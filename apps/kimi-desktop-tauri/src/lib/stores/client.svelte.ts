@@ -70,6 +70,9 @@ const ui = $state({
   isSending: false,
   isStartingFirstPrompt: false,
 
+  // Auth
+  authProvider: null as { name: string; status: string } | null,
+
   // Side panel
   detailTarget: null as string | null,
 });
@@ -119,6 +122,8 @@ export const uiFontSize = $derived(ui.uiFontSize);
 export const activity = $derived(ui.activity);
 export const isSending = $derived(ui.isSending);
 export const isStartingFirstPrompt = $derived(ui.isStartingFirstPrompt);
+
+export const authProvider = $derived(ui.authProvider);
 
 // The active session object.
 export const activeSession = $derived(
@@ -217,6 +222,9 @@ async function load(): Promise<void> {
     try {
       const auth = await a.getAuth();
       ui.authReady = auth.ready;
+      ui.authProvider = auth.managedProvider
+        ? { name: auth.managedProvider.name ?? 'managed:kimi-code', status: auth.managedProvider.status ?? 'unknown' }
+        : null;
     } catch {
       ui.authReady = false;
     }
@@ -226,6 +234,13 @@ async function load(): Promise<void> {
       ui.config = await a.getConfig();
     } catch {
       // Non-fatal.
+    }
+
+    // Load providers (for the config panel).
+    try {
+      ui.providers = await a.listProviders();
+    } catch {
+      ui.providers = [];
     }
 
     // Load workspaces.
@@ -603,6 +618,191 @@ function dismissWarning(index: number): void {
 }
 
 // ---------------------------------------------------------------------------
+// Config / Provider / Model / Auth management (GUI configuration panel)
+// ---------------------------------------------------------------------------
+// The daemon does NOT expose POST/DELETE /providers — adding or editing a
+// provider is done through POST /config with the providers table. These
+// actions wrap that flow so the GUI can treat it as CRUD.
+
+/** Update the daemon config via POST /config. Returns the new config. */
+async function updateConfig(patch: Partial<AppConfig>): Promise<void> {
+  const a = getApi();
+  const saved = await a.setConfig(patch);
+  ui.config = saved;
+}
+
+/** Add or update a provider by writing it into config.providers[id]. */
+async function saveProvider(
+  id: string,
+  input: {
+    type: string;
+    apiKey?: string;
+    baseUrl?: string;
+    defaultModel?: string;
+  },
+): Promise<void> {
+  const a = getApi();
+  // POST /config with the provider merged into providers[id].
+  // Wire body uses snake_case; setConfig() handles the camelCase→snake mapping
+  // for top-level keys, but provider sub-keys need manual snake-casing.
+  const providerEntry: Record<string, unknown> = { type: input.type };
+  if (input.apiKey) providerEntry['api_key'] = input.apiKey;
+  if (input.baseUrl) providerEntry['base_url'] = input.baseUrl;
+  if (input.defaultModel) providerEntry['default_model'] = input.defaultModel;
+
+  await a.setConfig({
+    providers: { [id]: providerEntry } as unknown as AppConfig['providers'],
+  });
+  // Refresh the provider list.
+  await refreshProviders();
+}
+
+/** Add a model alias by writing it into config.models[alias]. */
+async function saveModelAlias(
+  alias: string,
+  input: {
+    provider: string;
+    model: string;
+    maxContextSize: number;
+    displayName?: string;
+    capabilities?: string[];
+  },
+): Promise<void> {
+  const a = getApi();
+  const modelEntry: Record<string, unknown> = {
+    provider: input.provider,
+    model: input.model,
+    max_context_size: input.maxContextSize,
+  };
+  if (input.displayName) modelEntry['display_name'] = input.displayName;
+  if (input.capabilities) modelEntry['capabilities'] = input.capabilities;
+
+  await a.setConfig({
+    models: { [alias]: modelEntry },
+  } as unknown as Partial<AppConfig>);
+  // Refresh the model list.
+  await refreshModels();
+}
+
+/** Set the default model via POST /models/:id:set_default (the real endpoint). */
+async function setDefaultModel(modelId: string): Promise<void> {
+  // The REST endpoint POST /models/<id>:set_default is the cleanest path.
+  // But the API client doesn't expose it directly — fall back to POST /config.
+  await updateConfig({ defaultModel: modelId });
+}
+
+/** Refresh the provider catalog from the daemon. */
+async function refreshProviders(): Promise<void> {
+  const a = getApi();
+  try {
+    ui.providers = await a.listProviders();
+  } catch {
+    // Non-fatal.
+  }
+}
+
+/** Refresh the model catalog from the daemon. */
+async function refreshModels(): Promise<void> {
+  const a = getApi();
+  try {
+    ui.models = await a.listModels();
+  } catch {
+    // Non-fatal.
+  }
+}
+
+/** Trigger a remote model refresh for a specific provider. */
+async function refreshProviderModels(providerId: string): Promise<void> {
+  const a = getApi();
+  try {
+    await a.refreshProvider(providerId);
+    await refreshModels();
+  } catch {
+    // Non-fatal.
+  }
+}
+
+/** Check auth status and update authProvider. */
+async function checkAuth(): Promise<void> {
+  const a = getApi();
+  try {
+    const auth = await a.getAuth();
+    ui.authReady = auth.ready;
+    ui.authProvider = auth.managedProvider
+      ? { name: auth.managedProvider.name ?? 'managed:kimi-code', status: auth.managedProvider.status ?? 'unknown' }
+      : null;
+  } catch {
+    ui.authReady = false;
+  }
+}
+
+/** Start the OAuth device flow login. */
+async function startOAuthLogin(): Promise<{
+  verificationUri: string;
+  verificationUriComplete?: string;
+  userCode?: string;
+  expiresIn?: number;
+  interval?: number;
+}> {
+  const a = getApi();
+  const result = await a.startOAuthLogin();
+  return {
+    verificationUri: result.verificationUri,
+    verificationUriComplete: result.verificationUriComplete,
+    userCode: result.userCode,
+    expiresIn: result.expiresIn,
+    interval: result.interval,
+  };
+}
+
+/** Poll the OAuth login status. */
+async function pollOAuthLogin(): Promise<{
+  status: string;
+} | null> {
+  const a = getApi();
+  const result = await a.pollOAuthLogin();
+  if (!result) return null;
+  return { status: result.status };
+}
+
+/** Cancel the OAuth login flow. */
+async function cancelOAuthLogin(): Promise<void> {
+  const a = getApi();
+  await a.cancelOAuthLogin();
+}
+
+/** Logout (clear OAuth token). */
+async function logout(): Promise<void> {
+  const a = getApi();
+  await a.logout();
+  await checkAuth();
+}
+
+/** Set the color scheme (appearance — frontend local, not daemon config). */
+function setColorScheme(scheme: 'light' | 'dark' | 'system'): void {
+  ui.colorScheme = scheme;
+  try {
+    document.documentElement.dataset.colorScheme = scheme;
+    localStorage.setItem('kimi-web.color-scheme', scheme);
+  } catch {
+    // Non-fatal.
+  }
+}
+
+/** Set the UI font size (appearance — frontend local). */
+function setUiFontSize(size: number): void {
+  ui.uiFontSize = size;
+  try {
+    document.documentElement.style.setProperty('--base-ui-font-size', String(size) + 'px');
+    localStorage.setItem('kimi-web.ui-font-size', String(size));
+  } catch {
+    // Non-fatal.
+  }
+}
+
+
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -611,7 +811,7 @@ export const client = {
   get rawState() { return rawState; },
   get ui() { return ui; },
 
-  // Actions.
+  // Session / workspace actions.
   load,
   selectSession,
   clearActiveSession,
@@ -639,4 +839,20 @@ export const client = {
   activateSkill,
   steerPrompt,
   dismissWarning,
+
+  // Config / provider / model / auth actions (GUI configuration panel).
+  updateConfig,
+  saveProvider,
+  saveModelAlias,
+  setDefaultModel,
+  refreshProviders,
+  refreshModels,
+  refreshProviderModels,
+  checkAuth,
+  startOAuthLogin,
+  pollOAuthLogin,
+  cancelOAuthLogin,
+  logout,
+  setColorScheme,
+  setUiFontSize,
 };

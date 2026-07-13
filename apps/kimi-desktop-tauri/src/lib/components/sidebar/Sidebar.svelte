@@ -3,6 +3,9 @@
   import * as client from '../../stores/client.svelte';
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
+  import ConfigDialog from '../settings/ConfigDialog.svelte';
+
+  let showSettings = $state(false);
 
   function handleSelect(e: Event, sessionId: string) {
     e.preventDefault();
@@ -28,7 +31,7 @@
       <span class="brand-logo">◧</span>
       <span class="brand-name">Kimi Code</span>
     </div>
-    <IconButton name="settings" label="设置" size="sm" />
+    <IconButton name="settings" label="设置" size="sm" onclick={() => showSettings = true} />
   </header>
 
   <!-- New session button -->
@@ -101,6 +104,9 @@
     </button>
   </footer>
 </div>
+
+<!-- Settings dialog -->
+<ConfigDialog bind:open={showSettings} />
 
 <style>
   .sidebar {
