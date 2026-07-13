@@ -12,12 +12,6 @@ import { getKimiWebApi, type KimiWebApi } from '../api';
 import type {
   AppConfig,
   AppEvent,
-  AppMessage,
-  AppApprovalRequest,
-  AppSession,
-  AppQuestionRequest,
-  AppTask,
-  AppWarning,
   AppWorkspace,
   AppModel,
   AppProvider,
@@ -29,17 +23,6 @@ import {
   reduceAppEvent,
   type KimiClientState,
 } from '../api/daemon/eventReducer';
-import { isDaemonApiError, isDaemonNetworkError } from '../api/errors';
-import { mergeWorkspaces } from '../lib/mergeWorkspaces';
-import {
-  reconcileWorkspaceOrder,
-  sortByWorkspaceOrder,
-} from '../lib/workspaceOrder';
-import {
-  safeGetString,
-  safeSetString,
-  STORAGE_KEYS,
-} from '../lib/storage';
 import { messagesToTurns, type ChatTurn } from '../lib/messagesToTurns';
 import { setDaemonOrigin } from '../api/config';
 import { daemon } from './daemon.svelte';
@@ -286,7 +269,7 @@ function connectEvents(): void {
   const a = getApi();
 
   const handlers: KimiEventHandlers = {
-    onEvent(event: AppEvent, meta?: { seq?: number; sessionId?: string }) {
+    onEvent(event: AppEvent, meta: { sessionId: string; seq: number }) {
       // Apply the event to the reducer state.
       const next = reduceAppEvent(rawState, event, meta);
       // Reassign top-level fields to trigger $derived reactivity.
@@ -300,15 +283,15 @@ function connectEvents(): void {
         ui.activity = 'running';
       }
     },
-    onResyncRequired() {
-      // Re-fetch the active session's snapshot.
+    onResync(sessionId: string, _currentSeq: number, _epoch?: string) {
+      void sessionId;
       void resyncActiveSession();
     },
-    onConnected() {
-      ui.connected = true;
+    onError(code: number, msg: string, fatal: boolean) {
+      console.error(`[kimi-desktop-tauri] WS error (code=${code} fatal=${fatal}): ${msg}`);
     },
-    onDisconnected() {
-      ui.connected = false;
+    onConnectionChange(connected: boolean) {
+      ui.connected = connected;
     },
   };
 
@@ -323,7 +306,7 @@ async function resyncActiveSession(): Promise<void> {
     const a = getApi();
     const snapshot = await a.getSessionSnapshot(sid);
     if (snapshot && eventConn) {
-      eventConn.seedSnapshot(snapshot);
+      eventConn.seedSnapshot(sid, snapshot);
     }
   } catch {
     // Best-effort.

@@ -1,13 +1,12 @@
 <!-- App.svelte — root component (Phase 3: elegant three-column layout). -->
 <script lang="ts">
-  import { onMount, onUnmounted } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { daemon } from './lib/stores/daemon.svelte';
   import * as client from './lib/stores/client.svelte';
   import Sidebar from './lib/components/sidebar/Sidebar.svelte';
   import ConversationPane from './lib/components/chat/ConversationPane.svelte';
-  import Icon from './lib/components/ui/Icon.svelte';
   import IconButton from './lib/components/ui/IconButton.svelte';
-  import { isMacosDesktop, desktopPlatform } from './lib/lib/desktopFlag';
+  import { isMacosDesktop } from './lib/lib/desktopFlag';
 
   let sidebarCollapsed = $state(false);
   let sidebarWidth = $state(280);
@@ -43,7 +42,7 @@
     }
   });
 
-  onUnmounted(() => {
+  onDestroy(() => {
     daemon.destroy();
   });
 
@@ -206,16 +205,6 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-  }
-
-  /* When sidebar is collapsed, add left padding for the toggle button. */
-  .app-shell.sidebar-collapsed .col-conversation {
-    /* No extra padding needed — the toggle floats. */
-  }
-
-  /* macOS: the conversation header needs to clear the traffic lights + toggle. */
-  .app-shell.macos .col-conversation {
-    /* Handled inside ConversationPane's ChatHeader. */
   }
 
   /* --- Overlay screens (loading / error / initializing) --- */

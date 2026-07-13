@@ -7,7 +7,7 @@
 //
 // Components use `import { t } from 'svelte-i18n'` and `$t('key')` in markup.
 
-import { init, addMessages, getLocaleFromNavigator } from 'svelte-i18n';
+import { init, addMessages, getLocaleFromNavigator, locale as svelteLocale } from 'svelte-i18n';
 import { messages } from './locales';
 import { safeGetString, safeSetString, STORAGE_KEYS } from '../lib/storage';
 
@@ -84,6 +84,7 @@ export const i18n = {
 
 export function setLocale(l: LocaleCode): void {
   activeLocale = l;
+  svelteLocale.set(l);
   safeSetString(STORAGE_KEYS.locale, l);
 }
 

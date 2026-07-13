@@ -5,7 +5,9 @@
 // command on startup and renders loading / error / connected states.
 
 import { mount } from 'svelte';
-import './styles/global.css';
+import '@fontsource-variable/inter';
+import '@fontsource-variable/jetbrains-mono';
+import './lib/styles/global.css';
 import App from './App.svelte';
 
 const app = mount(App, {

@@ -89,7 +89,7 @@
             <div class="turn turn-assistant">
               <div class="turn-content assistant-content">
                 <!-- Phase 3: simplified rendering. Phase 4 will use full Markdown + tool cards. -->
-                {#each turn.blocks as block}
+                {#each turn.blocks ?? [] as block}
                   {#if block.kind === 'text'}
                     <div class="assistant-text">{block.text}</div>
                   {:else if block.kind === 'tool'}
@@ -107,7 +107,7 @@
                     </div>
                   {/if}
                 {/each}
-                {#if turn.streaming}
+                {#if running && turn === client.turns.at(-1)}
                   <span class="cursor"></span>
                 {/if}
               </div>
