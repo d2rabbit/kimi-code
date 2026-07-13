@@ -81,9 +81,18 @@
         {#each client.turns as turn (turn.id)}
           {#if turn.role === 'user'}
             <div class="turn turn-user">
-              <div class="turn-content user-content">
-                {turn.text}
-              </div>
+              {#if turn.images?.length}
+                <div class="user-images">
+                  {#each turn.images as img (img.url)}
+                    <img src={img.url} alt={img.alt ?? ''} />
+                  {/each}
+                </div>
+              {/if}
+              {#if turn.text}
+                <div class="turn-content user-content">
+                  {turn.text}
+                </div>
+              {/if}
             </div>
           {:else}
             <div class="turn turn-assistant">
@@ -240,6 +249,19 @@
     color: var(--color-text, #e7e7ea);
     white-space: pre-wrap;
     word-break: break-word;
+  }
+  .user-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+    justify-content: flex-end;
+  }
+  .user-images img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: var(--radius-md, 8px);
+    object-fit: cover;
   }
   .assistant-content {
     color: var(--color-text, #e7e7ea);

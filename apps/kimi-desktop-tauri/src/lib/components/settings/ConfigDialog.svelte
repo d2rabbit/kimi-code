@@ -232,6 +232,28 @@
     }
   }
 
+  // Thinking is a nested object { enabled?, effort? } — must spread to avoid clobbering effort.
+  async function toggleThinking(enabled: boolean) {
+    saving = true;
+    try {
+      await client.client.updateConfig({
+        thinking: { ...client.config?.thinking, enabled },
+      });
+    } catch (e) {
+      showMessage('error', `设置失败: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      saving = false;
+    }
+  }
+
+  // Toast timer — clear the previous timeout so rapid calls don't kill the new message early.
+  let msgTimer: ReturnType<typeof setTimeout> | null = null;
+  function showMessageTimed(type: 'success' | 'error', text: string) {
+    if (msgTimer) clearTimeout(msgTimer);
+    showMessage(type, text);
+    msgTimer = setTimeout(() => { message = null; msgTimer = null; }, 4000);
+  }
+
   async function setPermission(mode: 'manual' | 'auto' | 'yolo') {
     saving = true;
     try {
@@ -247,10 +269,15 @@
     client.client.setColorScheme(scheme);
   }
 
-  // Clean up on close.
+  // Clean up on close — cancel any in-flight OAuth flow on the server too.
   function handleClose() {
     stopPolling();
+    if (oauthState === 'pending') {
+      void client.client.cancelOAuthLogin().catch(() => {});
+    }
     oauthState = 'idle';
+    showProviderForm = false;
+    showModelForm = false;
   }
 </script>
 
@@ -502,7 +529,7 @@
           class="toggle"
           checked={client.config?.thinking?.enabled}
           disabled={saving}
-          onchange={(e) => toggleConfig('planMode' as never, (e.target as HTMLInputElement).checked)}
+          onchange={(e) => toggleThinking((e.target as HTMLInputElement).checked)}
         />
       </label>
       <label class="switch-row">

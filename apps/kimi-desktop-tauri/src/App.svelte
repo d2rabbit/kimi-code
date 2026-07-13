@@ -95,11 +95,17 @@
     </div>
   {:else}
     <!-- Connected: three-column layout -->
-    <!-- Column 1: Sidebar -->
-    {#if !sidebarCollapsed}
-      <aside class="col-sidebar" style="width: {sidebarWidth}px">
+    <!-- Column 1: Sidebar (always mounted; width animates to 0 when collapsed) -->
+    <aside
+      class="col-sidebar"
+      class:collapsed={sidebarCollapsed}
+      style="--sidebar-w: {sidebarWidth}px"
+    >
+      <div class="sidebar-inner">
         <Sidebar />
-      </aside>
+      </div>
+    </aside>
+    {#if !sidebarCollapsed}
       <div
         class="resize-handle"
         role="separator"
@@ -108,7 +114,7 @@
       ></div>
     {/if}
 
-    <!-- Sidebar toggle (collapsed or macOS) -->
+    <!-- Sidebar toggle (always rendered; macOS resident, others only when collapsed) -->
     {#if sidebarCollapsed || isMacosDesktop}
       <div class="sidebar-toggle-zone" class:macos={isMacosDesktop}>
         <IconButton
@@ -155,6 +161,7 @@
   /* --- Sidebar column --- */
   .col-sidebar {
     flex: none;
+    width: var(--sidebar-w, 280px);
     min-width: 0;
     height: 100%;
     background: var(--color-sidebar-bg, var(--color-surface, #121214));
@@ -162,7 +169,19 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: width 0.2s var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+    transition: width 0.22s var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+  }
+  .col-sidebar.collapsed {
+    width: 0;
+    border-right-color: transparent;
+  }
+  /* Inner wrapper keeps the real width so content doesn't reflow during the
+     width-to-0 animation — it clips instead. */
+  .sidebar-inner {
+    width: var(--sidebar-w, 280px);
+    height: 100%;
+    flex: none;
+    overflow: hidden;
   }
 
   /* --- Resize handle --- */

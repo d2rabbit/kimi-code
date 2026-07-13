@@ -16,10 +16,16 @@
     client.client.clearActiveSession();
   }
 
+  let addWsError = $state<string | null>(null);
+
   async function handleAddWorkspace() {
-    const path = prompt('输入工作区路径:');
-    if (path) {
-      await client.client.addWorkspaceByPath(path);
+    addWsError = null;
+    const path = prompt('输入工作区路径 (如 /home/user/project):');
+    if (!path) return;
+    const ok = await client.client.addWorkspaceByPath(path);
+    if (!ok) {
+      addWsError = `无法添加工作区 "${path}"，请检查路径是否正确`;
+      setTimeout(() => { addWsError = null; }, 5000);
     }
   }
 </script>
@@ -102,6 +108,9 @@
       <Icon name="folder-plus" size="sm" />
       <span>添加工作区</span>
     </button>
+    {#if addWsError}
+      <div class="ws-error">{addWsError}</div>
+    {/if}
   </footer>
 </div>
 
@@ -252,5 +261,13 @@
   .add-workspace-btn:hover {
     background: var(--color-hover, rgba(255, 255, 255, 0.06));
     color: var(--color-text, #e7e7ea);
+  }
+  .ws-error {
+    padding: 6px 10px;
+    margin-top: 4px;
+    font-size: var(--text-xs, 12px);
+    color: var(--color-danger, #ff6b6b);
+    background: var(--color-danger-soft, rgba(255, 107, 107, 0.1));
+    border-radius: var(--radius-sm, 6px);
   }
 </style>

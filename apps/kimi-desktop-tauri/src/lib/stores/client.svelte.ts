@@ -209,6 +209,18 @@ async function load(): Promise<void> {
       setDaemonOrigin(daemon.state.origin);
     }
 
+    // Restore persisted appearance preferences (theme + font size).
+    try {
+      const scheme = localStorage.getItem('kimi-web.color-scheme');
+      if (scheme === 'light' || scheme === 'dark' || scheme === 'system') {
+        setColorScheme(scheme);
+      }
+      const fs = localStorage.getItem('kimi-web.ui-font-size');
+      if (fs) setUiFontSize(Number(fs));
+    } catch {
+      // Non-fatal — localStorage may be unavailable.
+    }
+
     // Fetch meta (server version, capabilities).
     try {
       const meta = await a.getMeta();

@@ -42,6 +42,9 @@
       onkeydown={handleKeydown}
       placeholder="输入消息… (Enter 发送, Shift+Enter 换行)"
       rows="1"
+      spellcheck="false"
+      autocomplete="off"
+      autocapitalize="off"
       class="composer-input"
     ></textarea>
     <button
