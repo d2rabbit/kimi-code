@@ -281,6 +281,17 @@
   }
 </script>
 
+<!-- Intercept ESC: when a form overlay is open, close the form first (don't
+     let it bubble to Dialog which would close the entire settings panel). -->
+<svelte:window onkeydown={(e) => {
+  if (e.key === 'Escape' && (showProviderForm || showModelForm)) {
+    e.stopPropagation();
+    e.preventDefault();
+    showProviderForm = false;
+    showModelForm = false;
+  }
+}} />
+
 <Dialog bind:open title="设置" onClose={handleClose}>
   <!-- Tab bar -->
   <div class="tabs">

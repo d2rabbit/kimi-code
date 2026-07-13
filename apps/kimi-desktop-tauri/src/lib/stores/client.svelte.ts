@@ -642,9 +642,18 @@ async function updateConfig(patch: Partial<AppConfig>): Promise<void> {
   const saved = await a.setConfig(patch);
   ui.config = saved;
 }
-
-/** Add or update a provider by writing it into config.providers[id]. */
-async function saveProvider(
+// ---------------------------------------------------------------------------
+// Config / Provider / Model / Auth management (GUI configuration panel)
+// ---------------------------------------------------------------------------
+// VERIFIED: the daemon's POST /config uses deepMerge (merge.ts) to recursively
+// merge the patch into the existing config. Writing { providers: { "my-id": {...} } }
+// adds/updates ONLY that one provider — it does NOT replace the entire providers
+// table. The server route converts snake_case sub-keys to camelCase before
+// merging (configService.ts:25 convertKeysSnakeToCamel), so we pass snake_case
+// keys (api_key, base_url, max_context_size) in the wire body.
+// Caveat: deepMerge cannot DELETE fields — editing a provider and leaving a
+// field empty means "don't change it", not "clear it". This is a daemon
+// limitation (Zod schema rejects null for these optional fields).
   id: string,
   input: {
     type: string;
