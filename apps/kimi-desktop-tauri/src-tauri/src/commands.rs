@@ -84,3 +84,120 @@ pub fn open_path(path: String) -> Result<(), String> {
 pub fn get_kimi_home() -> String {
     kimi_home().to_string_lossy().into_owned()
 }
+
+// ---------------------------------------------------------------------------
+// Skill file management (filesystem CRUD)
+// ---------------------------------------------------------------------------
+// The daemon does NOT expose REST endpoints for creating/editing/deleting
+// skills — only list + activate. These commands operate directly on the
+// filesystem under ~/.kimi-code/skills/ to provide a GUI management layer.
+
+use std::fs as stdfs;
+
+/// The user-level skills directory: <KIMI_CODE_HOME>/skills/
+fn user_skills_dir() -> PathBuf {
+    kimi_home().join("skills")
+}
+
+/// List user-level skills by scanning <home>/skills/ for SKILL.md files.
+/// Returns a list of { name, path, content } for each skill found.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillFileInfo {
+    pub name: String,
+    /// Absolute path to the SKILL.md file.
+    pub path: String,
+    /// Full file content (frontmatter + body).
+    pub content: String,
+}
+
+#[tauri::command]
+pub fn list_user_skills() -> Result<Vec<SkillFileInfo>, String> {
+    let dir = user_skills_dir();
+    if !dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut skills = Vec::new();
+    let entries = stdfs::read_dir(&dir).map_err(|e| format!("Cannot read skills dir: {e}"))?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = if path.is_dir() {
+            // Directory form: <name>/SKILL.md
+            let skill_file = path.join("SKILL.md");
+            if !skill_file.exists() {
+                continue;
+            }
+            let content = stdfs::read_to_string(&skill_file)
+                .map_err(|e| format!("Cannot read {}: {e}", skill_file.display()))?;
+            SkillFileInfo {
+                name: path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
+                path: skill_file.to_string_lossy().into_owned(),
+                content,
+            }
+        } else if path.extension().and_then(|e| e.to_str()) == Some("md") {
+            // Flat form: <name>.md
+            let content = stdfs::read_to_string(&path)
+                .map_err(|e| format!("Cannot read {}: {e}", path.display()))?;
+            let name = path
+                .file_stem()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            // Skip SKILL.md at the top level (not a skill itself)
+            if name.eq_ignore_ascii_case("SKILL") {
+                continue;
+            }
+            SkillFileInfo {
+                name,
+                path: path.to_string_lossy().into_owned(),
+                content,
+            }
+        } else {
+            continue;
+        };
+        skills.push(name);
+    }
+    Ok(skills)
+}
+
+/// Create or overwrite a skill file.
+/// Writes to <home>/skills/<name>/SKILL.md (directory form).
+#[tauri::command]
+pub fn write_user_skill(name: String, content: String) -> Result<String, String> {
+    let trimmed_name = name.trim();
+    if trimmed_name.is_empty() {
+        return Err("Skill name cannot be empty".into());
+    }
+    // Validate name: no path separators, no dots (avoid directory traversal).
+    if trimmed_name.contains('/') || trimmed_name.contains('\\') || trimmed_name.contains("..") {
+        return Err("Invalid skill name".into());
+    }
+    let skill_dir = user_skills_dir().join(trimmed_name);
+    stdfs::create_dir_all(&skill_dir).map_err(|e| format!("Cannot create skill dir: {e}"))?;
+    let skill_path = skill_dir.join("SKILL.md");
+    stdfs::write(&skill_path, &content)
+        .map_err(|e| format!("Cannot write skill file: {e}"))?;
+    Ok(skill_path.to_string_lossy().into_owned())
+}
+
+/// Delete a user-level skill (removes the entire <name>/ directory or <name>.md file).
+#[tauri::command]
+pub fn delete_user_skill(name: String) -> Result<(), String> {
+    let trimmed_name = name.trim();
+    if trimmed_name.contains('/') || trimmed_name.contains('\\') || trimmed_name.contains("..") {
+        return Err("Invalid skill name".into());
+    }
+    let skill_dir = user_skills_dir().join(trimmed_name);
+    if skill_dir.exists() {
+        stdfs::remove_dir_all(&skill_dir)
+            .map_err(|e| format!("Cannot delete skill directory: {e}"))?;
+        return Ok(());
+    }
+    // Try flat form
+    let flat = user_skills_dir().join(format!("{trimmed_name}.md"));
+    if flat.exists() {
+        stdfs::remove_file(&flat)
+            .map_err(|e| format!("Cannot delete skill file: {e}"))?;
+        return Ok(());
+    }
+    Err(format!("Skill '{trimmed_name}' not found"))
+}

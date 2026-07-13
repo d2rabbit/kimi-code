@@ -798,7 +798,47 @@ function setUiFontSize(size: number): void {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Skill management (filesystem CRUD via Tauri commands)
+// ---------------------------------------------------------------------------
+// The daemon only exposes list + activate for skills — no create/edit/delete.
+// These actions call Rust commands that operate directly on
+// ~/.kimi-code/skills/<name>/SKILL.md, then refresh the file list.
 
+import { invoke as tauriInvoke } from '@tauri-apps/api/core';
+
+interface UserSkillFile {
+  name: string;
+  path: string;
+  content: string;
+}
+
+const userSkills = $state<UserSkillFile[]>([]);
+
+export const skillFiles = $derived(userSkills);
+
+/** Refresh the user-level skill file list from the filesystem. */
+async function refreshUserSkills(): Promise<void> {
+  try {
+    const list = await tauriInvoke<UserSkillFile[]>('list_user_skills');
+    userSkills.splice(0, userSkills.length, ...list);
+  } catch {
+    // Non-fatal — skills dir may not exist yet.
+  }
+}
+
+/** Create or overwrite a skill. Returns the file path on success. */
+async function saveUserSkill(name: string, content: string): Promise<string> {
+  const path = await tauriInvoke<string>('write_user_skill', { name, content });
+  await refreshUserSkills();
+  return path;
+}
+
+/** Delete a user-level skill from the filesystem. */
+async function deleteUserSkill(name: string): Promise<void> {
+  await tauriInvoke('delete_user_skill', { name });
+  await refreshUserSkills();
+}
 
 // ---------------------------------------------------------------------------
 // Export
@@ -853,4 +893,9 @@ export const client = {
   logout,
   setColorScheme,
   setUiFontSize,
+
+  // Skill management (filesystem CRUD).
+  refreshUserSkills,
+  saveUserSkill,
+  deleteUserSkill,
 };

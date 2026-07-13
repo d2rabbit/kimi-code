@@ -1,11 +1,12 @@
 <!-- ConfigDialog.svelte — the "傻瓜化" configuration panel.
-     Four tabs: 账号 / 模型 / Provider / 通用.
+     Five tabs: 账号 / 模型 / Provider / Skills / 通用.
      Lets users configure everything through GUI without editing TOML. -->
 <script lang="ts">
   import Dialog from '../ui/Dialog.svelte';
   import Button from '../ui/Button.svelte';
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
+  import SkillsPanel from './SkillsPanel.svelte';
   import * as client from '../../stores/client.svelte';
   import { invoke } from '@tauri-apps/api/core';
 
@@ -13,7 +14,7 @@
     open = $bindable(true),
   }: { open?: boolean } = $props();
 
-  let activeTab = $state<'account' | 'models' | 'providers' | 'general'>('account');
+  let activeTab = $state<'account' | 'models' | 'providers' | 'skills' | 'general'>('account');
   let saving = $state(false);
   let message = $state<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -304,6 +305,9 @@
     <button class="tab" class:active={activeTab === 'providers'} onclick={() => activeTab = 'providers'}>
       <Icon name="globe" size="sm" /> Provider
     </button>
+    <button class="tab" class:active={activeTab === 'skills'} onclick={() => activeTab = 'skills'}>
+      <Icon name="sparkles" size="sm" /> Skills
+    </button>
     <button class="tab" class:active={activeTab === 'general'} onclick={() => activeTab = 'general'}>
       <Icon name="settings" size="sm" /> 通用
     </button>
@@ -490,6 +494,13 @@
           </div>
         </div>
       {/if}
+    </div>
+  {/if}
+
+  <!-- === Skills tab === -->
+  {#if activeTab === 'skills'}
+    <div class="tab-content">
+      <SkillsPanel />
     </div>
   {/if}
 
