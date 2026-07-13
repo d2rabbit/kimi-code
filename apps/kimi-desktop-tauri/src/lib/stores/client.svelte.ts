@@ -150,14 +150,14 @@ export const activeMessages = $derived(
 );
 
 // Turns (grouped messages) for the active session.
-export const turns = $derived<ChatTurn[]>(() => {
+export const turns = $derived.by<ChatTurn[]>(() => {
   const sid = rawState.activeSessionId;
   if (!sid) return [];
   const msgs = rawState.messagesBySession[sid] ?? [];
   const approvals = rawState.approvalsBySession[sid] ?? [];
   const tasks = rawState.tasksBySession[sid] ?? [];
   return messagesToTurns(msgs, approvals, tasks);
-})();
+});
 
 // Pending approvals for the active session.
 export const pendingApprovals = $derived(
@@ -193,12 +193,12 @@ export const visibleWorkspace = $derived(
 );
 
 // Sessions for the active workspace (or all if no workspace selected).
-export const sessionsForView = $derived(() => {
+export const sessionsForView = $derived.by(() => {
   if (!ui.activeWorkspaceId) return rawState.sessions;
   return rawState.sessions.filter(
     (s) => s.workspaceId === ui.activeWorkspaceId,
   );
-})();
+});
 
 // Default model from config.
 export const defaultModel = $derived(ui.config?.defaultModel ?? '');
@@ -241,7 +241,6 @@ async function load(): Promise<void> {
     // Load config.
     try {
       ui.config = await a.getConfig();
-      ui.defaultModel = ui.config?.defaultModel ?? '';
     } catch {
       // Non-fatal.
     }
@@ -331,8 +330,12 @@ async function resyncActiveSession(): Promise<void> {
   }
 }
 
+/** Incremented on each selectSession call to guard against stale async results. */
+let selectToken = 0;
+
 /** Select a session: set active + subscribe to its event stream. */
 async function selectSession(sessionId: string): Promise<void> {
+  const myToken = ++selectToken;
   rawState.activeSessionId = sessionId;
   ui.sessionLoading = true;
 
@@ -341,11 +344,13 @@ async function selectSession(sessionId: string): Promise<void> {
     // Load messages if not already cached.
     if (!rawState.messagesBySession[sessionId]) {
       const result = await a.listMessages(sessionId);
+      // Discard if a newer selection has superseded this one.
+      if (myToken !== selectToken) return;
       rawState.messagesBySession[sessionId] = result.messages;
     }
-    // Subscribe to events.
-    if (eventConn) {
-      await eventConn.subscribe(sessionId);
+    // Subscribe to events — only if this selection is still current.
+    if (myToken === selectToken && eventConn) {
+      eventConn.subscribe(sessionId);
     }
   } catch {
     // Non-fatal.
@@ -381,7 +386,6 @@ async function sendPrompt(
   if (!sid) return;
 
   ui.isSending = true;
-  ui.isStartingFirstPrompt = true;
   ui.activity = 'running';
 
   try {
@@ -393,8 +397,6 @@ async function sendPrompt(
     ui.activity = 'idle';
     ui.isSending = false;
     throw e;
-  } finally {
-    ui.isStartingFirstPrompt = false;
   }
 }
 
@@ -600,17 +602,12 @@ async function activateSkill(name: string, args?: string): Promise<void> {
   await a.activateSkill(sid, name, args);
 }
 
-/** Steer a prompt. */
-async function steerPrompt(
-  text: string,
-  attachments?: { fileId: string; kind: 'image' | 'video' }[],
-): Promise<void> {
+/** Steer queued prompts into the current turn. */
+async function steerPrompt(promptIds: string[]): Promise<void> {
   const sid = rawState.activeSessionId;
   if (!sid) return;
   const a = getApi();
-  await a.steerPrompts(sid, []);
-  void text;
-  void attachments;
+  await a.steerPrompts(sid, promptIds);
 }
 
 /** Dismiss a warning. */
@@ -621,14 +618,6 @@ function dismissWarning(index: number): void {
     rawState.warnings = rawState.warnings.filter((_, i) => i !== index);
   }
 }
-
-// Set defaultModel setter (used by load()).
-Object.defineProperty(ui, 'defaultModel', {
-  value: '',
-  writable: true,
-  enumerable: true,
-  configurable: true,
-});
 
 // ---------------------------------------------------------------------------
 // Export

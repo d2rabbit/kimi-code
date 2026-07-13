@@ -37,7 +37,9 @@
     loadSidebarState();
     await daemon.connect();
     if (daemon.state.status === 'connected') {
-      await client.client.load();
+      await client.client.load().catch((e) => {
+        console.error('[kimi-desktop-tauri] client.load() failed:', e);
+      });
     }
   });
 

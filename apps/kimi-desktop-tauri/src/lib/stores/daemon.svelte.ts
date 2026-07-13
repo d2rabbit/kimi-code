@@ -34,16 +34,17 @@ class DaemonStore {
 
   /** Start the daemon connection flow. Call once on app mount. */
   async connect(): Promise<void> {
-    // Listen for async error events from the Rust side (in case the background
-    // spawn in setup() fails before the frontend's own call returns).
-    this.unlisteners.push(
-      await listen<string>('daemon:error', (event) => {
-        if (this.state.status !== 'connected') {
-          this.state.status = 'error';
-          this.state.error = event.payload;
-        }
-      }),
-    );
+    // Only register the event listener once, not on every retry.
+    if (this.unlisteners.length === 0) {
+      this.unlisteners.push(
+        await listen<string>('daemon:error', (event) => {
+          if (this.state.status !== 'connected') {
+            this.state.status = 'error';
+            this.state.error = event.payload;
+          }
+        }),
+      );
+    }
 
     try {
       // The Rust setup() already spawned ensure_server in the background, but

@@ -5,7 +5,7 @@
 // native SEA build supports (apps/kimi-code/scripts/native/native-deps.mjs).
 
 use std::path::PathBuf;
-use tauri::{Manager, plugin::TauriPlugin};
+use tauri::Manager;
 
 /// The 6 supported platform-arch targets.
 const SUPPORTED_TARGETS: &[&str] = &[
@@ -56,19 +56,16 @@ pub fn resolve_sea_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let target = current_target()?;
     let exe = executable_name();
 
-    if app.package_info().is_none() {
+    if cfg!(debug_assertions) {
         // Dev mode: resolve relative to the workspace root.
-        // app.path().app_dir() in dev points to apps/kimi-desktop-tauri;
-        // the kimi-code dist is a sibling app.
+        // CARGO_MANIFEST_DIR = .../apps/kimi-desktop-tauri/src-tauri
+        // ancestors: [0]=src-tauri, [1]=kimi-desktop-tauri, [2]=apps, [3]=repo root
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        // manifest_dir = apps/kimi-desktop-tauri/src-tauri
-        // workspace root   = apps/kimi-desktop-tauri/src-tauri/../../..  = repo root
-        let workspace_root = manifest_dir
+        let apps_dir = manifest_dir
             .ancestors()
             .nth(2)
-            .ok_or("Cannot determine workspace root")?;
-        let dev_path = workspace_root
-            .join("apps")
+            .ok_or("Cannot determine apps directory")?;
+        let dev_path = apps_dir
             .join("kimi-code")
             .join("dist-native")
             .join("bin")

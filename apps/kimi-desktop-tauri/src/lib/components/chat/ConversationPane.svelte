@@ -8,15 +8,21 @@
 
   let composerText = $state('');
 
-  // Auto-scroll to bottom when turns change.
+  // Auto-scroll to bottom when turns change or stream updates.
   let scrollEl: HTMLElement | null = $state(null);
   $effect(() => {
-    // Track turns length for reactivity.
+    // Track the last turn's content for streaming scroll-follow, not just count.
+    const lastTurn = client.turns.at(-1);
+    const blockCount = lastTurn?.blocks.length ?? 0;
+    const lastText = lastTurn?.blocks.at(-1);
+    void blockCount;
+    void lastText;
     void client.turns.length;
     if (scrollEl) {
-      requestAnimationFrame(() => {
+      const raf = requestAnimationFrame(() => {
         if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
       });
+      return () => cancelAnimationFrame(raf);
     }
   });
 
@@ -24,7 +30,12 @@
     const text = composerText.trim();
     if (!text) return;
     composerText = '';
-    await client.client.sendPrompt(text);
+    try {
+      await client.client.sendPrompt(text);
+    } catch {
+      // Restore the text so the user doesn't lose their input on failure.
+      composerText = text;
+    }
   }
 
   async function handleAbort() {
@@ -81,15 +92,18 @@
                 {#each turn.blocks as block}
                   {#if block.kind === 'text'}
                     <div class="assistant-text">{block.text}</div>
-                  {:else if block.kind === 'toolCall'}
+                  {:else if block.kind === 'tool'}
                     <div class="tool-call-chip">
                       <Icon name="tool" size="sm" />
-                      <span>{block.name || 'tool'}</span>
+                      <span>{block.tool.name}</span>
+                      {#if block.tool.arg}
+                        <span class="tool-arg">{block.tool.arg}</span>
+                      {/if}
                     </div>
                   {:else if block.kind === 'thinking'}
                     <div class="thinking-block">
                       <Icon name="sparkles" size="sm" />
-                      <span>思考中…</span>
+                      <span>{block.thinking || '思考中…'}</span>
                     </div>
                   {/if}
                 {/each}
@@ -245,6 +259,10 @@
     border: 1px solid var(--color-line, #2a2a2e);
     font-size: var(--text-xs, 12px);
     color: var(--color-text-muted, #9a9aa2);
+  }
+  .tool-arg {
+    color: var(--color-text-faint, #6a6a72);
+    font-family: var(--font-mono, monospace);
   }
   .thinking-block {
     display: inline-flex;

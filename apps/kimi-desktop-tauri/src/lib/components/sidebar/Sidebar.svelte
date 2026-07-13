@@ -6,7 +6,7 @@
 
   function handleSelect(e: Event, sessionId: string) {
     e.preventDefault();
-    client.client.selectSession(sessionId);
+    void client.client.selectSession(sessionId);
   }
 
   function handleNew() {
@@ -39,7 +39,10 @@
     </button>
   </div>
 
-  <!-- Workspaces + sessions -->
+  <!-- Workspaces + sessions.
+       Session→workspace matching: use the registered workspaceId if present,
+       otherwise fall back to matching cwd === workspace.root (the daemon may
+       not have populated workspaceId yet). -->
   <div class="sidebar-body">
     {#if client.workspaces.length > 0}
       {#each client.workspaces as ws (ws.id)}
@@ -48,7 +51,7 @@
             <Icon name="folder" size="sm" />
             <span class="workspace-name" title={ws.name}>{ws.name}</span>
           </div>
-          {#each client.sessions.filter((s) => s.workspaceId === ws.id) as session (session.id)}
+          {#each client.sessions.filter((s) => s.workspaceId === ws.id || (!s.workspaceId && s.cwd === ws.root)) as session (session.id)}
             <button
               class="session-row"
               class:active={session.id === client.activeSessionId}
@@ -58,6 +61,16 @@
             </button>
           {/each}
         </div>
+      {/each}
+      <!-- Sessions without a matching workspace (e.g. cwd not in any registered workspace) -->
+      {#each client.sessions.filter((s) => !client.workspaces.some((w) => w.id === s.workspaceId || w.root === s.cwd)) as session (session.id)}
+        <button
+          class="session-row"
+          class:active={session.id === client.activeSessionId}
+          onclick={(e) => handleSelect(e, session.id)}
+        >
+          <span class="session-title">{session.title || '新对话'}</span>
+        </button>
       {/each}
     {:else}
       <!-- No workspaces: show all sessions -->

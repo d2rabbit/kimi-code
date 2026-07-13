@@ -8,15 +8,10 @@ mod commands;
 mod daemon;
 mod sea_path;
 
-use tauri::{Manager, WindowEvent};
+use tauri::Manager;
 
 /// The window title.
 const WINDOW_TITLE: &str = "Kimi Code Desktop";
-/// Default + minimum window dimensions.
-const DEFAULT_WIDTH: u32 = 1280;
-const DEFAULT_HEIGHT: u32 = 860;
-const MIN_WIDTH: u32 = 720;
-const MIN_HEIGHT: u32 = 480;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -27,44 +22,18 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            // On macOS, position the traffic lights over the web UI's header row
-            // (mirrors the Electron app's trafficLightPosition { x:16, y:18 }).
             #[cfg(target_os = "macos")]
             {
-                use tauri::TitleBarStyle;
                 if let Some(window) = app.get_webview_window("main") {
-                    // Decorations are controlled in tauri.conf.json; here we just
-                    // ensure the window is ready.
                     let _ = window.set_title(WINDOW_TITLE);
                 }
             }
 
-            // Kick off daemon startup in the background — the frontend listens
-            // for the `daemon:ready` event (or calls `ensure_server` directly).
-            let app_handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                match commands::ensure_server(app_handle.clone()).await {
-                    Ok(result) => {
-                        eprintln!(
-                            "[kimi-desktop-tauri] connected to {}",
-                            result.origin
-                        );
-                    }
-                    Err(e) => {
-                        eprintln!("[kimi-desktop-tauri] ensureServer failed: {e}");
-                        let _ = app_handle.emit("daemon:error", &e);
-                    }
-                }
-            });
-
+            // The frontend calls `ensure_server` directly on mount. We do NOT
+            // spawn a duplicate background call here — that would race with the
+            // frontend's invoke and risk double-forking the daemon. The
+            // frontend's daemon store handles the full lifecycle.
             Ok(())
-        })
-        .on_window_event(|window, event| {
-            // Persist window state on close (best-effort; the frontend also
-            // persists via localStorage, but keeping the Rust side as a backup).
-            if let WindowEvent::CloseRequested { .. } = event {
-                let _ = window;
-            }
         })
         .invoke_handler(tauri::generate_handler![
             commands::ensure_server,
