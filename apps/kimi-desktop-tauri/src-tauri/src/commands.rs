@@ -127,8 +127,11 @@ pub fn list_user_skills() -> Result<Vec<SkillFileInfo>, String> {
             if !skill_file.exists() {
                 continue;
             }
-            let content = stdfs::read_to_string(&skill_file)
-                .map_err(|e| format!("Cannot read {}: {e}", skill_file.display()))?;
+            // Skip unreadable files instead of aborting the entire list.
+            let content = match stdfs::read_to_string(&skill_file) {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
             SkillFileInfo {
                 name: path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
                 path: skill_file.to_string_lossy().into_owned(),
@@ -136,8 +139,10 @@ pub fn list_user_skills() -> Result<Vec<SkillFileInfo>, String> {
             }
         } else if path.extension().and_then(|e| e.to_str()) == Some("md") {
             // Flat form: <name>.md
-            let content = stdfs::read_to_string(&path)
-                .map_err(|e| format!("Cannot read {}: {e}", path.display()))?;
+            let content = match stdfs::read_to_string(&path) {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
             let name = path
                 .file_stem()
                 .map(|n| n.to_string_lossy().into_owned())
@@ -156,6 +161,8 @@ pub fn list_user_skills() -> Result<Vec<SkillFileInfo>, String> {
         };
         skills.push(name);
     }
+    // Deterministic order for stable UI rendering.
+    skills.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     Ok(skills)
 }
 

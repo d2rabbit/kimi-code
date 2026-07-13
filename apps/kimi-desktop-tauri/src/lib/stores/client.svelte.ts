@@ -25,6 +25,7 @@ import {
 } from '../api/daemon/eventReducer';
 import { messagesToTurns, type ChatTurn } from '../lib/messagesToTurns';
 import { setDaemonOrigin } from '../api/config';
+import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { daemon } from './daemon.svelte';
 
 // ---------------------------------------------------------------------------
@@ -805,8 +806,6 @@ function setUiFontSize(size: number): void {
 // These actions call Rust commands that operate directly on
 // ~/.kimi-code/skills/<name>/SKILL.md, then refresh the file list.
 
-import { invoke as tauriInvoke } from '@tauri-apps/api/core';
-
 interface UserSkillFile {
   name: string;
   path: string;
@@ -820,8 +819,7 @@ export const skillFiles = $derived(userSkills);
 /** Refresh the user-level skill file list from the filesystem. */
 async function refreshUserSkills(): Promise<void> {
   try {
-    const list = await tauriInvoke<UserSkillFile[]>('list_user_skills');
-    userSkills.splice(0, userSkills.length, ...list);
+    userSkills = await tauriInvoke<UserSkillFile[]>('list_user_skills');
   } catch {
     // Non-fatal — skills dir may not exist yet.
   }

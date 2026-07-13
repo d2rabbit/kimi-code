@@ -2,6 +2,7 @@
      Lists user-level skills from ~/.kimi-code/skills/, with create/edit/delete.
      The editor works directly on the raw SKILL.md content (frontmatter + body). -->
 <script lang="ts">
+  import { onMount } from 'svelte';
   import * as client from '../../stores/client.svelte';
   import Button from '../ui/Button.svelte';
   import Icon from '../ui/Icon.svelte';
@@ -12,11 +13,39 @@
   let editorContent = $state<string>('');
   let saving = $state(false);
   let error = $state<string | null>(null);
+  let filter = $state('');
 
   // Load skills on mount.
-  $effect(() => {
+  onMount(() => {
     void client.client.refreshUserSkills();
   });
+
+  // Combined skill list: user-level files (editable) + daemon skills (read-only,
+  // may include project/builtin/extra). Deduplicated by name (user files win).
+  const allSkills = $derived.by(() => {
+    const userNames = new Set(client.skillFiles.map((s) => s.name.toLowerCase()));
+    const daemonOnly = client.skills.filter((s) => !userNames.has(s.name.toLowerCase()));
+    return [
+      ...client.skillFiles.map((s) => ({ ...s, editable: true, source: 'user' as const })),
+      ...daemonOnly.map((s) => ({ name: s.name, description: s.description, source: s.source, editable: false })),
+    ];
+  });
+
+  // Filtered view.
+  const filteredSkills = $derived.by(() => {
+    if (!filter.trim()) return allSkills;
+    const q = filter.toLowerCase();
+    return allSkills.filter(
+      (s) => s.name.toLowerCase().includes(q) || (s.description ?? '').toLowerCase().includes(q),
+    );
+  });
+
+  const SOURCE_LABELS: Record<string, string> = {
+    user: '用户',
+    project: '项目',
+    extra: '额外',
+    builtin: '内置',
+  };
 
   const DEFAULT_TEMPLATE = `---
 name: my-skill
@@ -33,7 +62,7 @@ Write your skill instructions here. This markdown is sent to the model when the 
 You can use parameter placeholders:
 - $ARGUMENTS — all arguments passed by the user
 - $0, $1 — positional arguments
-- ${KIMI_SKILL_DIR} — the directory containing this skill file
+- \${KIMI_SKILL_DIR} — the directory containing this skill file
 `;
 
   function startCreate() {
@@ -54,10 +83,7 @@ You can use parameter placeholders:
     // Parse the name from the frontmatter if creating new.
     let name = editingName;
     if (!name) {
-      const match = editorContent.match(/^---[\s\S]*?^name:\s*(.+)/m);
-      if (match) {
-        name = match[1].trim();
-      }
+      name = getName(editorContent) ?? '';
     }
     if (!name) {
       error = '请填写 skill 名称（在 frontmatter 的 name 字段中）';
@@ -89,20 +115,38 @@ You can use parameter placeholders:
     error = null;
   }
 
+  // Extract the YAML frontmatter block (between --- fences) from SKILL.md content.
+  function extractFrontmatter(content: string): string {
+    const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    return m ? m[1] : '';
+  }
+
+  // Read a field from frontmatter text, stripping surrounding quotes.
+  function frontmatterField(fm: string, key: string): string | null {
+    const m = fm.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
+    if (!m) return null;
+    return m[1].trim().replace(/^["']|["']$/g, '');
+  }
+
   // Parse frontmatter description for display.
   function getDescription(content: string): string {
-    const match = content.match(/^---[\s\S]*?^description:\s*(.+)/m);
-    return match ? match[1].trim() : '(无描述)';
+    return frontmatterField(extractFrontmatter(content), 'description') ?? '(无描述)';
   }
 
   function getType(content: string): string {
-    const match = content.match(/^---[\s\S]*?^type:\s*(.+)/m);
-    return match ? match[1].trim() : 'prompt';
+    return frontmatterField(extractFrontmatter(content), 'type') ?? 'prompt';
   }
 
   function isDisabled(content: string): boolean {
-    const match = content.match(/^---[\s\S]*?^disable[Mm]odel[Ii]nvocation:\s*(true)/m);
-    return !!match;
+    const fm = extractFrontmatter(content);
+    const v = frontmatterField(fm, 'disableModelInvocation')
+      ?? frontmatterField(fm, 'disable-model-invocation')
+      ?? frontmatterField(fm, 'disable_model_invocation');
+    return v === 'true';
+  }
+
+  function getName(content: string): string | null {
+    return frontmatterField(extractFrontmatter(content), 'name');
   }
 </script>
 
@@ -110,43 +154,61 @@ You can use parameter placeholders:
   <!-- === Skill list === -->
   <div class="skills-list-view">
     <div class="section-header">
-      <h3>用户 Skills</h3>
+      <h3>Skills <span class="count-badge">{allSkills.length}</span></h3>
       <Button size="sm" variant="default" icon="plus" onclick={startCreate}>新建 Skill</Button>
     </div>
 
     <p class="hint">
-      Skills 存储在 <code>~/.kimi-code/skills/</code>。放入后会自动被 Kimi Code 发现并可以通过 <code>/skill:名称</code> 调用。
+      用户级 Skills 存储在 <code>~/.kimi-code/skills/</code>，可编辑。项目级和内置 Skills 只读。
     </p>
+
+    <!-- Search filter -->
+    <input
+      class="skill-search"
+      bind:value={filter}
+      placeholder="搜索 skill…"
+      spellcheck="false"
+      autocomplete="off"
+    />
 
     {#if error}
       <div class="msg-error">{error}</div>
     {/if}
 
-    {#if client.skillFiles.length === 0}
+    {#if allSkills.length === 0}
       <div class="empty-state">
         <Icon name="sparkles" size="lg" />
-        <p>还没有自定义 Skill</p>
+        <p>还没有 Skill</p>
         <p class="sub-hint">点击「新建 Skill」创建你的第一个</p>
+      </div>
+    {:else if filteredSkills.length === 0}
+      <div class="empty-state">
+        <p>没有匹配「{filter}」的 Skill</p>
       </div>
     {:else}
       <div class="skill-list">
-        {#each client.skillFiles as skill (skill.name)}
+        {#each filteredSkills as skill (skill.name)}
           <div class="skill-row">
             <div class="skill-info">
               <div class="skill-top">
                 <span class="skill-name">{skill.name}</span>
-                <span class="skill-type">{getType(skill.content)}</span>
-                {#if isDisabled(skill.content)}
-                  <span class="skill-badge warn">手动调用</span>
-                {:else}
-                  <span class="skill-badge ok">自动可用</span>
+                <span class="skill-source source-{skill.source}">{SOURCE_LABELS[skill.source] ?? skill.source}</span>
+                {#if skill.editable}
+                  <span class="skill-type">{getType(skill.content)}</span>
+                  {#if isDisabled(skill.content)}
+                    <span class="skill-badge warn">手动调用</span>
+                  {:else}
+                    <span class="skill-badge ok">自动可用</span>
+                  {/if}
                 {/if}
               </div>
-              <div class="skill-desc">{getDescription(skill.content)}</div>
+              <div class="skill-desc">{skill.description ?? (skill.editable ? getDescription(skill.content) : '(无描述)')}</div>
             </div>
             <div class="skill-actions">
-              <IconButton name="pencil" label="编辑" size="sm" onclick={() => startEdit(skill.name, skill.content)} />
-              <IconButton name="close" label="删除" size="sm" onclick={() => handleDelete(skill.name)} />
+              {#if skill.editable}
+                <IconButton name="pencil" label="编辑" size="sm" onclick={() => startEdit(skill.name, skill.content)} />
+                <IconButton name="close" label="删除" size="sm" onclick={() => handleDelete(skill.name)} />
+              {/if}
             </div>
           </div>
         {/each}
@@ -214,7 +276,43 @@ You can use parameter placeholders:
     justify-content: space-between;
     margin-bottom: 8px;
   }
-  .section-header h3 { margin: 0; font-size: var(--text-base, 14px); font-weight: var(--weight-medium, 500); }
+  .section-header h3 { margin: 0; font-size: var(--text-base, 14px); font-weight: var(--weight-medium, 500); display: flex; align-items: center; gap: 6px; }
+
+  .count-badge {
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: var(--radius-full, 999px);
+    background: var(--color-surface-raised, #1a1a1e);
+    color: var(--color-text-muted, #9a9aa2);
+    font-weight: var(--weight-regular, 400);
+  }
+
+  .skill-search {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid var(--color-line, #2a2a2e);
+    background: var(--color-surface-raised, #1a1a1e);
+    color: var(--color-text, #e7e7ea);
+    font-size: var(--text-sm, 13px);
+    margin-bottom: 12px;
+    outline: none;
+  }
+  .skill-search:focus { border-color: var(--color-accent, #7c8cff); }
+  .skill-search::placeholder { color: var(--color-text-faint, #6a6a72); }
+
+  .skill-source {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: var(--radius-full, 999px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .source-user { background: var(--color-accent-soft, rgba(124,140,255,0.15)); color: var(--color-accent, #7c8cff); }
+  .source-project { background: var(--color-success-soft, rgba(78,201,176,0.15)); color: var(--color-success, #4ec9b0); }
+  .source-builtin { background: var(--color-surface-raised, #1a1a1e); color: var(--color-text-faint, #6a6a72); }
+  .source-extra { background: var(--color-warning-soft, rgba(255,193,7,0.15)); color: var(--color-warning, #ffc107); }
 
   .hint { font-size: var(--text-xs, 12px); color: var(--color-text-faint, #6a6a72); margin: 0 0 16px; }
   .hint code, .sub-hint code {
