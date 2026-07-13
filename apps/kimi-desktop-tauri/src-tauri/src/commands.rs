@@ -57,10 +57,26 @@ pub fn get_server_log_path() -> String {
     server_log_path().to_string_lossy().into_owned()
 }
 
-/// Open a file or folder in the system's default application.
+/// Open a URL or file path in the system's default application.
+/// URLs must use http/https; file paths are opened as-is (Tauri IPC is only
+/// reachable from our own WebView, so the attack surface is limited, but we
+/// still validate to prevent accidental shell injection on Windows).
 #[tauri::command]
 pub fn open_path(path: String) -> Result<(), String> {
-    open::that(&path).map_err(|e| format!("Failed to open {path}: {e}"))
+    // Allow only http(s) URLs and local file paths; reject anything that
+    // looks like a command (e.g. "cmd /c ..." on Windows).
+    let trimmed = path.trim();
+    if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+        open::that(trimmed).map_err(|e| format!("Failed to open URL: {e}"))
+    } else if trimmed.starts_with('/')
+        || trimmed.starts_with('\\')
+        || trimmed.chars().nth(1) == Some(':')
+    {
+        // Looks like a file path (Unix absolute, Windows drive letter, or UNC).
+        open::that(trimmed).map_err(|e| format!("Failed to open path: {e}"))
+    } else {
+        Err(format!("Refused to open (not a URL or absolute path): {trimmed}"))
+    }
 }
 
 /// Resolve the kimi-code home directory (useful for the frontend to build paths).

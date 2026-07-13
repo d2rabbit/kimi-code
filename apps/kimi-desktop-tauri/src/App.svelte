@@ -44,27 +44,36 @@
 
   onDestroy(() => {
     daemon.destroy();
+    // Clean up any lingering drag listeners.
+    if (activeMove) document.removeEventListener('mousemove', activeMove);
+    if (activeUp) document.removeEventListener('mouseup', activeUp);
   });
 
   // Sidebar resize drag.
   let dragging = $state(false);
+  // Track active drag handlers so we can clean them up on component destroy.
+  let activeMove: ((ev: MouseEvent) => void) | null = null;
+  let activeUp: (() => void) | null = null;
+
   function onResizeStart(e: MouseEvent) {
     e.preventDefault();
     dragging = true;
     const startX = e.clientX;
     const startW = sidebarWidth;
-    const onMove = (ev: MouseEvent) => {
+    activeMove = (ev: MouseEvent) => {
       const delta = ev.clientX - startX;
       sidebarWidth = Math.max(240, Math.min(360, startW + delta));
     };
-    const onUp = () => {
+    activeUp = () => {
       dragging = false;
       saveSidebarState();
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+      if (activeMove) document.removeEventListener('mousemove', activeMove);
+      if (activeUp) document.removeEventListener('mouseup', activeUp);
+      activeMove = null;
+      activeUp = null;
     };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.addEventListener('mousemove', activeMove);
+    document.addEventListener('mouseup', activeUp);
   }
 </script>
 

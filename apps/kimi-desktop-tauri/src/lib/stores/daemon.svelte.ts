@@ -47,9 +47,8 @@ class DaemonStore {
     }
 
     try {
-      // The Rust setup() already spawned ensure_server in the background, but
-      // calling it here too is harmless (it reuses the running daemon) and
-      // gives us a direct promise to await.
+      // The frontend is the sole caller of ensure_server — the Rust setup()
+      // intentionally does NOT spawn a duplicate background call.
       const result = await invoke<{ origin: string }>('ensure_server');
       const token = await invoke<string | null>('read_server_token');
       this.state.status = 'connected';

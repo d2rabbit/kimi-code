@@ -67,7 +67,6 @@ fn origin_from_lock(lock: &LockContents) -> String {
 }
 
 /// Poll `/api/v1/healthz` once with a short timeout.
-#[allow(dead_code)]
 async fn is_healthy(origin: &str, timeout: Duration) -> bool {
     let url = format!("{origin}/api/v1/healthz");
     let client = reqwest::Client::builder()

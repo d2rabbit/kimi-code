@@ -221,64 +221,44 @@ async function load(): Promise<void> {
       // Non-fatal — localStorage may be unavailable.
     }
 
-    // Fetch meta (server version, capabilities).
-    try {
-      const meta = await a.getMeta();
-      ui.serverVersion = meta.serverVersion ?? '';
-      ui.dangerousBypassAuth = meta.dangerousBypassAuth ?? false;
-    } catch {
-      // Non-fatal — the server might not support /meta yet.
+    // Fire all independent REST calls in parallel for faster startup.
+    const [metaR, authR, configR, providersR, workspacesR, sessionsR, modelsR] =
+      await Promise.allSettled([
+        a.getMeta(),
+        a.getAuth(),
+        a.getConfig(),
+        a.listProviders(),
+        a.listWorkspaces(),
+        a.listSessions(),
+        a.listModels(),
+      ]);
+
+    if (metaR.status === 'fulfilled') {
+      ui.serverVersion = metaR.value.serverVersion ?? '';
+      ui.dangerousBypassAuth = metaR.value.dangerousBypassAuth ?? false;
     }
 
-    // Check auth.
-    try {
-      const auth = await a.getAuth();
-      ui.authReady = auth.ready;
-      ui.authProvider = auth.managedProvider
-        ? { name: auth.managedProvider.name ?? 'managed:kimi-code', status: auth.managedProvider.status ?? 'unknown' }
+    if (authR.status === 'fulfilled') {
+      ui.authReady = authR.value.ready;
+      ui.authProvider = authR.value.managedProvider
+        ? { name: authR.value.managedProvider.name ?? 'managed:kimi-code', status: authR.value.managedProvider.status ?? 'unknown' }
         : null;
-    } catch {
-      ui.authReady = false;
     }
 
-    // Load config.
-    try {
-      ui.config = await a.getConfig();
-    } catch {
-      // Non-fatal.
+    if (configR.status === 'fulfilled') {
+      ui.config = configR.value;
     }
 
-    // Load providers (for the config panel).
-    try {
-      ui.providers = await a.listProviders();
-    } catch {
-      ui.providers = [];
-    }
+    ui.providers = providersR.status === 'fulfilled' ? providersR.value : [];
+    ui.workspaces = workspacesR.status === 'fulfilled' ? workspacesR.value : [];
+    ui.models = modelsR.status === 'fulfilled' ? modelsR.value : [];
 
-    // Load workspaces.
-    try {
-      ui.workspaces = await a.listWorkspaces();
-    } catch {
-      ui.workspaces = [];
-    }
-
-    // Load sessions.
-    try {
-      const result = await a.listSessions();
-      rawState.sessions = result.sessions;
+    if (sessionsR.status === 'fulfilled') {
+      rawState.sessions = sessionsR.value.sessions;
       // Auto-select the first session if any.
       if (rawState.sessions.length > 0 && !rawState.activeSessionId) {
         selectSession(rawState.sessions[0].id);
       }
-    } catch {
-      rawState.sessions = [];
-    }
-
-    // Load models.
-    try {
-      ui.models = await a.listModels();
-    } catch {
-      ui.models = [];
     }
 
     // Connect the WebSocket event stream.
@@ -632,19 +612,6 @@ function dismissWarning(index: number): void {
 // ---------------------------------------------------------------------------
 // Config / Provider / Model / Auth management (GUI configuration panel)
 // ---------------------------------------------------------------------------
-// The daemon does NOT expose POST/DELETE /providers — adding or editing a
-// provider is done through POST /config with the providers table. These
-// actions wrap that flow so the GUI can treat it as CRUD.
-
-/** Update the daemon config via POST /config. Returns the new config. */
-async function updateConfig(patch: Partial<AppConfig>): Promise<void> {
-  const a = getApi();
-  const saved = await a.setConfig(patch);
-  ui.config = saved;
-}
-// ---------------------------------------------------------------------------
-// Config / Provider / Model / Auth management (GUI configuration panel)
-// ---------------------------------------------------------------------------
 // VERIFIED: the daemon's POST /config uses deepMerge (merge.ts) to recursively
 // merge the patch into the existing config. Writing { providers: { "my-id": {...} } }
 // adds/updates ONLY that one provider — it does NOT replace the entire providers
@@ -654,6 +621,16 @@ async function updateConfig(patch: Partial<AppConfig>): Promise<void> {
 // Caveat: deepMerge cannot DELETE fields — editing a provider and leaving a
 // field empty means "don't change it", not "clear it". This is a daemon
 // limitation (Zod schema rejects null for these optional fields).
+
+/** Update the daemon config via POST /config. */
+async function updateConfig(patch: Partial<AppConfig>): Promise<void> {
+  const a = getApi();
+  const saved = await a.setConfig(patch);
+  ui.config = saved;
+}
+
+/** Add or update a provider by writing it into config.providers[id]. */
+async function saveProvider(
   id: string,
   input: {
     type: string;
