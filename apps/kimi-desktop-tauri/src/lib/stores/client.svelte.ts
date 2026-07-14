@@ -291,7 +291,7 @@ async function load(): Promise<void> {
     if (authR.status === 'fulfilled') {
       ui.authReady = authR.value.ready;
       ui.authProvider = authR.value.managedProvider
-        ? { name: authR.value.managedProvider.name ?? 'managed:kimi-code', status: authR.value.managedProvider.status ?? 'unknown' }
+        ? { name: 'managed:kimi-code', status: authR.value.managedProvider.status ?? 'unknown' }
         : null;
     }
 
@@ -350,12 +350,16 @@ function connectEvents(): void {
       // Reassign top-level fields to trigger $derived reactivity.
       Object.assign(rawState, next);
 
-      // Track activity + notifications.
-      if (event.type === 'assistantCompleted' || event.type === 'promptCompleted') {
-        ui.activity = 'idle';
-        ui.isSending = false;
-        notifyDesktop('任务完成', `${ui.activeWorkspaceId || 'Kimi Code'} 的任务已完成`);
-      } else if (event.type === 'assistantDelta' || event.type === 'promptSubmitted') {
+      // Track activity + notifications using actual AppEvent variant names.
+      if (event.type === 'sessionStatusChanged') {
+        if (event.status === 'idle' || event.status === 'waiting') {
+          ui.activity = 'idle';
+          ui.isSending = false;
+          notifyDesktop('任务完成', `${ui.activeWorkspaceId || 'Kimi Code'} 的任务已完成`);
+        } else if (event.status === 'running') {
+          ui.activity = 'running';
+        }
+      } else if (event.type === 'assistantDelta') {
         ui.activity = 'running';
       } else if (event.type === 'approvalRequested') {
         notifyDesktop('需要审批', 'Agent 请求你的确认');
@@ -861,7 +865,7 @@ async function checkAuth(): Promise<void> {
     const auth = await a.getAuth();
     ui.authReady = auth.ready;
     ui.authProvider = auth.managedProvider
-      ? { name: auth.managedProvider.name ?? 'managed:kimi-code', status: auth.managedProvider.status ?? 'unknown' }
+      ? { name: 'managed:kimi-code', status: auth.managedProvider.status ?? 'unknown' }
       : null;
   } catch {
     ui.authReady = false;

@@ -2,7 +2,7 @@
      Phase 3 upgrade: Markdown rendering, ToolCard, ApprovalCard, QuestionCard, SlashMenu. -->
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
-  import { isMacosDesktop } from '../../lib/lib/desktopFlag';
+  import { isMacosDesktop } from '../../lib/desktopFlag.js';
   import Composer from './Composer.svelte';
   import MarkdownRenderer from './MarkdownRenderer.svelte';
   import ToolCard from './ToolCard.svelte';
