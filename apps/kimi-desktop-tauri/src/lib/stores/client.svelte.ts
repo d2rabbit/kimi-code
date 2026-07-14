@@ -462,6 +462,14 @@ async function abortCurrentPrompt(): Promise<void> {
   }
 }
 
+/** Upload an image file to the daemon. Returns the fileId for attaching to a prompt. */
+async function uploadImage(file: Blob, name?: string): Promise<{ fileId: string; kind: 'image' | 'video' }> {
+  const a = getApi();
+  const result = await a.uploadFile({ file, name });
+  const kind: 'image' | 'video' = result.mediaType.startsWith('video/') ? 'video' : 'image';
+  return { fileId: result.id, kind };
+}
+
 /** Respond to an approval. */
 async function respondApproval(
   approvalId: string,
@@ -880,6 +888,7 @@ export const client = {
   sendPrompt,
   startSessionAndSendPrompt,
   abortCurrentPrompt,
+  uploadImage,
   respondApproval,
   respondQuestion,
   dismissQuestion,

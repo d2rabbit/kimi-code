@@ -30,12 +30,12 @@
     }
   });
 
-  async function handleSubmit() {
+  async function handleSubmit(attachments?: { fileId: string; kind: 'image' | 'video' }[]) {
     const text = composerText.trim();
-    if (!text) return;
+    if (!text && (!attachments || attachments.length === 0)) return;
     composerText = '';
     try {
-      await client.client.sendPrompt(text);
+      await client.client.sendPrompt(text || ' ', attachments);
     } catch {
       composerText = text;
     }
