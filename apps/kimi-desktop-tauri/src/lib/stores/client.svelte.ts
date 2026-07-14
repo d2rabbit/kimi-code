@@ -84,6 +84,9 @@ const ui = $state({
   previewError: null as string | null,
   previewMode: 'file' as 'file' | 'diff',
   previewDiff: null as string | null,
+
+  // Onboarding
+  onboarded: false,
 });
 
 // The WS event connection.
@@ -142,6 +145,8 @@ export const previewLoading = $derived(ui.previewLoading);
 export const previewError = $derived(ui.previewError);
 export const previewMode = $derived(ui.previewMode);
 export const previewDiff = $derived(ui.previewDiff);
+
+export const onboarded = $derived(ui.onboarded);
 
 // The active session object.
 export const activeSession = $derived(
@@ -228,7 +233,7 @@ async function load(): Promise<void> {
 
     const a = getApi();
 
-    // Restore persisted appearance preferences (theme + font size).
+    // Restore persisted appearance preferences (theme + font size + onboarding).
     try {
       const scheme = localStorage.getItem('kimi-web.color-scheme');
       if (scheme === 'light' || scheme === 'dark' || scheme === 'system') {
@@ -236,6 +241,7 @@ async function load(): Promise<void> {
       }
       const fs = localStorage.getItem('kimi-web.ui-font-size');
       if (fs) setUiFontSize(Number(fs));
+      ui.onboarded = localStorage.getItem('kimi-desktop-onboarded') === '1';
     } catch {
       // Non-fatal — localStorage may be unavailable.
     }
@@ -526,6 +532,16 @@ function closeFilePreview(): void {
   ui.previewError = null;
   ui.previewLoading = false;
   ui.detailTarget = null;
+}
+
+/** Mark onboarding as complete (persisted to localStorage). */
+function setOnboarded(value: boolean): void {
+  ui.onboarded = value;
+  try {
+    localStorage.setItem('kimi-desktop-onboarded', value ? '1' : '0');
+  } catch {
+    // Non-fatal.
+  }
 }
 
 /** Respond to an approval. */
@@ -949,6 +965,7 @@ export const client = {
   uploadImage,
   openFilePreview,
   closeFilePreview,
+  setOnboarded,
   respondApproval,
   respondQuestion,
   dismissQuestion,

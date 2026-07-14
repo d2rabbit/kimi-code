@@ -6,8 +6,11 @@
   import Sidebar from './lib/components/sidebar/Sidebar.svelte';
   import ConversationPane from './lib/components/chat/ConversationPane.svelte';
   import FilePreview from './lib/components/chat/FilePreview.svelte';
+  import Onboarding from './lib/components/settings/Onboarding.svelte';
   import IconButton from './lib/components/ui/IconButton.svelte';
   import { isMacosDesktop } from './lib/lib/desktopFlag';
+
+  let showOnboarding = $state(false);
 
   let sidebarCollapsed = $state(false);
   let sidebarWidth = $state(280);
@@ -40,6 +43,10 @@
       await client.client.load().catch((e) => {
         console.error('[kimi-desktop-tauri] client.load() failed:', e);
       });
+      // Show onboarding on first run.
+      if (!client.onboarded) {
+        showOnboarding = true;
+      }
     }
   });
 
@@ -146,6 +153,14 @@
         <FilePreview />
       {/if}
     </aside>
+  {/if}
+
+  <!-- Onboarding overlay (first run only) -->
+  {#if showOnboarding}
+    <Onboarding
+      oncomplete={() => { showOnboarding = false; }}
+      onskip={() => { showOnboarding = false; }}
+    />
   {/if}
 </div>
 
