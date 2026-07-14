@@ -5,6 +5,7 @@
   import * as client from './lib/stores/client.svelte';
   import Sidebar from './lib/components/sidebar/Sidebar.svelte';
   import ConversationPane from './lib/components/chat/ConversationPane.svelte';
+  import FilePreview from './lib/components/chat/FilePreview.svelte';
   import IconButton from './lib/components/ui/IconButton.svelte';
   import { isMacosDesktop } from './lib/lib/desktopFlag';
 
@@ -139,8 +140,12 @@
       <ConversationPane />
     </main>
 
-    <!-- Column 3: Detail panel (future) -->
-    <!-- TODO: right-side detail panel (file preview / diff / thinking) -->
+    <!-- Column 3: Detail panel (file preview / diff) -->
+    <aside class="col-detail" class:open={client.previewOpen}>
+      {#if client.previewOpen}
+        <FilePreview />
+      {/if}
+    </aside>
   {/if}
 </div>
 
@@ -233,6 +238,22 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  /* --- Detail panel column --- */
+  .col-detail {
+    flex: none;
+    width: 0;
+    height: 100%;
+    overflow: hidden;
+    border-left: 1px solid transparent;
+    background: var(--bg, #0b0b0c);
+    transition: width 0.22s var(--ease-out, cubic-bezier(0.2, 0, 0, 1)),
+                border-left-color 0.22s var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+  }
+  .col-detail.open {
+    width: 460px;
+    border-left-color: var(--color-line, #2a2a2e);
   }
 
   /* --- Overlay screens (loading / error / initializing) --- */

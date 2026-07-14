@@ -76,6 +76,14 @@ const ui = $state({
 
   // Side panel
   detailTarget: null as string | null,
+
+  // File preview panel
+  previewPath: null as string | null,
+  previewContent: null as string | null,
+  previewLoading: false,
+  previewError: null as string | null,
+  previewMode: 'file' as 'file' | 'diff',
+  previewDiff: null as string | null,
 });
 
 // The WS event connection.
@@ -125,6 +133,15 @@ export const isSending = $derived(ui.isSending);
 export const isStartingFirstPrompt = $derived(ui.isStartingFirstPrompt);
 
 export const authProvider = $derived(ui.authProvider);
+
+// File preview panel state.
+export const previewOpen = $derived(ui.previewPath !== null);
+export const previewPath = $derived(ui.previewPath);
+export const previewContent = $derived(ui.previewContent);
+export const previewLoading = $derived(ui.previewLoading);
+export const previewError = $derived(ui.previewError);
+export const previewMode = $derived(ui.previewMode);
+export const previewDiff = $derived(ui.previewDiff);
 
 // The active session object.
 export const activeSession = $derived(
@@ -468,6 +485,47 @@ async function uploadImage(file: Blob, name?: string): Promise<{ fileId: string;
   const result = await a.uploadFile({ file, name });
   const kind: 'image' | 'video' = result.mediaType.startsWith('video/') ? 'video' : 'image';
   return { fileId: result.id, kind };
+}
+
+// ---------------------------------------------------------------------------
+// File preview panel (right-side detail)
+// ---------------------------------------------------------------------------
+
+/** Open a file preview in the right panel (reads file content from daemon). */
+async function openFilePreview(path: string, mode: 'file' | 'diff' = 'file'): Promise<void> {
+  const sid = rawState.activeSessionId;
+  if (!sid) return;
+  const a = getApi();
+  ui.previewPath = path;
+  ui.previewMode = mode;
+  ui.previewLoading = true;
+  ui.previewError = null;
+  ui.previewContent = null;
+  ui.previewDiff = null;
+  ui.detailTarget = 'file';
+  try {
+    if (mode === 'diff') {
+      const result = await a.getFileDiff(sid, path);
+      ui.previewDiff = result.diff;
+    } else {
+      const result = await a.readFile(sid, { path });
+      ui.previewContent = result.content;
+    }
+  } catch (e) {
+    ui.previewError = e instanceof Error ? e.message : String(e);
+  } finally {
+    ui.previewLoading = false;
+  }
+}
+
+/** Close the file preview panel. */
+function closeFilePreview(): void {
+  ui.previewPath = null;
+  ui.previewContent = null;
+  ui.previewDiff = null;
+  ui.previewError = null;
+  ui.previewLoading = false;
+  ui.detailTarget = null;
 }
 
 /** Respond to an approval. */
@@ -889,6 +947,8 @@ export const client = {
   startSessionAndSendPrompt,
   abortCurrentPrompt,
   uploadImage,
+  openFilePreview,
+  closeFilePreview,
   respondApproval,
   respondQuestion,
   dismissQuestion,

@@ -6,6 +6,7 @@
   import StatusDot from '../ui/StatusDot.svelte';
   import Icon from '../ui/Icon.svelte';
   import { toolLabel, toolSummary } from '../../lib/toolMeta';
+  import * as client from '../../stores/client.svelte';
 
   let {
     tool,
@@ -16,7 +17,27 @@
   // Auto-expand running tools, collapse completed ones.
   let expanded = $state(tool.status === 'running');
 
-  // Diff stats for edit/write tools.
+  // Extract file path from arg for click-to-preview.
+  const filePath = $derived.by(() => {
+    if (!tool.arg) return null;
+    // tool.arg is typically JSON or a path string like "· src/foo.ts".
+    const trimmed = tool.arg.replace(/^[·\s]+/, '').trim();
+    // Try parsing as JSON (edit tools use {file_path: "..."}).
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === 'object') {
+        return parsed.file_path ?? parsed.path ?? parsed.filePath ?? null;
+      }
+    } catch {
+      // Not JSON — treat as path string.
+    }
+    // Check if it looks like a file path.
+    if (/^[\w./-]+\.\w+$/.test(trimmed) || trimmed.startsWith('/') || trimmed.startsWith('./')) {
+      return trimmed.split(/\s+/)[0];
+    }
+    return null;
+  });
+
   const isEditTool = $derived(['edit', 'write', 'multi_edit', 'multiedit'].includes(tool.name.toLowerCase()));
 
   const diffStats = $derived.by(() => {
@@ -53,7 +74,18 @@
     <Icon name={toolIcon(tool.name) as never} size="sm" />
     <span class="tool-name">{toolLabel(tool.name)}</span>
     {#if tool.arg}
-      <span class="tool-arg" title={tool.arg}>{toolSummary(tool.name, tool.arg)}</span>
+      {#if filePath}
+        <span
+          class="tool-arg tool-arg-link"
+          title={filePath}
+          role="link"
+          tabindex="0"
+          onclick={(e) => { e.stopPropagation(); client.client.openFilePreview(filePath); }}
+          onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); client.client.openFilePreview(filePath); } }}
+        >{toolSummary(tool.name, tool.arg)}</span>
+      {:else}
+        <span class="tool-arg" title={tool.arg}>{toolSummary(tool.name, tool.arg)}</span>
+      {/if}
     {/if}
     {#if diffStats}
       <span class="diff-chip add">+{diffStats.added}</span>
@@ -121,6 +153,16 @@
     font-family: var(--font-mono, monospace);
     opacity: 0.7;
     min-width: 0;
+  }
+  .tool-arg-link {
+    cursor: pointer;
+    color: var(--color-accent, #7c8cff);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    opacity: 1;
+  }
+  .tool-arg-link:hover {
+    opacity: 0.8;
   }
   .tool-timing {
     flex: none;
