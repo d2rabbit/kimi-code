@@ -18,12 +18,12 @@
 
   type MenuItem = { name: string; desc: string; isSkill: boolean; acceptsInput: boolean };
 
-  // Build the full command list: builtin + skills.
+  // Build the full command list: builtin commands + skills.
   const allItems = $derived.by(() => {
     const builtin: MenuItem[] = SLASH_COMMANDS.map((c) => ({
-      name: c.builtin ? `/${c.name}` : `/skill:${c.name}`,
+      name: `/${c.name}`,
       desc: c.desc,
-      isSkill: !c.builtin,
+      isSkill: false,
       acceptsInput: c.acceptsInput ?? false,
     }));
     const skillItems: MenuItem[] = skills
