@@ -169,8 +169,8 @@ export const turns = $derived.by<ChatTurn[]>(() => {
   if (!sid) return [];
   const msgs = rawState.messagesBySession[sid] ?? [];
   const approvals = rawState.approvalsBySession[sid] ?? [];
-  const tasks = rawState.tasksBySession[sid] ?? [];
-  return messagesToTurns(msgs, approvals, tasks);
+  // messagesToTurns signature: (messages, approvals, getFileUrl?, sessionActive?, planReview?)
+  return messagesToTurns(msgs, approvals, undefined, true);
 });
 
 // Pending approvals for the active session (reducer removes resolved ones,
@@ -352,7 +352,7 @@ function connectEvents(): void {
 
       // Track activity + notifications using actual AppEvent variant names.
       if (event.type === 'sessionStatusChanged') {
-        if (event.status === 'idle' || event.status === 'waiting') {
+        if (event.status === 'idle') {
           ui.activity = 'idle';
           ui.isSending = false;
           notifyDesktop('任务完成', `${ui.activeWorkspaceId || 'Kimi Code'} 的任务已完成`);
