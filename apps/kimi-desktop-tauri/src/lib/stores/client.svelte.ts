@@ -13,6 +13,7 @@ import type { KimiWebApi } from '../api/types';
 import type {
   AppConfig,
   AppEvent,
+  AppMessageContent,
   AppWorkspace,
   AppModel,
   AppProvider,
@@ -451,10 +452,11 @@ async function sendPrompt(
   ui.activity = 'running';
 
   try {
-    await a.submitPrompt(sid, {
-      text,
-      attachments: attachments ?? [],
-    });
+    const content: AppMessageContent[] = [{ type: 'text', text }];
+    for (const att of attachments ?? []) {
+      content.push({ type: att.kind, source: { fileId: att.fileId } } as AppMessageContent);
+    }
+    await a.submitPrompt(sid, { content });
   } catch (e) {
     ui.activity = 'idle';
     ui.isSending = false;
@@ -485,10 +487,11 @@ async function startSessionAndSendPrompt(
       await eventConn.subscribe(session.id);
     }
 
-    await a.submitPrompt(session.id, {
-      text,
-      attachments: attachments ?? [],
-    });
+    const content: AppMessageContent[] = [{ type: 'text', text }];
+    for (const att of attachments ?? []) {
+      content.push({ type: att.kind, source: { fileId: att.fileId } } as AppMessageContent);
+    }
+    await a.submitPrompt(session.id, { content });
   } finally {
     ui.isSending = false;
     ui.isStartingFirstPrompt = false;
@@ -570,23 +573,23 @@ function setOnboarded(value: boolean): void {
 /** Respond to an approval. */
 async function respondApproval(
   approvalId: string,
-  response: 'approve' | 'reject',
+  decision: 'approved' | 'rejected',
 ): Promise<void> {
   const sid = rawState.activeSessionId;
   if (!sid) return;
   const a = getApi();
-  await a.respondApproval(sid, approvalId, response);
+  await a.respondApproval(sid, approvalId, { decision });
 }
 
 /** Respond to a question. */
 async function respondQuestion(
   questionId: string,
-  response: string,
+  response: { answers: Record<string, unknown>; method?: string },
 ): Promise<void> {
   const sid = rawState.activeSessionId;
   if (!sid) return;
   const a = getApi();
-  await a.respondQuestion(sid, questionId, response);
+  await a.respondQuestion(sid, questionId, response as never);
 }
 
 /** Dismiss a question. */
@@ -656,7 +659,7 @@ async function setModel(modelId: string): Promise<boolean> {
   if (!sid) return false;
   const a = getApi();
   try {
-    await a.updateSession(sid, { modelId });
+    await a.updateSession(sid, { model: modelId });
     // Update session status.
     rawState.sessions = rawState.sessions.map((s) =>
       s.id === sid ? { ...s, modelId } : s,
@@ -949,7 +952,8 @@ export const skillFiles = $derived(userSkills);
 /** Refresh the user-level skill file list from the filesystem. */
 async function refreshUserSkills(): Promise<void> {
   try {
-    userSkills = await tauriInvoke<UserSkillFile[]>('list_user_skills');
+    const list = await tauriInvoke<UserSkillFile[]>('list_user_skills');
+    userSkills.splice(0, userSkills.length, ...list);
   } catch {
     // Non-fatal — skills dir may not exist yet.
   }
