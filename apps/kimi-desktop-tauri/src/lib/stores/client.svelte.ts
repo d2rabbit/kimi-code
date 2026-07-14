@@ -272,6 +272,24 @@ async function load(): Promise<void> {
   }
 }
 
+/** Send a desktop notification (uses Notification API, which Tauri's WebView
+ *  delegates to the OS notification center). Silently no-ops if permission
+ *  hasn't been granted or notifications aren't available. */
+function notifyDesktop(title: string, body: string): void {
+  try {
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission === 'granted') {
+      new Notification(title, { body });
+    } else if (Notification.permission !== 'denied') {
+      void Notification.requestPermission().then((perm) => {
+        if (perm === 'granted') new Notification(title, { body });
+      });
+    }
+  } catch {
+    // Non-fatal — notifications are best-effort.
+  }
+}
+
 /** Connect the WS event stream and wire events into the reducer. */
 function connectEvents(): void {
   if (eventConn) return;
@@ -288,8 +306,14 @@ function connectEvents(): void {
       if (event.type === 'assistant.completed' || event.type === 'prompt.completed') {
         ui.activity = 'idle';
         ui.isSending = false;
+        // Desktop notification on task completion.
+        notifyDesktop('任务完成', `${ui.activeWorkspaceId || 'Kimi Code'} 的任务已完成`);
       } else if (event.type === 'assistant.delta' || event.type === 'prompt.submitted') {
         ui.activity = 'running';
+      } else if (event.type === 'approval.requested') {
+        notifyDesktop('需要审批', 'Agent 请求你的确认');
+      } else if (event.type === 'question.requested') {
+        notifyDesktop('Agent 提问', 'Agent 需要你的回答');
       }
     },
     onResync(sessionId: string, _currentSeq: number, _epoch?: string) {

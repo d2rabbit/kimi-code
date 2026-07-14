@@ -1,4 +1,5 @@
-<!-- Composer.svelte — prompt input with auto-resizing textarea, slash menu, and submit. -->
+<!-- Composer.svelte — prompt input with auto-resizing textarea, slash menu,
+     input history (↑/↓ recall), and submit. -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
   import SlashMenu from './SlashMenu.svelte';
@@ -15,10 +16,79 @@
   } = $props();
 
   let textareaEl: HTMLTextAreaElement | null = $state(null);
-  let slashActive = $state(false);
   let slashIndex = $state(0);
 
-  // Auto-resize the textarea.
+  // --- Input history (shell-style ↑/↓ recall, per session) ---
+  const HISTORY_KEY = 'kimi-desktop-input-history';
+  const MAX_HISTORY = 100;
+  let historyBrowsing = $state(false);
+  let historyCursor = 0;
+  let draftBeforeBrowse = '';
+
+  function loadHistory(sessionId: string): string[] {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (!raw) return [];
+      const map = JSON.parse(raw) as Record<string, string[]>;
+      return map[sessionId] ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveHistory(sessionId: string, entries: string[]) {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      const map = raw ? (JSON.parse(raw) as Record<string, string[]>) : {};
+      map[sessionId] = entries.slice(-MAX_HISTORY);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(map));
+    } catch {
+      // Non-fatal.
+    }
+  }
+
+  function recordHistory(entry: string) {
+    const sid = client.activeSessionId;
+    if (!sid) return;
+    const entries = loadHistory(sid);
+    // Don't record consecutive duplicates.
+    if (entries[entries.length - 1] !== entry) {
+      entries.push(entry);
+      saveHistory(sid, entries);
+    }
+  }
+
+  function recallHistory(direction: 'up' | 'down') {
+    const sid = client.activeSessionId;
+    if (!sid) return;
+    const entries = loadHistory(sid);
+    if (entries.length === 0) return;
+
+    if (!historyBrowsing) {
+      if (direction === 'up') {
+        draftBeforeBrowse = text;
+        historyBrowsing = true;
+        historyCursor = entries.length - 1;
+        text = entries[historyCursor]!;
+      }
+    } else {
+      if (direction === 'up') {
+        historyCursor = Math.max(0, historyCursor - 1);
+        text = entries[historyCursor] ?? '';
+      } else {
+        historyCursor++;
+        if (historyCursor >= entries.length) {
+          // Reached the end — restore draft.
+          historyBrowsing = false;
+          text = draftBeforeBrowse;
+        } else {
+          text = entries[historyCursor] ?? '';
+        }
+      }
+    }
+  }
+
+  // --- Auto-resize ---
   $effect(() => {
     void text;
     if (textareaEl) {
@@ -28,49 +98,57 @@
     }
   });
 
-  // Slash command detection: text starts with "/" and has no space yet.
+  // --- Slash menu ---
   const slashQuery = $derived(
     text.startsWith('/') && !text.includes(' ') ? text.slice(1) : '',
   );
   const showSlash = $derived(slashQuery !== '' && !running);
 
-  // Reset index when query changes.
   $effect(() => {
     void slashQuery;
     slashIndex = 0;
   });
 
+  // Reset browsing when session changes or user manually edits.
+  $effect(() => {
+    void client.activeSessionId;
+    historyBrowsing = false;
+  });
+
+  function handleInput() {
+    // Any manual input drops out of history browsing mode.
+    historyBrowsing = false;
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     // Slash menu keyboard navigation.
     if (showSlash) {
-      if (e.key === 'ArrowDown') {
+      if (e.key === 'ArrowDown') { e.preventDefault(); slashIndex++; return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); slashIndex = Math.max(0, slashIndex - 1); return; }
+      if (e.key === 'Escape') { e.preventDefault(); text = ''; return; }
+    }
+
+    // Input history: ArrowUp at caret position 0 recalls older messages.
+    if (!showSlash && !running) {
+      if (e.key === 'ArrowUp' && textareaEl?.selectionStart === 0) {
         e.preventDefault();
-        slashIndex++;
+        recallHistory('up');
         return;
       }
-      if (e.key === 'ArrowUp') {
+      if (e.key === 'ArrowDown' && historyBrowsing &&
+          textareaEl && textareaEl.selectionStart === textareaEl.value.length) {
         e.preventDefault();
-        slashIndex = Math.max(0, slashIndex - 1);
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        text = '';
+        recallHistory('down');
         return;
       }
     }
+
     // Enter to send, Shift+Enter for newline.
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (showSlash) {
-        // If slash menu is open, Enter selects the highlighted command.
-        e.stopPropagation();
-        // The SlashMenu component handles selection via mousedown,
-        // but Enter key is handled here by calling onselect directly.
-        // For simplicity, just close the menu and let user confirm.
-        // TODO: wire slashIndex → onselect
-      }
       if (!running && text.trim()) {
+        recordHistory(text.trim());
+        historyBrowsing = false;
         onsubmit();
       }
     }
@@ -96,7 +174,8 @@
       bind:this={textareaEl}
       bind:value={text}
       onkeydown={handleKeydown}
-      placeholder="输入消息… (Enter 发送, Shift+Enter 换行, / 查看命令)"
+      oninput={handleInput}
+      placeholder="输入消息… (Enter 发送, Shift+Enter 换行, / 命令, ↑ 历史)"
       rows="1"
       spellcheck="false"
       autocomplete="off"
@@ -115,7 +194,7 @@
     </button>
   </div>
   <div class="composer-hint">
-    <kbd>Enter</kbd> 发送 · <kbd>Shift+Enter</kbd> 换行 · <kbd>/</kbd> 命令
+    <kbd>Enter</kbd> 发送 · <kbd>Shift+Enter</kbd> 换行 · <kbd>/</kbd> 命令 · <kbd>↑</kbd> 历史
   </div>
 </div>
 

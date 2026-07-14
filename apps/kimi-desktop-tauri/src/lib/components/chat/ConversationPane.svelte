@@ -8,8 +8,10 @@
   import ToolCard from './ToolCard.svelte';
   import ApprovalCard from './ApprovalCard.svelte';
   import QuestionCard from './QuestionCard.svelte';
+  import StatusDot from '../ui/StatusDot.svelte';
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
+  import type { TurnBlock, ToolCall } from '../../types';
 
   let composerText = $state('');
 
@@ -49,6 +51,49 @@
   // Pending approval/question (first in list).
   const pendingApproval = $derived(client.pendingApprovals[0]);
   const pendingQuestion = $derived(client.questions[0]);
+
+  // --- Tool grouping: aggregate consecutive tool blocks into collapsible groups ---
+  type RenderItem =
+    | { kind: 'thinking'; thinking: string }
+    | { kind: 'text'; text: string }
+    | { kind: 'tool'; tool: ToolCall }
+    | { kind: 'tool-group'; tools: ToolCall[] };
+
+  function groupBlocks(blocks: TurnBlock[]): RenderItem[] {
+    const result: RenderItem[] = [];
+    let toolBuffer: ToolCall[] = [];
+    for (const block of blocks) {
+      if (block.kind === 'tool') {
+        toolBuffer.push(block.tool);
+      } else {
+        if (toolBuffer.length > 0) {
+          result.push(toolBuffer.length === 1
+            ? { kind: 'tool', tool: toolBuffer[0]! }
+            : { kind: 'tool-group', tools: [...toolBuffer] });
+          toolBuffer = [];
+        }
+        if (block.kind === 'text') {
+          result.push({ kind: 'text', text: block.text });
+        } else if (block.kind === 'thinking') {
+          result.push({ kind: 'thinking', thinking: block.thinking });
+        }
+      }
+    }
+    if (toolBuffer.length > 0) {
+      result.push(toolBuffer.length === 1
+        ? { kind: 'tool', tool: toolBuffer[0]! }
+        : { kind: 'tool-group', tools: [...toolBuffer] });
+    }
+    return result;
+  }
+
+  function groupAggregateStatus(tools: ToolCall[]): 'running' | 'ok' | 'error' {
+    if (tools.some((t) => t.status === 'running')) return 'running';
+    if (tools.some((t) => t.status === 'error')) return 'error';
+    return 'ok';
+  }
+
+  let expandedGroups = $state<Record<number, boolean>>({});
 </script>
 
 <div class="conversation-pane">
@@ -118,19 +163,45 @@
             <!-- Assistant turn -->
             <div class="turn turn-assistant">
               <div class="turn-content assistant-content">
-                {#each turn.blocks ?? [] as block}
-                  {#if block.kind === 'thinking'}
+                {#each groupBlocks(turn.blocks ?? []) as item, i}
+                  {#if item.kind === 'thinking'}
                     <details class="thinking-details">
                       <summary>
                         <Icon name="sparkles" size="sm" />
                         <span>思考过程</span>
                       </summary>
-                      <div class="thinking-body">{block.thinking}</div>
+                      <div class="thinking-body">{item.thinking}</div>
                     </details>
-                  {:else if block.kind === 'text'}
-                    <MarkdownRenderer text={block.text} streaming={running && turn === client.turns.at(-1)} />
-                  {:else if block.kind === 'tool'}
-                    <ToolCard tool={block.tool} />
+                  {:else if item.kind === 'text'}
+                    <MarkdownRenderer text={item.text} streaming={running && turn === client.turns.at(-1)} />
+                  {:else if item.kind === 'tool'}
+                    <ToolCard tool={item.tool} />
+                  {:else if item.kind === 'tool-group'}
+                    <!-- Tool group: collapsible aggregate of consecutive tool calls -->
+                    {#if expandedGroups[i] ?? (groupAggregateStatus(item.tools) === 'running')}
+                      <!-- Expanded: show individual ToolCards -->
+                      <div class="tool-group-header" onclick={() => expandedGroups[i] = false}>
+                        <StatusDot status={groupAggregateStatus(item.tools)} />
+                        <Icon name="list" size="sm" />
+                        <span>{item.tools.length} 个工具调用</span>
+                        <Icon name="chevron-down" size="sm" />
+                      </div>
+                      {#each item.tools as tool (tool.id)}
+                        <ToolCard {tool} />
+                      {/each}
+                    {:else}
+                      <!-- Collapsed: just the summary header -->
+                      <button class="tool-group-header collapsed" onclick={() => expandedGroups[i] = true} type="button">
+                        <StatusDot status={groupAggregateStatus(item.tools)} />
+                        <Icon name="list" size="sm" />
+                        <span>{item.tools.length} 个工具调用</span>
+                        <span class="tool-group-names">
+                          {item.tools.map((t) => t.name).slice(0, 3).join(', ')}
+                          {#if item.tools.length > 3}…{/if}
+                        </span>
+                        <Icon name="chevron-right" size="sm" />
+                      </button>
+                    {/if}
                   {/if}
                 {/each}
               </div>
@@ -320,6 +391,38 @@
   .compact-stats {
     color: var(--color-text-faint, #6a6a72);
     font-family: var(--font-mono, monospace);
+  }
+
+  /* Tool group header */
+  .tool-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 10px;
+    margin: 4px 0;
+    border: none;
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-surface-raised, transparent);
+    color: var(--color-text-muted, #9a9aa2);
+    font-size: var(--text-xs, 12px);
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--duration-fast, 120ms);
+  }
+  .tool-group-header:hover {
+    background: var(--color-hover, rgba(255,255,255,0.04));
+  }
+  .tool-group-header.collapsed {
+    border: 1px solid var(--color-line, #2a2a2e);
+  }
+  .tool-group-names {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.6;
+    font-family: var(--font-mono, monospace);
+    min-width: 0;
   }
 
   /* Thinking block */
