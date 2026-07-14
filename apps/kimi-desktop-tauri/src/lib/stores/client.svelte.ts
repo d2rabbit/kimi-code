@@ -8,7 +8,8 @@
 // and core runtime controls (permission, model). Advanced features (swarm,
 // goal, side chat, task polling) will be layered on in Phase 4.
 
-import { getKimiWebApi, type KimiWebApi } from '../api';
+import { getKimiWebApi } from '../api';
+import type { KimiWebApi } from '../api/types';
 import type {
   AppConfig,
   AppEvent,
@@ -23,7 +24,8 @@ import {
   reduceAppEvent,
   type KimiClientState,
 } from '../api/daemon/eventReducer';
-import { messagesToTurns, type ChatTurn } from '../lib/messagesToTurns';
+import { messagesToTurns } from '../lib/messagesToTurns';
+import type { ChatTurn } from '../types';
 import { setDaemonOrigin } from '../api/config';
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { daemon } from './daemon.svelte';
@@ -170,21 +172,18 @@ export const turns = $derived.by<ChatTurn[]>(() => {
   return messagesToTurns(msgs, approvals, tasks);
 });
 
-// Pending approvals for the active session.
+// Pending approvals for the active session (reducer removes resolved ones,
+// so all entries in approvalsBySession are still pending).
 export const pendingApprovals = $derived(
   rawState.activeSessionId
-    ? (rawState.approvalsBySession[rawState.activeSessionId] ?? []).filter(
-        (a) => a.status === 'pending',
-      )
+    ? (rawState.approvalsBySession[rawState.activeSessionId] ?? [])
     : [],
 );
 
-// Pending questions for the active session.
+// Pending questions for the active session (same — reducer removes answered).
 export const questions = $derived(
   rawState.activeSessionId
-    ? (rawState.questionsBySession[rawState.activeSessionId] ?? []).filter(
-        (q) => q.status === 'pending',
-      )
+    ? (rawState.questionsBySession[rawState.activeSessionId] ?? [])
     : [],
 );
 
@@ -203,12 +202,12 @@ export const warnings = $derived(rawState.warnings);
 export const unreadCount = $derived.by(() => {
   let count = 0;
   for (const [sid, approvals] of Object.entries(rawState.approvalsBySession)) {
-    if (sid !== rawState.activeSessionId && approvals.some((a) => a.status === 'pending')) {
+    if (sid !== rawState.activeSessionId && approvals.length > 0) {
       count++;
     }
   }
   for (const [sid, questions] of Object.entries(rawState.questionsBySession)) {
-    if (sid !== rawState.activeSessionId && questions.some((q) => q.status === 'pending')) {
+    if (sid !== rawState.activeSessionId && questions.length > 0) {
       count++;
     }
   }
@@ -350,17 +349,16 @@ function connectEvents(): void {
       // Reassign top-level fields to trigger $derived reactivity.
       Object.assign(rawState, next);
 
-      // Track activity.
-      if (event.type === 'assistant.completed' || event.type === 'prompt.completed') {
+      // Track activity + notifications.
+      if (event.type === 'assistantCompleted' || event.type === 'promptCompleted') {
         ui.activity = 'idle';
         ui.isSending = false;
-        // Desktop notification on task completion.
         notifyDesktop('任务完成', `${ui.activeWorkspaceId || 'Kimi Code'} 的任务已完成`);
-      } else if (event.type === 'assistant.delta' || event.type === 'prompt.submitted') {
+      } else if (event.type === 'assistantDelta' || event.type === 'promptSubmitted') {
         ui.activity = 'running';
-      } else if (event.type === 'approval.requested') {
+      } else if (event.type === 'approvalRequested') {
         notifyDesktop('需要审批', 'Agent 请求你的确认');
-      } else if (event.type === 'question.requested') {
+      } else if (event.type === 'questionRequested') {
         notifyDesktop('Agent 提问', 'Agent 需要你的回答');
       }
     },

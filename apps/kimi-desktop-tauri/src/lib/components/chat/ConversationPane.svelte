@@ -215,7 +215,7 @@
   <!-- Dock: pending approval / question (above composer, mutually exclusive) -->
   {#if pendingApproval}
     <div class="dock-area">
-      <ApprovalCard approval={pendingApproval.block} approvalId={pendingApproval.approvalId} />
+      <ApprovalCard request={pendingApproval} />
     </div>
   {:else if pendingQuestion}
     <div class="dock-area">

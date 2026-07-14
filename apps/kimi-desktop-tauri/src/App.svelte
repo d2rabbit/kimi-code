@@ -57,15 +57,12 @@
     if (activeUp) document.removeEventListener('mouseup', activeUp);
   });
 
-  // Sidebar resize drag.
-  let dragging = $state(false);
-  // Track active drag handlers so we can clean them up on component destroy.
+  // Sidebar resize drag — track active handlers for cleanup on destroy.
   let activeMove: ((ev: MouseEvent) => void) | null = null;
   let activeUp: (() => void) | null = null;
 
   function onResizeStart(e: MouseEvent) {
     e.preventDefault();
-    dragging = true;
     const startX = e.clientX;
     const startW = sidebarWidth;
     activeMove = (ev: MouseEvent) => {
@@ -73,7 +70,6 @@
       sidebarWidth = Math.max(240, Math.min(360, startW + delta));
     };
     activeUp = () => {
-      dragging = false;
       saveSidebarState();
       if (activeMove) document.removeEventListener('mousemove', activeMove);
       if (activeUp) document.removeEventListener('mouseup', activeUp);
