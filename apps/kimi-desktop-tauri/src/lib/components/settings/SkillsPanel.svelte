@@ -26,8 +26,8 @@
     const userNames = new Set(client.skillFiles.map((s) => s.name.toLowerCase()));
     const daemonOnly = client.skills.filter((s) => !userNames.has(s.name.toLowerCase()));
     return [
-      ...client.skillFiles.map((s) => ({ ...s, editable: true, source: 'user' as const })),
-      ...daemonOnly.map((s) => ({ name: s.name, description: s.description, source: s.source, editable: false })),
+      ...client.skillFiles.map((s) => ({ name: s.name, path: s.path, content: s.content, description: '', editable: true, source: 'user' as const })),
+      ...daemonOnly.map((s) => ({ name: s.name, description: s.description, path: '', content: '', editable: false, source: s.source })),
     ];
   });
 

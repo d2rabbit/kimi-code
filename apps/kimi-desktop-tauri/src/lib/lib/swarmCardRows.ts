@@ -5,7 +5,7 @@
 // be unit-tested without mounting the component.
 
 import type { AppSubagentPhase } from '../api/types';
-import type { SwarmMember } from '../composables/swarmGroups';
+import type { SwarmMember } from './swarmGroups';
 import type { SwarmResult, SwarmResultSubagent } from './parseSwarmResult';
 
 export interface SwarmCardRow {

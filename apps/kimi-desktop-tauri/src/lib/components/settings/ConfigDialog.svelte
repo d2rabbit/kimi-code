@@ -251,14 +251,6 @@
     }
   }
 
-  // Toast timer — clear the previous timeout so rapid calls don't kill the new message early.
-  let msgTimer: ReturnType<typeof setTimeout> | null = null;
-  function showMessageTimed(type: 'success' | 'error', text: string) {
-    if (msgTimer) clearTimeout(msgTimer);
-    showMessage(type, text);
-    msgTimer = setTimeout(() => { message = null; msgTimer = null; }, 4000);
-  }
-
   async function setPermission(mode: 'manual' | 'auto' | 'yolo') {
     saving = true;
     try {

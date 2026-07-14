@@ -4,7 +4,7 @@
 // Pure logic (no Vue, no DOM) so it is unit-testable in isolation. See
 // useKimiWebClient.ts for where it is wired into the WS event pipeline.
 
-import type { AppEvent } from '../../api/types';
+import type { AppEvent } from '../api/types';
 
 // Events that merely append a chunk to something already streaming. They can
 // arrive dozens to hundreds of times per second, so they are worth coalescing.

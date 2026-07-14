@@ -18,7 +18,7 @@
 
   // Shiki highlighter singleton (loaded once).
   let highlighter: Awaited<ReturnType<typeof createHighlighter>> | null = null;
-  let shikiReady = $state(false);
+  
 
   const COMMON_LANGS = [
     'javascript', 'typescript', 'bash', 'shell', 'json', 'yaml', 'python',
@@ -33,7 +33,7 @@
       themes: ['github-dark', 'github-light'],
       langs: COMMON_LANGS,
     });
-    shikiReady = true;
+    
     return highlighter;
   }
 

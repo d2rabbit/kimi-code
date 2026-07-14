@@ -248,7 +248,7 @@
 
   <div class="composer-inner" style="position: relative;">
     {#if showSlash}
-      <SlashMenu query={slashQuery} skills={client.skills} {activeIndex} onselect={handleSlashSelect} />
+      <SlashMenu query={slashQuery} skills={client.skills} activeIndex={slashIndex} onselect={handleSlashSelect} />
     {/if}
     <IconButton name="image" label="添加图片" size="sm" onclick={openFilePicker} />
     <textarea

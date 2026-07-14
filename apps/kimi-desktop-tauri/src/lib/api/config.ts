@@ -51,7 +51,7 @@ function daemonOrigin(): string {
 }
 
 export function normalizeServerOrigin(value: string | undefined): string {
-  const raw = value && value.trim() ? value : defaultServerOrigin();
+  const raw = value && value.trim() ? value : daemonOrigin();
   const url = new URL(raw);
   url.pathname = url.pathname.replace(/\/v1\/?$/, '').replace(/\/$/, '');
   url.search = '';

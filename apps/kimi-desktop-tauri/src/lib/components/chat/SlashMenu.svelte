@@ -1,7 +1,7 @@
 <!-- SlashMenu.svelte — slash command menu overlay.
      Shows filtered builtin commands + skills. Keyboard navigable. -->
 <script lang="ts">
-  import { SLASH_COMMANDS, stripSkillPrefix } from '../../lib/slashCommands';
+  import { SLASH_COMMANDS } from '../../lib/slashCommands';
   import type { AppSkill } from '../../api/types';
 
   let {

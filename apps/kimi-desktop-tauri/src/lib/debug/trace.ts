@@ -11,6 +11,7 @@ export function isTraceEnabled(): boolean {
 interface Traceable {
   readonly method: string;
   readonly url: string;
+  readonly path?: string;
   readonly status?: number;
   readonly bodyPreview?: string;
   readonly phase?: string;

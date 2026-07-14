@@ -3,7 +3,6 @@
 <script lang="ts">
   import Button from '../ui/Button.svelte';
   import IconButton from '../ui/IconButton.svelte';
-  import Icon from '../ui/Icon.svelte';
   import * as client from '../../stores/client.svelte';
 
   type QuestionOption = { id: string; label: string; description?: string; recommended?: boolean };
@@ -128,7 +127,7 @@
 
       <!-- Options -->
       <div class="q-options">
-        {#each current.options as opt, i (opt.id)}
+        {#each current.options as opt (opt.id)}
           <button
             class="q-option"
             class:selected={current.multiSelect
