@@ -3,15 +3,26 @@
 // Exposes a `run()` function that builds and starts the Tauri app.
 // This split (lib + main) follows the Tauri 2 convention and allows tests
 // to import the app builder.
+//
+// Native desktop features:
+// - System tray: minimize-to-tray, show/hide window, quit
+// - Global shortcut: Cmd/Ctrl+Shift+K toggles window visibility
+// - Window state persistence: save/restore position, size, maximized state
 
 mod commands;
 mod daemon;
 mod sea_path;
 
-use tauri::Manager;
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    Emitter, Manager, WindowEvent,
+};
 
 /// The window title.
 const WINDOW_TITLE: &str = "Kimi Code Desktop";
+/// Path to the window state file (under KIMI_CODE_HOME).
+const WINDOW_STATE_FILE: &str = "window-state.json";
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -29,11 +40,88 @@ pub fn run() {
                 }
             }
 
-            // The frontend calls `ensure_server` directly on mount. We do NOT
-            // spawn a duplicate background call here — that would race with the
-            // frontend's invoke and risk double-forking the daemon. The
-            // frontend's daemon store handles the full lifecycle.
+            // --- Restore window state (position + size + maximized) ---
+            restore_window_state(app);
+
+            // --- System tray ---
+            let show_item = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
+            let hide_item = MenuItem::with_id(app, "hide", "隐藏到托盘", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_item, &hide_item, &quit_item])?;
+
+            let _tray = TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .tooltip("Kimi Code Desktop")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "hide" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.hide();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    // Double-click (or single-click on some platforms) toggles window.
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            if window.is_visible().unwrap_or(false) {
+                                let _ = window.hide();
+                            } else {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    }
+                })
+                .build(app)?;
+
+            // --- Global shortcut: Cmd/Ctrl+Shift+K toggles window ---
+            let app_handle = app.handle().clone();
+            app.global_shortcut()
+                .on_shortcut("Super+Shift+K", move || {
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        if window.is_visible().unwrap_or(false) {
+                            let _ = window.hide();
+                        } else {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })?;
+
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Save window state on close.
+            if let WindowEvent::CloseRequested { .. } = event {
+                save_window_state(window);
+            }
+            // On macOS, closing the window hides it instead of quitting (so the
+            // tray still works). The user can quit from the tray menu.
+            #[cfg(target_os = "macos")]
+            {
+                if let WindowEvent::CloseRequested { api, .. } = event {
+                    let _ = window.hide();
+                    api.prevent_close();
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             commands::ensure_server,
@@ -47,4 +135,81 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+// ---------------------------------------------------------------------------
+// Window state persistence
+// ---------------------------------------------------------------------------
+
+use serde::{Deserialize, Serialize};
+use std::fs;
+
+#[derive(Serialize, Deserialize)]
+struct WindowState {
+    width: u32,
+    height: u32,
+    x: i32,
+    y: i32,
+    maximized: bool,
+}
+
+fn state_file_path() -> std::path::PathBuf {
+    let home = if let Ok(dir) = std::env::var("KIMI_CODE_HOME") {
+        let trimmed = dir.trim();
+        if !trimmed.is_empty() {
+            std::path::PathBuf::from(trimmed)
+        } else {
+            dirs::home_dir().unwrap_or_default().join(".kimi-code")
+        }
+    } else {
+        dirs::home_dir().unwrap_or_default().join(".kimi-code")
+    };
+    home.join(WINDOW_STATE_FILE)
+}
+
+fn restore_window_state(app: &tauri::App) {
+    let path = state_file_path();
+    let Ok(content) = fs::read_to_string(&path) else {
+        return;
+    };
+    let Ok(state) = serde_json::from_str::<WindowState>(&content) else {
+        return;
+    };
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_size(tauri::LogicalSize::new(state.width, state.height));
+        let _ = window.set_position(tauri::LogicalPosition::new(state.x, state.y));
+        if state.maximized {
+            let _ = window.maximize();
+        }
+    }
+}
+
+fn save_window_state(window: &tauri::WebviewWindow) {
+    let Some(scale) = window.scale_factor().ok() else {
+        return;
+    };
+    let Ok(physical_pos) = window.outer_position() else {
+        return;
+    };
+    let Ok(physical_size) = window.outer_size() else {
+        return;
+    };
+    let maximized = window.is_maximized().unwrap_or(false);
+
+    // Convert physical to logical coordinates.
+    let state = WindowState {
+        width: (physical_size.width as f64 / scale) as u32,
+        height: (physical_size.height as f64 / scale) as u32,
+        x: (physical_pos.x as f64 / scale) as i32,
+        y: (physical_pos.y as f64 / scale) as i32,
+        maximized,
+    };
+
+    let path = state_file_path();
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if let Ok(json) = serde_json::to_string(&state) {
+        let _ = fs::write(&path, json);
+    }
 }
