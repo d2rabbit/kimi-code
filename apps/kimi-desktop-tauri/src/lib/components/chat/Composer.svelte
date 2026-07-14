@@ -46,6 +46,7 @@
       autocomplete="off"
       autocapitalize="off"
       class="composer-input"
+      class:busy={running}
     ></textarea>
     <button
       class="send-btn"
@@ -101,6 +102,9 @@
   }
   .composer-input::placeholder {
     color: var(--color-text-faint, #6a6a72);
+  }
+  .composer-input.busy {
+    opacity: 0.6;
   }
 
   .send-btn {

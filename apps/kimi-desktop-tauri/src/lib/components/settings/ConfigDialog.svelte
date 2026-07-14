@@ -177,6 +177,10 @@
   });
 
   function openAddModel() {
+    if (client.providers.length === 0) {
+      showMessage('error', '请先在 Provider 标签页添加一个 Provider');
+      return;
+    }
     modelForm = {
       alias: '',
       provider: client.providers[0]?.id ?? '',
@@ -283,10 +287,12 @@
 </script>
 
 <!-- Intercept ESC: when a form overlay is open, close the form first (don't
-     let it bubble to Dialog which would close the entire settings panel). -->
+     let it bubble to Dialog which would close the entire settings panel).
+     stopImmediatePropagation prevents the Dialog's own window-level Escape
+     handler from also firing (they share the same window target). -->
 <svelte:window onkeydown={(e) => {
   if (e.key === 'Escape' && (showProviderForm || showModelForm)) {
-    e.stopPropagation();
+    e.stopImmediatePropagation();
     e.preventDefault();
     showProviderForm = false;
     showModelForm = false;
@@ -330,7 +336,7 @@
             <div class="status-sub">{client.authProvider?.name}</div>
           </div>
         </div>
-        <Button variant="default" {saving} onclick={handleLogout} disabled={saving}>
+        <Button variant="default" onclick={handleLogout} disabled={saving}>
           {saving ? '退出中…' : '退出登录'}
         </Button>
       {:else if oauthState === 'pending'}
@@ -421,7 +427,7 @@
             </label>
             <div class="form-actions">
               <Button variant="ghost" onclick={() => showModelForm = false}>取消</Button>
-              <Button variant="primary" {saving} onclick={saveModel}>保存</Button>
+              <Button variant="primary" onclick={saveModel} disabled={saving}>保存</Button>
             </div>
           </div>
         </div>
@@ -489,7 +495,7 @@
             </label>
             <div class="form-actions">
               <Button variant="ghost" onclick={() => showProviderForm = false}>取消</Button>
-              <Button variant="primary" {saving} onclick={saveProvider}>保存</Button>
+              <Button variant="primary" onclick={saveProvider} disabled={saving}>保存</Button>
             </div>
           </div>
         </div>

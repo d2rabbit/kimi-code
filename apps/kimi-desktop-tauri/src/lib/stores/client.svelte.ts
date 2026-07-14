@@ -203,12 +203,13 @@ export const starredModelIds = $derived(ui.starredModelIds);
 async function load(): Promise<void> {
   ui.loading = true;
   try {
-    const a = getApi();
-
-    // Set the daemon origin from the daemon store.
+    // Set the daemon origin BEFORE creating the API singleton — the singleton
+    // snapshots the origin at construction time, so it must be correct first.
     if (daemon.state.origin) {
       setDaemonOrigin(daemon.state.origin);
     }
+
+    const a = getApi();
 
     // Restore persisted appearance preferences (theme + font size).
     try {

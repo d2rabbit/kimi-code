@@ -28,9 +28,8 @@
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
-
 {#if open}
+  <svelte:window onkeydown={onKeydown} />
   <div class="dialog-backdrop" onclick={close} role="presentation">
     <div class="dialog" role="dialog" aria-modal="true" aria-label={title} onclick={(e) => e.stopPropagation()}>
       <header class="dialog-header">

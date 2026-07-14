@@ -5,16 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <title>Kimi Code Desktop</title>
-    <!-- Apply the persisted color scheme before the bundle loads to avoid a flash. -->
-    <script>
-      (function () {
-        try {
-          var scheme = localStorage.getItem('kimi-web.color-scheme');
-          if (scheme !== 'light' && scheme !== 'dark') scheme = 'system';
-          document.documentElement.dataset.colorScheme = scheme;
-        } catch (_) {}
-      })();
-    </script>
+    <!-- No inline scripts: Tauri's production CSP enforces script-src 'self'.
+         The color scheme is handled by CSS @media (prefers-color-scheme) as a
+         default, then JS in main.ts applies the persisted preference on mount. -->
   </head>
   <body>
     <div id="app"></div>
