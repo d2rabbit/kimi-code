@@ -40,6 +40,17 @@ The daemon must be running for the frontend to connect (`pnpm run dev:server` fr
 - **Platform WebView**: macOS (WKWebView, built-in), Windows (WebView2 / Edge), Linux (WebKitGTK).
 - **SEA build** for dev: `pnpm --filter @moonshot-ai/kimi-code run build:native:sea` (the Rust `sea_path.rs` resolves `apps/kimi-code/dist-native/bin/<target>/kimi` in dev mode).
 
+## Packaging
+
+`pnpm run tauri:build` triggers:
+1. `pnpm build` (frontend → dist/)
+2. `node scripts/before-bundle.cjs` (stages SEA into src-tauri/resources/bin/)
+3. Cargo build + Tauri bundler (produces .dmg/.msi/.deb/.AppImage)
+
+The `before-bundle.cjs` script detects the current platform via `TAURI_PLATFORM` / `TAURI_ARCH` env vars (set by Tauri during build) and stages the matching SEA. If the SEA is missing, the build fails with a clear error.
+
+CI: `.github/workflows/desktop-tauri-build.yml` builds on 4 runners (macos-arm64, macos-x64, windows-x64, linux-x64), each building the SEA for its platform first.
+
 ## Gotchas
 
 - **CSP**: `tauri.conf.json` restricts `connect-src` to `127.0.0.1` and `localhost`. If the daemon binds a different host, update the CSP.
