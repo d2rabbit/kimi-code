@@ -1,8 +1,13 @@
-<!-- ConversationPane.svelte — conversation column (header + messages + composer). -->
+<!-- ConversationPane.svelte — conversation column (header + messages + dock + composer).
+     Phase 3 upgrade: Markdown rendering, ToolCard, ApprovalCard, QuestionCard, SlashMenu. -->
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
   import { isMacosDesktop } from '../../lib/lib/desktopFlag';
   import Composer from './Composer.svelte';
+  import MarkdownRenderer from './MarkdownRenderer.svelte';
+  import ToolCard from './ToolCard.svelte';
+  import ApprovalCard from './ApprovalCard.svelte';
+  import QuestionCard from './QuestionCard.svelte';
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
 
@@ -11,12 +16,9 @@
   // Auto-scroll to bottom when turns change or stream updates.
   let scrollEl: HTMLElement | null = $state(null);
   $effect(() => {
-    // Track the last turn's content for streaming scroll-follow, not just count.
     const lastTurn = client.turns.at(-1);
-    const blockCount = lastTurn?.blocks.length ?? 0;
-    const lastText = lastTurn?.blocks.at(-1);
+    const blockCount = lastTurn?.blocks?.length ?? 0;
     void blockCount;
-    void lastText;
     void client.turns.length;
     if (scrollEl) {
       const raf = requestAnimationFrame(() => {
@@ -33,7 +35,6 @@
     try {
       await client.client.sendPrompt(text);
     } catch {
-      // Restore the text so the user doesn't lose their input on failure.
       composerText = text;
     }
   }
@@ -44,6 +45,10 @@
 
   const running = $derived(client.activity === 'running');
   const headerPadLeft = isMacosDesktop ? '108px' : '0';
+
+  // Pending approval/question (first in list).
+  const pendingApproval = $derived(client.pendingApprovals[0]);
+  const pendingQuestion = $derived(client.questions[0]);
 </script>
 
 <div class="conversation-pane">
@@ -63,19 +68,26 @@
           <span>停止</span>
         </button>
       {/if}
-      <IconButton name="sliders" label="模式" size="sm" />
+      {#if client.activeSession}
+        <IconButton name="close" label="归档对话" size="sm" onclick={() => client.client.archiveSession(client.activeSessionId)} />
+      {/if}
     </div>
   </header>
 
   <!-- Messages -->
   <div class="messages-scroll" bind:this={scrollEl}>
     <div class="messages-inner">
-      {#if client.turns.length === 0}
-        <!-- Empty state / welcome -->
+      {#if client.turns.length === 0 && !client.sessionLoading}
+        <!-- Empty state: centered welcome -->
         <div class="welcome">
           <div class="welcome-logo">◧</div>
           <h1>开始与 Kimi Code 对话</h1>
           <p>输入你的问题，或使用 <code>/</code> 查看可用命令</p>
+        </div>
+      {:else if client.turns.length === 0 && client.sessionLoading}
+        <div class="loading-hint">
+          <div class="spinner"></div>
+          <p>加载中…</p>
         </div>
       {:else}
         {#each client.turns as turn (turn.id)}
@@ -94,31 +106,33 @@
                 </div>
               {/if}
             </div>
+          {:else if turn.role === 'compaction'}
+            <div class="compaction-divider">
+              <Icon name="check-list" size="sm" />
+              <span>对话已压缩</span>
+              {#if turn.compaction?.tokensBefore}
+                <span class="compact-stats">{turn.compaction.tokensBefore} → {turn.compaction.tokensAfter ?? '?'} tokens</span>
+              {/if}
+            </div>
           {:else}
+            <!-- Assistant turn -->
             <div class="turn turn-assistant">
               <div class="turn-content assistant-content">
-                <!-- Phase 3: simplified rendering. Phase 4 will use full Markdown + tool cards. -->
                 {#each turn.blocks ?? [] as block}
-                  {#if block.kind === 'text'}
-                    <div class="assistant-text">{block.text}</div>
+                  {#if block.kind === 'thinking'}
+                    <details class="thinking-details">
+                      <summary>
+                        <Icon name="sparkles" size="sm" />
+                        <span>思考过程</span>
+                      </summary>
+                      <div class="thinking-body">{block.thinking}</div>
+                    </details>
+                  {:else if block.kind === 'text'}
+                    <MarkdownRenderer text={block.text} streaming={running && turn === client.turns.at(-1)} />
                   {:else if block.kind === 'tool'}
-                    <div class="tool-call-chip">
-                      <Icon name="tool" size="sm" />
-                      <span>{block.tool.name}</span>
-                      {#if block.tool.arg}
-                        <span class="tool-arg">{block.tool.arg}</span>
-                      {/if}
-                    </div>
-                  {:else if block.kind === 'thinking'}
-                    <div class="thinking-block">
-                      <Icon name="sparkles" size="sm" />
-                      <span>{block.thinking || '思考中…'}</span>
-                    </div>
+                    <ToolCard tool={block.tool} />
                   {/if}
                 {/each}
-                {#if running && turn === client.turns.at(-1)}
-                  <span class="cursor"></span>
-                {/if}
               </div>
             </div>
           {/if}
@@ -126,6 +140,17 @@
       {/if}
     </div>
   </div>
+
+  <!-- Dock: pending approval / question (above composer, mutually exclusive) -->
+  {#if pendingApproval}
+    <div class="dock-area">
+      <ApprovalCard approval={pendingApproval.block} approvalId={pendingApproval.approvalId} />
+    </div>
+  {:else if pendingQuestion}
+    <div class="dock-area">
+      <QuestionCard question={pendingQuestion} />
+    </div>
+  {/if}
 
   <!-- Composer -->
   <Composer bind:text={composerText} {running} onsubmit={handleSubmit} />
@@ -150,9 +175,7 @@
     -webkit-app-region: drag;
     transition: padding-left 0.2s var(--ease-out, ease);
   }
-  .header-left {
-    overflow: hidden;
-  }
+  .header-left { overflow: hidden; }
   .header-title {
     font-size: var(--text-sm, 13px);
     font-weight: var(--weight-medium, 500);
@@ -180,9 +203,7 @@
     cursor: pointer;
     -webkit-app-region: no-drag;
   }
-  .abort-btn:hover {
-    background: var(--color-danger-soft, rgba(255, 107, 107, 0.1));
-  }
+  .abort-btn:hover { background: var(--color-danger-soft, rgba(255, 107, 107, 0.1)); }
 
   .messages-scroll {
     flex: 1;
@@ -230,13 +251,27 @@
     font-size: var(--text-xs, 12px);
   }
 
-  /* Turns */
-  .turn {
+  .loading-hint {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 80px 20px;
+    color: var(--color-text-muted, #9a9aa2);
   }
-  .turn-user {
-    justify-content: flex-end;
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--color-line, #2a2a2e);
+    border-top-color: var(--color-accent, #7c8cff);
+    animation: spin 0.9s linear infinite;
   }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Turns */
+  .turn { display: flex; }
+  .turn-user { justify-content: flex-end; }
   .turn-content {
     max-width: 85%;
     line-height: var(--leading-normal, 1.5);
@@ -250,6 +285,12 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
+  .assistant-content {
+    color: var(--color-text, #e7e7ea);
+    width: 100%;
+    max-width: none;
+  }
+
   .user-images {
     display: flex;
     flex-wrap: wrap;
@@ -263,57 +304,60 @@
     border-radius: var(--radius-md, 8px);
     object-fit: cover;
   }
-  .assistant-content {
-    color: var(--color-text, #e7e7ea);
-  }
-  .assistant-text {
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-  .tool-call-chip {
-    display: inline-flex;
+
+  /* Compaction divider */
+  .compaction-divider {
+    display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 3px 8px;
-    margin: 4px 0;
-    border-radius: var(--radius-sm, 6px);
-    background: var(--color-surface-raised, #1a1a1e);
-    border: 1px solid var(--color-line, #2a2a2e);
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-surface-raised, transparent);
+    border: 1px dashed var(--color-line-strong, #3a3a3e);
     font-size: var(--text-xs, 12px);
     color: var(--color-text-muted, #9a9aa2);
   }
-  .tool-arg {
+  .compact-stats {
     color: var(--color-text-faint, #6a6a72);
     font-family: var(--font-mono, monospace);
   }
-  .thinking-block {
-    display: inline-flex;
+
+  /* Thinking block */
+  .thinking-details {
+    margin: 4px 0 8px;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--color-surface-raised, rgba(128,128,128,0.06));
+    overflow: hidden;
+  }
+  .thinking-details summary {
+    display: flex;
     align-items: center;
     gap: 5px;
-    padding: 3px 8px;
-    margin: 4px 0;
+    padding: 6px 10px;
+    cursor: pointer;
     font-size: var(--text-xs, 12px);
     color: var(--color-text-faint, #6a6a72);
     font-style: italic;
   }
-
-  .cursor {
-    display: inline-block;
-    width: 2px;
-    height: 1em;
-    background: var(--color-accent, #7c8cff);
-    animation: blink 1s steps(2) infinite;
-    vertical-align: text-bottom;
+  .thinking-body {
+    padding: 8px 12px;
+    font-size: var(--text-xs, 12px);
+    color: var(--color-text-muted, #9a9aa2);
+    white-space: pre-wrap;
+    line-height: 1.5;
   }
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
+
+  /* Dock area (approval / question) */
+  .dock-area {
+    flex: none;
+    max-width: var(--p-content-max, 760px);
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 24px 4px;
+    box-sizing: border-box;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cursor {
-      animation: none;
-    }
+    .spinner { animation: none; }
   }
 </style>

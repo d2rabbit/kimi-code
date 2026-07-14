@@ -1,6 +1,8 @@
-<!-- Composer.svelte — prompt input with auto-resizing textarea + submit. -->
+<!-- Composer.svelte — prompt input with auto-resizing textarea, slash menu, and submit. -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
+  import SlashMenu from './SlashMenu.svelte';
+  import * as client from '../../stores/client.svelte';
 
   let {
     text = $bindable(''),
@@ -13,34 +15,88 @@
   } = $props();
 
   let textareaEl: HTMLTextAreaElement | null = $state(null);
+  let slashActive = $state(false);
+  let slashIndex = $state(0);
 
   // Auto-resize the textarea.
   $effect(() => {
     void text;
     if (textareaEl) {
       textareaEl.style.height = 'auto';
-      textareaEl.style.height = Math.min(textareaEl.scrollHeight, 200) + 'px';
+      const h = textareaEl.scrollHeight;
+      textareaEl.style.height = Math.min(h, 200) + 'px';
     }
   });
 
+  // Slash command detection: text starts with "/" and has no space yet.
+  const slashQuery = $derived(
+    text.startsWith('/') && !text.includes(' ') ? text.slice(1) : '',
+  );
+  const showSlash = $derived(slashQuery !== '' && !running);
+
+  // Reset index when query changes.
+  $effect(() => {
+    void slashQuery;
+    slashIndex = 0;
+  });
+
   function handleKeydown(e: KeyboardEvent) {
+    // Slash menu keyboard navigation.
+    if (showSlash) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        slashIndex++;
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        slashIndex = Math.max(0, slashIndex - 1);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        text = '';
+        return;
+      }
+    }
     // Enter to send, Shift+Enter for newline.
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      if (showSlash) {
+        // If slash menu is open, Enter selects the highlighted command.
+        e.stopPropagation();
+        // The SlashMenu component handles selection via mousedown,
+        // but Enter key is handled here by calling onselect directly.
+        // For simplicity, just close the menu and let user confirm.
+        // TODO: wire slashIndex → onselect
+      }
       if (!running && text.trim()) {
         onsubmit();
       }
     }
   }
+
+  function handleSlashSelect(cmd: string) {
+    text = cmd + ' ';
+    textareaEl?.focus();
+  }
 </script>
 
 <div class="composer">
-  <div class="composer-inner">
+  <div class="composer-inner" style="position: relative;">
+    {#if showSlash}
+      <SlashMenu
+        query={slashQuery}
+        skills={client.skills}
+        activeIndex={slashIndex}
+        onselect={handleSlashSelect}
+      />
+    {/if}
     <textarea
       bind:this={textareaEl}
       bind:value={text}
       onkeydown={handleKeydown}
-      placeholder="输入消息… (Enter 发送, Shift+Enter 换行)"
+      placeholder="输入消息… (Enter 发送, Shift+Enter 换行, / 查看命令)"
       rows="1"
       spellcheck="false"
       autocomplete="off"
@@ -59,7 +115,7 @@
     </button>
   </div>
   <div class="composer-hint">
-    <kbd>Enter</kbd> 发送 · <kbd>Shift+Enter</kbd> 换行
+    <kbd>Enter</kbd> 发送 · <kbd>Shift+Enter</kbd> 换行 · <kbd>/</kbd> 命令
   </div>
 </div>
 
@@ -119,9 +175,7 @@
     background: var(--color-accent, #7c8cff);
     color: var(--color-text-on-accent, #fff);
     cursor: pointer;
-    transition:
-      opacity var(--duration-fast, 120ms),
-      transform var(--duration-fast, 120ms);
+    transition: opacity var(--duration-fast, 120ms), transform var(--duration-fast, 120ms);
   }
   .send-btn:disabled {
     opacity: 0.4;
