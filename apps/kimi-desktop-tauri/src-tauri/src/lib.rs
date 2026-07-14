@@ -129,6 +129,7 @@ pub fn run() {
             commands::get_server_log_path,
             commands::open_path,
             commands::get_kimi_home,
+            commands::set_badge_count,
             commands::list_user_skills,
             commands::write_user_skill,
             commands::delete_user_skill,

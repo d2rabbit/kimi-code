@@ -198,6 +198,31 @@ export const tasks = $derived(
 // Warnings.
 export const warnings = $derived(rawState.warnings);
 
+// Unread session count (sessions with attention — pending approvals or questions).
+// Drives the macOS Dock badge and Windows taskbar overlay.
+export const unreadCount = $derived.by(() => {
+  let count = 0;
+  for (const [sid, approvals] of Object.entries(rawState.approvalsBySession)) {
+    if (sid !== rawState.activeSessionId && approvals.some((a) => a.status === 'pending')) {
+      count++;
+    }
+  }
+  for (const [sid, questions] of Object.entries(rawState.questionsBySession)) {
+    if (sid !== rawState.activeSessionId && questions.some((q) => q.status === 'pending')) {
+      count++;
+    }
+  }
+  return count;
+});
+
+// Update the Dock badge when unread count changes.
+$effect(() => {
+  const count = unreadCount;
+  void tauriInvoke('set_badge_count', { count }).catch(() => {
+    // Non-fatal — badge is cosmetic.
+  });
+});
+
 // The visible workspace object.
 export const visibleWorkspace = $derived(
   ui.workspaces.find((w) => w.id === ui.activeWorkspaceId) ?? null,

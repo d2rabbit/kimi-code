@@ -8,7 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use serde::Serialize;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::daemon::{ensure_daemon, kimi_home, server_log_path, EnsureResult};
 use crate::sea_path::resolve_sea_path;
@@ -83,6 +83,26 @@ pub fn open_path(path: String) -> Result<(), String> {
 #[tauri::command]
 pub fn get_kimi_home() -> String {
     kimi_home().to_string_lossy().into_owned()
+}
+
+// ---------------------------------------------------------------------------
+// Dock badge / taskbar overlay (unread session count)
+// ---------------------------------------------------------------------------
+
+/// Set the macOS Dock badge (or Windows taskbar overlay) to show the number
+/// of unread sessions. Pass 0 to clear.
+#[tauri::command]
+pub fn set_badge_count(app: AppHandle, count: u32) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        if count == 0 {
+            let _ = window.set_badge_count(None);
+        } else {
+            // Cap at 99+ to avoid overly wide badges.
+            let label = if count > 99 { "99+".to_string() } else { count.to_string() };
+            let _ = window.set_badge_count(Some(label));
+        }
+    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
