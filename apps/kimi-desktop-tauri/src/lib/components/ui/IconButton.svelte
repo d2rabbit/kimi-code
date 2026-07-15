@@ -1,7 +1,7 @@
 <!-- IconButton.svelte — icon-only button primitive. -->
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import type { IconName, IconSize } from '../../lib/icons';
+  import type { IconName, IconSize } from '../../lib/icon-types';
 
   let {
     name,

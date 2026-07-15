@@ -2,7 +2,7 @@
 // Helpers for tool display. Labels/chips are localized via the shared i18n instance.
 
 import { i18n } from '../i18n';
-import { iconSvg, type IconName } from './icons';
+import { iconSvg, type IconName } from './icon-types';
 
 const t = i18n.global.t;
 
