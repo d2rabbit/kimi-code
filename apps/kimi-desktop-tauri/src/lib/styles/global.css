@@ -156,12 +156,254 @@ summary {
   }
 }
 
+/* ===========================================================================
+   GLASS MATERIAL + DESIGN TOKENS v3 (macOS glassmorphism redesign)
+   Non-solid backgrounds with radial-gradient glows. Dual-mode (dark/light).
+   =========================================================================== */
 :root {
-  --dim: #595959;
-  --muted: #8a8a8a;
-  --faint: #b5b5b5;
-  --line: #e9edf3;
-  --line2: #f1f4f8;
+  /* Glass material parameters */
+  --glass-blur: 24px;
+  --glass-saturate: 1.6;
+  --glass-bg-dark: rgba(28, 28, 30, 0.72);
+  --glass-bg-light: rgba(252, 252, 254, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-light: rgba(0, 0, 0, 0.06);
+  --glass-highlight: rgba(255, 255, 255, 0.12);
+  --glass-divider: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.18);
+  --glass-shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.38), 0 8px 24px rgba(0, 0, 0, 0.22);
+
+  /* Spring animation curves */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---- Dark mode (default) ---- */
+html[data-color-scheme="dark"] {
+  --color-bg: #0a0a0c;
+  --color-surface: rgba(28, 28, 30, 0.72);
+  --color-surface-raised: rgba(44, 44, 46, 0.80);
+  --color-surface-sunken: rgba(20, 20, 22, 0.60);
+  --color-text: rgba(255, 255, 255, 0.92);
+  --color-text-muted: rgba(235, 235, 245, 0.60);
+  --color-text-faint: rgba(235, 235, 245, 0.30);
+  --color-line: rgba(84, 84, 88, 0.65);
+  --color-line-strong: rgba(84, 84, 88, 0.40);
+  --color-accent: #0a84ff;
+  --color-accent-hover: #409cff;
+  --color-accent-soft: rgba(10, 132, 255, 0.16);
+  --color-accent-bd: rgba(10, 132, 255, 0.30);
+  --color-success: #30d158;
+  --color-success-soft: rgba(48, 209, 88, 0.16);
+  --color-warning: #ffd60a;
+  --color-warning-soft: rgba(255, 214, 10, 0.16);
+  --color-danger: #ff453a;
+  --color-danger-soft: rgba(255, 69, 58, 0.16);
+  --color-purple: #bf5af2;
+  --color-purple-soft: rgba(191, 90, 242, 0.16);
+  --color-orange: #ff9f0a;
+  --color-orange-soft: rgba(255, 159, 10, 0.16);
+  --color-selected: rgba(255, 255, 255, 0.10);
+  --color-hover: rgba(255, 255, 255, 0.06);
+  color-scheme: dark;
+}
+
+/* ---- Light mode ---- */
+html[data-color-scheme="light"] {
+  --color-bg: #f5f5f7;
+  --color-surface: rgba(252, 252, 254, 0.78);
+  --color-surface-raised: rgba(255, 255, 255, 0.90);
+  --color-surface-sunken: rgba(243, 243, 245, 0.70);
+  --color-text: rgba(0, 0, 0, 0.88);
+  --color-text-muted: rgba(60, 60, 67, 0.60);
+  --color-text-faint: rgba(60, 60, 67, 0.30);
+  --color-line: rgba(60, 60, 67, 0.29);
+  --color-line-strong: rgba(60, 60, 67, 0.18);
+  --color-accent: #007aff;
+  --color-accent-hover: #0066d6;
+  --color-accent-soft: rgba(0, 122, 255, 0.10);
+  --color-accent-bd: rgba(0, 122, 255, 0.25);
+  --color-success: #34c759;
+  --color-success-soft: rgba(52, 199, 89, 0.12);
+  --color-warning: #ff9f0a;
+  --color-warning-soft: rgba(255, 159, 10, 0.12);
+  --color-danger: #ff3b30;
+  --color-danger-soft: rgba(255, 59, 48, 0.10);
+  --color-purple: #af52de;
+  --color-purple-soft: rgba(175, 82, 222, 0.10);
+  --color-orange: #ff9500;
+  --color-orange-soft: rgba(255, 149, 0, 0.10);
+  --color-selected: rgba(0, 0, 0, 0.06);
+  --color-hover: rgba(0, 0, 0, 0.04);
+  color-scheme: light;
+}
+
+/* ---- System follow ---- */
+@media (prefers-color-scheme: dark) {
+  html[data-color-scheme="system"] {
+    --color-bg: #0a0a0c;
+    --color-surface: rgba(28, 28, 30, 0.72);
+    --color-surface-raised: rgba(44, 44, 46, 0.80);
+    --color-surface-sunken: rgba(20, 20, 22, 0.60);
+    --color-text: rgba(255, 255, 255, 0.92);
+    --color-text-muted: rgba(235, 235, 245, 0.60);
+    --color-text-faint: rgba(235, 235, 245, 0.30);
+    --color-line: rgba(84, 84, 88, 0.65);
+    --color-line-strong: rgba(84, 84, 88, 0.40);
+    --color-accent: #0a84ff;
+    --color-accent-hover: #409cff;
+    --color-accent-soft: rgba(10, 132, 255, 0.16);
+    --color-accent-bd: rgba(10, 132, 255, 0.30);
+    --color-success: #30d158;
+    --color-success-soft: rgba(48, 209, 88, 0.16);
+    --color-warning: #ffd60a;
+    --color-warning-soft: rgba(255, 214, 10, 0.16);
+    --color-danger: #ff453a;
+    --color-danger-soft: rgba(255, 69, 58, 0.16);
+    --color-purple: #bf5af2;
+    --color-purple-soft: rgba(191, 90, 242, 0.16);
+    --color-orange: #ff9f0a;
+    --color-orange-soft: rgba(255, 159, 10, 0.16);
+    --color-selected: rgba(255, 255, 255, 0.10);
+    --color-hover: rgba(255, 255, 255, 0.06);
+    color-scheme: dark;
+  }
+}
+@media (prefers-color-scheme: light) {
+  html[data-color-scheme="system"] {
+    --color-bg: #f5f5f7;
+    --color-surface: rgba(252, 252, 254, 0.78);
+    --color-surface-raised: rgba(255, 255, 255, 0.90);
+    --color-surface-sunken: rgba(243, 243, 245, 0.70);
+    --color-text: rgba(0, 0, 0, 0.88);
+    --color-text-muted: rgba(60, 60, 67, 0.60);
+    --color-text-faint: rgba(60, 60, 67, 0.30);
+    --color-line: rgba(60, 60, 67, 0.29);
+    --color-line-strong: rgba(60, 60, 67, 0.18);
+    --color-accent: #007aff;
+    --color-accent-hover: #0066d6;
+    --color-accent-soft: rgba(0, 122, 255, 0.10);
+    --color-accent-bd: rgba(0, 122, 255, 0.25);
+    --color-success: #34c759;
+    --color-success-soft: rgba(52, 199, 89, 0.12);
+    --color-warning: #ff9f0a;
+    --color-warning-soft: rgba(255, 159, 10, 0.12);
+    --color-danger: #ff3b30;
+    --color-danger-soft: rgba(255, 59, 48, 0.10);
+    --color-purple: #af52de;
+    --color-purple-soft: rgba(175, 82, 222, 0.10);
+    --color-orange: #ff9500;
+    --color-orange-soft: rgba(255, 149, 0, 0.10);
+    --color-selected: rgba(0, 0, 0, 0.06);
+    --color-hover: rgba(0, 0, 0, 0.04);
+    color-scheme: light;
+  }
+}
+
+/* ---- Radial-gradient backgrounds (non-solid, gives glass depth) ---- */
+html[data-color-scheme="dark"] body {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(59, 130, 246, 0.08), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139, 92, 246, 0.06), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(14, 165, 233, 0.05), transparent),
+    #0a0a0c;
+}
+html[data-color-scheme="light"] body {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(59, 130, 246, 0.06), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(251, 146, 60, 0.05), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(14, 165, 233, 0.04), transparent),
+    #f5f5f7;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-color-scheme="system"] body {
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(59, 130, 246, 0.08), transparent),
+      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139, 92, 246, 0.06), transparent),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(14, 165, 233, 0.05), transparent),
+      #0a0a0c;
+  }
+}
+@media (prefers-color-scheme: light) {
+  html[data-color-scheme="system"] body {
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(59, 130, 246, 0.06), transparent),
+      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(251, 146, 60, 0.05), transparent),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(14, 165, 233, 0.04), transparent),
+      #f5f5f7;
+  }
+}
+
+/* Glass utility classes — updated to use new tokens */
+.glass-panel {
+  background: var(--glass-bg-dark);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+html[data-color-scheme="light"] .glass-panel,
+html[data-color-scheme="system"] .glass-panel {
+  background: var(--glass-bg-light);
+  border-color: var(--glass-border-light);
+}
+@media (prefers-color-scheme: light) {
+  html[data-color-scheme="system"] .glass-panel {
+    background: var(--glass-bg-light);
+    border-color: var(--glass-border-light);
+  }
+}
+
+.glass-header {
+  background: rgba(28, 28, 30, 0.6);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-bottom: 1px solid var(--glass-divider);
+}
+html[data-color-scheme="light"] .glass-header {
+  background: rgba(245, 245, 247, 0.6);
+  border-bottom-color: rgba(0, 0, 0, 0.04);
+}
+@media (prefers-color-scheme: light) {
+  html[data-color-scheme="system"] .glass-header {
+    background: rgba(245, 245, 247, 0.6);
+    border-bottom-color: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.glass-menu {
+  background: rgba(40, 40, 42, 0.82);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--glass-shadow);
+  padding: 4px;
+  min-width: 160px;
+}
+html[data-color-scheme="light"] .glass-menu {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+@media (prefers-color-scheme: light) {
+  html[data-color-scheme="system"] .glass-menu {
+    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* backdrop-filter fallback for Linux compositors that don't support it */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-panel,
+  .glass-header,
+  .glass-menu {
+    background: var(--color-surface);
+  }
+}
+
+/* ---- Legacy token aliases (kept for backward compat with existing components) ---- */
+:root {
   /* Soft neutral canvas the white cards/bubbles lift off, plus the soft
      elevation shadows shared by the per-element card rules. */
   --canvas: #f4f6fa;
@@ -507,26 +749,27 @@ html[data-color-scheme="dark"][data-accent="mono"] {
   --p-bp-md: 980px;
 }
 
-/* Design tokens v2 — dark values (explicit choice). */
+/* Design tokens v2 — dark values (explicit choice).
+   Codex-style palette: near-black surfaces, high-contrast text, minimal accent. */
 html[data-color-scheme="dark"] {
-  --accent-primary: #58a6ff;
-  --color-bg: #0d1117;
-  --color-surface: #161b22;
-  --color-surface-raised: #1c2128;
-  --color-surface-sunken: #0d1117;
-  --color-text: #c9cdd4;
-  --color-text-muted: #9aa0a8;
-  --color-text-faint: #6b7280;
-  --color-line: #2d333b;
-  --color-line-strong: #3d444d;
-  --color-selected: #ffffff14;
+  --accent-primary: #ffffff;
+  --color-bg: #1a1a1a;
+  --color-surface: #212121;
+  --color-surface-raised: #2a2a2a;
+  --color-surface-sunken: #161616;
+  --color-text: #ececec;
+  --color-text-muted: #999;
+  --color-text-faint: #666;
+  --color-line: #2e2e2e;
+  --color-line-strong: #3a3a3a;
+  --color-selected: #ffffff18;
   --color-hover: #ffffff0d;
-  --color-sidebar-bg: #181817;
-  --color-accent: #58a6ff;
-  --color-accent-hover: #79b8ff;
-  --color-accent-soft: rgba(88, 166, 255, 0.14);
-  --p-selection: rgba(88, 166, 255, 0.32);
-  --color-accent-bd: rgba(88, 166, 255, 0.28);
+  --color-sidebar-bg: #181818;
+  --color-accent: #ffffff;
+  --color-accent-hover: #ddd;
+  --color-accent-soft: rgba(255, 255, 255, 0.1);
+  --p-selection: rgba(255, 255, 255, 0.2);
+  --color-accent-bd: rgba(255, 255, 255, 0.2);
   --color-success: #3fb950;
   --color-success-soft: rgba(63, 185, 80, 0.14);
   --color-success-bd: rgba(63, 185, 80, 0.28);
@@ -536,39 +779,38 @@ html[data-color-scheme="dark"] {
   --color-danger: #f85149;
   --color-danger-soft: rgba(248, 81, 73, 0.14);
   --color-danger-bd: rgba(248, 81, 73, 0.28);
-  /* "Done" scale — purple used for GitHub merged PRs (matches GitHub Primer). */
   --color-done: #a371f7;
   --color-done-soft: rgba(163, 113, 247, 0.14);
   --color-done-bd: rgba(163, 113, 247, 0.28);
-  --color-info: #58a6ff;
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.18);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.24);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.34), 0 4px 10px rgba(0, 0, 0, 0.28);
-  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.42), 0 8px 20px rgba(0, 0, 0, 0.32);
+  --color-info: #79b8ff;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
-/* Design tokens v2 — dark values (follow OS preference). */
+/* Design tokens v2 — dark values (follow OS preference). Codex-style palette. */
 @media (prefers-color-scheme: dark) {
   html[data-color-scheme="system"] {
-    --accent-primary: #58a6ff;
-    --color-bg: #0d1117;
-    --color-surface: #161b22;
-    --color-surface-raised: #1c2128;
-    --color-surface-sunken: #0d1117;
-    --color-text: #c9cdd4;
-    --color-text-muted: #9aa0a8;
-    --color-text-faint: #6b7280;
-    --color-line: #2d333b;
-    --color-line-strong: #3d444d;
-    --color-selected: #ffffff14;
+    --accent-primary: #ffffff;
+    --color-bg: #1a1a1a;
+    --color-surface: #212121;
+    --color-surface-raised: #2a2a2a;
+    --color-surface-sunken: #161616;
+    --color-text: #ececec;
+    --color-text-muted: #999;
+    --color-text-faint: #666;
+    --color-line: #2e2e2e;
+    --color-line-strong: #3a3a3a;
+    --color-selected: #ffffff18;
     --color-hover: #ffffff0d;
-    --color-sidebar-bg: #181817;
-    --color-accent: #58a6ff;
-    --color-accent-hover: #79b8ff;
-    --color-accent-soft: rgba(88, 166, 255, 0.14);
-  --p-selection: rgba(88, 166, 255, 0.32);
-    --color-accent-bd: rgba(88, 166, 255, 0.28);
+    --color-sidebar-bg: #181818;
+    --color-accent: #ffffff;
+    --color-accent-hover: #ddd;
+    --color-accent-soft: rgba(255, 255, 255, 0.1);
+  --p-selection: rgba(255, 255, 255, 0.2);
+    --color-accent-bd: rgba(255, 255, 255, 0.2);
     --color-success: #3fb950;
     --color-success-soft: rgba(63, 185, 80, 0.14);
     --color-success-bd: rgba(63, 185, 80, 0.28);
@@ -578,15 +820,14 @@ html[data-color-scheme="dark"] {
     --color-danger: #f85149;
     --color-danger-soft: rgba(248, 81, 73, 0.14);
     --color-danger-bd: rgba(248, 81, 73, 0.28);
-    /* "Done" scale — purple used for GitHub merged PRs (matches GitHub Primer). */
     --color-done: #a371f7;
     --color-done-soft: rgba(163, 113, 247, 0.14);
     --color-done-bd: rgba(163, 113, 247, 0.28);
-    --color-info: #58a6ff;
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.18);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.24);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.34), 0 4px 10px rgba(0, 0, 0, 0.28);
+    --color-info: #79b8ff;
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
     --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.42), 0 8px 20px rgba(0, 0, 0, 0.32);
   }
 }
@@ -596,9 +837,9 @@ body,
 #app {
   height: 100%;
   margin: 0;
-  /* Explicit light background on the root: a transparent <html> gets sampled as
-     "dark" by some extensions, which then repaint it. Keep it solid white. */
-  background: var(--bg);
+  /* Explicit background on the root: a transparent <html> gets sampled as
+     "dark" by some extensions, which then repaint it. */
+  background: var(--color-bg);
 }
 
 /* Pin the app to the viewport so it always fills the screen even if a dark-mode
@@ -640,18 +881,19 @@ body {
   }
 }
 *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.3);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 999px;
+  transition: background 0.2s;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 128, 128, 0.5);
+  background: rgba(255, 255, 255, 0.18);
 }
 *::-webkit-scrollbar-corner {
   background: transparent;
@@ -917,5 +1159,145 @@ body {
   .a-msg .msg,
   .ph {
     font-size: max(16px, var(--ui-font-size-xl));
+  }
+}
+
+/* ===========================================================================
+   macOS Glass Effect System
+   Frosted-glass panels, vibrancy headers, spring animations.
+   =========================================================================== */
+
+:root {
+  /* Glass material tokens */
+  --glass-blur: 24px;
+  --glass-saturate: 1.6;
+  --glass-bg-dark: rgba(28, 28, 30, 0.72);
+  --glass-bg-light: rgba(245, 245, 247, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-strong: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.18);
+  --glass-shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.38), 0 8px 24px rgba(0, 0, 0, 0.22);
+  --glass-divider: rgba(255, 255, 255, 0.06);
+
+  /* macOS spring animation */
+  --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --spring-exit: cubic-bezier(0.4, 0.0, 1, 1);
+}
+
+/* Dark-mode glass background (default for the app's Codex-style dark theme) */
+.glass-panel {
+  background: var(--glass-bg-dark);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Light-mode glass */
+html[data-color-scheme="light"] .glass-panel,
+html[data-color-scheme="system"] .glass-panel {
+  background: var(--glass-bg-light);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+@media (prefers-color-scheme: light) {
+  html[data-color-scheme="system"] .glass-panel {
+    background: var(--glass-bg-light);
+    border-color: rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Glass header bar — for sidebar header, chat header, composer bar */
+.glass-header {
+  background: rgba(28, 28, 30, 0.6);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-bottom: 1px solid var(--glass-divider);
+}
+
+html[data-color-scheme="light"] .glass-header {
+  background: rgba(245, 245, 247, 0.6);
+  border-bottom-color: rgba(0, 0, 0, 0.04);
+}
+@media (prefers-color-scheme: light) {
+  html[data-color-scheme="system"] .glass-header {
+    background: rgba(245, 245, 247, 0.6);
+    border-bottom-color: rgba(0, 0, 0, 0.04);
+  }
+}
+
+/* Glass context menu (right-click / hover menu) */
+.glass-menu {
+  background: rgba(40, 40, 42, 0.82);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--glass-shadow);
+  padding: 4px;
+  min-width: 160px;
+}
+.glass-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: var(--text-sm, 13px);
+  color: var(--color-text, #ececec);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+.glass-menu-item:hover {
+  background: var(--color-hover, rgba(255, 255, 255, 0.08));
+}
+.glass-menu-item.danger {
+  color: var(--color-danger, #f85149);
+}
+.glass-menu-divider {
+  height: 1px;
+  background: var(--glass-divider);
+  margin: 4px 6px;
+}
+
+/* macOS spring entrance animation */
+@keyframes spring-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-spring-in {
+  animation: spring-in 0.32s var(--spring-bounce);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s var(--spring-smooth);
+}
+
+/* Glass divider — ultra-thin semi-transparent line */
+.glass-divider {
+  height: 1px;
+  background: var(--glass-divider);
+  border: none;
+}
+
+/* Fallback for browsers without backdrop-filter support */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-panel,
+  .glass-header,
+  .glass-menu {
+    background: var(--color-surface, #212121);
   }
 }

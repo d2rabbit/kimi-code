@@ -24,7 +24,9 @@
         "center": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "backgroundColor": "#0b0b0c"
+        "decorations": false,
+        "transparent": true,
+        "backgroundColor": "#0a0a0c"
       }
     ],
     "security": {
