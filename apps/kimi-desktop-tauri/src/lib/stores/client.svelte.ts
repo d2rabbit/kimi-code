@@ -9,6 +9,7 @@
 // goal, side chat, task polling) will be layered on in Phase 4.
 
 import { getKimiWebApi } from '../api';
+import { setCredential } from '../api/daemon/serverAuth';
 import type { KimiWebApi } from '../api/types';
 import type {
   AppConfig,
@@ -106,101 +107,118 @@ function getApi(): KimiWebApi {
 }
 
 // ---------------------------------------------------------------------------
-// Derived state (read-only computeds)
+// Derived state (read-only computets)
+// Svelte 5 does not allow exporting $derived from a .svelte.ts module.
+// Expose each derived value via a getter function instead.
 // ---------------------------------------------------------------------------
 
-export const sessions = $derived(rawState.sessions);
-export const activeSessionId = $derived(rawState.activeSessionId ?? '');
-export const workspaces = $derived(ui.workspaces);
-export const activeWorkspaceId = $derived(ui.activeWorkspaceId);
-export const models = $derived(ui.models);
-export const providers = $derived(ui.providers);
-export const skills = $derived(ui.skills);
-export const config = $derived(ui.config);
-export const serverVersion = $derived(ui.serverVersion);
-export const authReady = $derived(ui.authReady);
-export const initialized = $derived(ui.initialized);
-export const connected = $derived(ui.connected);
-export const loading = $derived(ui.loading);
-export const sessionLoading = $derived(ui.sessionLoading);
+export const sessions = () => rawState.sessions;
+export const activeSessionId = () => rawState.activeSessionId ?? '';
+export const workspaces = () => ui.workspaces;
+export const activeWorkspaceId = () => ui.activeWorkspaceId;
+export const models = () => ui.models;
+export const providers = () => ui.providers;
+export const skills = () => ui.skills;
+export const config = () => ui.config;
+export const serverVersion = () => ui.serverVersion;
+export const authReady = () => ui.authReady;
+export const initialized = () => ui.initialized;
+export const connected = () => ui.connected;
+export const loading = () => ui.loading;
+export const sessionLoading = () => ui.sessionLoading;
 
-export const permission = $derived(ui.permission);
-export const thinking = $derived(ui.thinking);
-export const planMode = $derived(ui.planMode);
-export const swarmMode = $derived(ui.swarmMode);
-export const goalMode = $derived(ui.goalMode);
+export const permission = () => ui.permission;
+export const thinking = () => ui.thinking;
+export const planMode = () => ui.planMode;
+export const swarmMode = () => ui.swarmMode;
+export const goalMode = () => ui.goalMode;
 
-export const colorScheme = $derived(ui.colorScheme);
-export const accent = $derived(ui.accent);
-export const uiFontSize = $derived(ui.uiFontSize);
+export const colorScheme = () => ui.colorScheme;
+export const accent = () => ui.accent;
+export const uiFontSize = () => ui.uiFontSize;
 
-export const activity = $derived(ui.activity);
-export const isSending = $derived(ui.isSending);
-export const isStartingFirstPrompt = $derived(ui.isStartingFirstPrompt);
+export const activity = () => ui.activity;
+export const isSending = () => ui.isSending;
+export const isStartingFirstPrompt = () => ui.isStartingFirstPrompt;
 
-export const authProvider = $derived(ui.authProvider);
+export const authProvider = () => ui.authProvider;
 
 // File preview panel state.
-export const previewOpen = $derived(ui.previewPath !== null);
-export const previewPath = $derived(ui.previewPath);
-export const previewContent = $derived(ui.previewContent);
-export const previewLoading = $derived(ui.previewLoading);
-export const previewError = $derived(ui.previewError);
-export const previewMode = $derived(ui.previewMode);
-export const previewDiff = $derived(ui.previewDiff);
+export const previewOpen = () => ui.previewPath !== null;
+export const previewPath = () => ui.previewPath;
+export const previewContent = () => ui.previewContent;
+export const previewLoading = () => ui.previewLoading;
+export const previewError = () => ui.previewError;
+export const previewMode = () => ui.previewMode;
+export const previewDiff = () => ui.previewDiff;
 
-export const onboarded = $derived(ui.onboarded);
+export const onboarded = () => ui.onboarded;
 
 // The active session object.
-export const activeSession = $derived(
-  rawState.sessions.find((s) => s.id === rawState.activeSessionId) ?? null,
-);
+export const activeSession = () =>
+  rawState.sessions.find((s) => s.id === rawState.activeSessionId) ?? null;
 
 // Messages for the active session.
-export const activeMessages = $derived(
+export const activeMessages = () =>
   rawState.activeSessionId
     ? (rawState.messagesBySession[rawState.activeSessionId] ?? [])
-    : [],
-);
+    : [];
 
 // Turns (grouped messages) for the active session.
-export const turns = $derived.by<ChatTurn[]>(() => {
+export const turns = (): ChatTurn[] => {
   const sid = rawState.activeSessionId;
   if (!sid) return [];
   const msgs = rawState.messagesBySession[sid] ?? [];
   const approvals = rawState.approvalsBySession[sid] ?? [];
   // messagesToTurns signature: (messages, approvals, getFileUrl?, sessionActive?, planReview?)
   return messagesToTurns(msgs, approvals, undefined, true);
-});
+};
 
 // Pending approvals for the active session (reducer removes resolved ones,
 // so all entries in approvalsBySession are still pending).
-export const pendingApprovals = $derived(
+export const pendingApprovals = () =>
   rawState.activeSessionId
     ? (rawState.approvalsBySession[rawState.activeSessionId] ?? [])
-    : [],
-);
+    : [];
 
 // Pending questions for the active session (same — reducer removes answered).
-export const questions = $derived(
+export const questions = () =>
   rawState.activeSessionId
     ? (rawState.questionsBySession[rawState.activeSessionId] ?? [])
-    : [],
-);
+    : [];
 
 // Active tasks for the active session.
-export const tasks = $derived(
+export const tasks = () =>
   rawState.activeSessionId
     ? (rawState.tasksBySession[rawState.activeSessionId] ?? [])
-    : [],
-);
+    : [];
 
 // Warnings.
-export const warnings = $derived(rawState.warnings);
+export const warnings = () => rawState.warnings;
+
+// Active workspace name (for breadcrumb header).
+export const activeWorkspaceName = () =>
+  ui.workspaces.find((w) => w.id === ui.activeWorkspaceId)?.name ?? null;
+
+// Active session usage (token/cost data from WS events).
+export const activeSessionUsage = () => {
+  const sid = rawState.activeSessionId;
+  if (!sid) return null;
+  const session = rawState.sessions.find((s) => s.id === sid);
+  return session?.usage ?? null;
+};
+
+// Active session model.
+export const activeSessionModel = () => {
+  const sid = rawState.activeSessionId;
+  if (!sid) return '';
+  const session = rawState.sessions.find((s) => s.id === sid);
+  return session?.modelId ?? '';
+};
 
 // Unread session count (sessions with attention — pending approvals or questions).
 // Drives the macOS Dock badge and Windows taskbar overlay.
-export const unreadCount = $derived.by(() => {
+export const unreadCount = (): number => {
   let count = 0;
   for (const [sid, approvals] of Object.entries(rawState.approvalsBySession)) {
     if (sid !== rawState.activeSessionId && approvals.length > 0) {
@@ -213,34 +231,29 @@ export const unreadCount = $derived.by(() => {
     }
   }
   return count;
-});
+};
 
 // Update the Dock badge when unread count changes.
-$effect(() => {
-  const count = unreadCount;
-  void tauriInvoke('set_badge_count', { count }).catch(() => {
-    // Non-fatal — badge is cosmetic.
-  });
-});
+// NOTE: $effect can only run inside component init, not at module level.
+// This is wired in App.svelte's onMount via client.updateBadge().
 
 // The visible workspace object.
-export const visibleWorkspace = $derived(
-  ui.workspaces.find((w) => w.id === ui.activeWorkspaceId) ?? null,
-);
+export const visibleWorkspace = () =>
+  ui.workspaces.find((w) => w.id === ui.activeWorkspaceId) ?? null;
 
 // Sessions for the active workspace (or all if no workspace selected).
-export const sessionsForView = $derived.by(() => {
+export const sessionsForView = () => {
   if (!ui.activeWorkspaceId) return rawState.sessions;
   return rawState.sessions.filter(
     (s) => s.workspaceId === ui.activeWorkspaceId,
   );
-});
+};
 
 // Default model from config.
-export const defaultModel = $derived(ui.config?.defaultModel ?? '');
+export const defaultModel = () => ui.config?.defaultModel ?? '';
 
 // Starred models.
-export const starredModelIds = $derived(ui.starredModelIds);
+export const starredModelIds = () => ui.starredModelIds;
 
 // ---------------------------------------------------------------------------
 // Actions
@@ -250,10 +263,25 @@ export const starredModelIds = $derived(ui.starredModelIds);
 async function load(): Promise<void> {
   ui.loading = true;
   try {
-    // Set the daemon origin BEFORE creating the API singleton — the singleton
-    // snapshots the origin at construction time, so it must be correct first.
-    if (daemon.state.origin) {
-      setDaemonOrigin(daemon.state.origin);
+    // Set the daemon origin BEFORE creating the API singleton.
+    setDaemonOrigin(daemon.state.origin ?? '');
+
+    // Ensure credential is set. In Tauri mode daemon.connect() already did this,
+    // but we re-assert to be safe (handles timing edge cases).
+    if (daemon.state.token) {
+      setCredential(daemon.state.token);
+    }
+    // Browser mode fallback: try URL fragment or sessionStorage.
+    const { getCredential } = await import('../api/daemon/serverAuth');
+    if (!getCredential()) {
+      const { initServerAuth } = await import('../api/daemon/serverAuth');
+      initServerAuth();
+    }
+
+    // Debug: verify credential is set before API calls.
+    const cred = getCredential();
+    if (!cred) {
+      console.warn('[kimi-desktop-tauri] No credential set — API calls will fail with 401');
     }
 
     const a = getApi();
@@ -304,15 +332,20 @@ async function load(): Promise<void> {
     ui.models = modelsR.status === 'fulfilled' ? modelsR.value : [];
 
     if (sessionsR.status === 'fulfilled') {
-      rawState.sessions = sessionsR.value.sessions;
+      rawState.sessions = sessionsR.value.items ?? [];
       // Auto-select the first session if any.
       if (rawState.sessions.length > 0 && !rawState.activeSessionId) {
         selectSession(rawState.sessions[0].id);
       }
     }
 
-    // Connect the WebSocket event stream.
-    connectEvents();
+    // Connect the WebSocket event stream (skip in browser dev mode — the Vite
+    // proxy doesn't forward the WS bearer subprotocol, so the connection fails
+    // with 403. REST is fully functional without WS; real-time streaming is
+    // only needed in the Tauri desktop app where WS works natively.)
+    if ('__TAURI_INTERNALS__' in globalThis) {
+      connectEvents();
+    }
 
     ui.initialized = true;
   } finally {
@@ -372,7 +405,10 @@ function connectEvents(): void {
       void resyncActiveSession();
     },
     onError(code: number, msg: string, fatal: boolean) {
-      console.error(`[kimi-desktop-tauri] WS error (code=${code} fatal=${fatal}): ${msg}`);
+      // Suppress non-fatal WS errors (browser dev proxy 403 is expected).
+      if (fatal) {
+        console.error(`[kimi-desktop-tauri] WS error (code=${code} fatal=${fatal}): ${msg}`);
+      }
     },
     onConnectionChange(connected: boolean) {
       ui.connected = connected;
@@ -674,29 +710,46 @@ async function setModel(modelId: string): Promise<boolean> {
   }
 }
 
-/** Set the permission mode. */
+/** Set the permission mode. Persists to daemon via updateSession. */
 function setPermission(mode: 'manual' | 'auto' | 'yolo'): void {
   ui.permission = mode;
+  void persistRuntimeControl({ permissionMode: mode });
 }
 
-/** Set the thinking level. */
+/** Set the thinking level. Persists to daemon via updateSession. */
 function setThinking(level: 'off' | 'on' | string): void {
   ui.thinking = level;
+  void persistRuntimeControl({ thinking: level as never });
 }
 
-/** Toggle plan mode. */
+/** Toggle plan mode. Persists to daemon via updateSession. */
 function togglePlanMode(): void {
   ui.planMode = !ui.planMode;
+  void persistRuntimeControl({ planMode: ui.planMode });
 }
 
-/** Toggle swarm mode. */
+/** Toggle swarm mode. Persists to daemon via updateSession. */
 function toggleSwarmMode(): void {
   ui.swarmMode = !ui.swarmMode;
+  void persistRuntimeControl({ swarmMode: ui.swarmMode });
 }
 
-/** Toggle goal mode. */
+/** Toggle goal mode. Persists to daemon via updateSession. */
 function toggleGoalMode(): void {
   ui.goalMode = !ui.goalMode;
+  void persistRuntimeControl({ planMode: ui.goalMode });
+}
+
+/** Fire-and-forget runtime control persistence to the daemon. */
+async function persistRuntimeControl(patch: Record<string, unknown>): Promise<void> {
+  const sid = rawState.activeSessionId;
+  if (!sid) return;
+  try {
+    const a = getApi();
+    await a.updateSession(sid, patch as Parameters<typeof a.updateSession>[1]);
+  } catch {
+    // Non-critical: local state already updated for immediate UI feedback.
+  }
 }
 
 /** Add a workspace by path. */
@@ -951,7 +1004,7 @@ interface UserSkillFile {
 
 const userSkills = $state<UserSkillFile[]>([]);
 
-export const skillFiles = $derived(userSkills);
+export const skillFiles = () => userSkills;
 
 /** Refresh the user-level skill file list from the filesystem. */
 async function refreshUserSkills(): Promise<void> {
@@ -977,6 +1030,33 @@ async function deleteUserSkill(name: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Archived sessions browser
+// ---------------------------------------------------------------------------
+
+let archivedSessions = $state<AppSession[]>([]);
+let archivedLoading = $state(false);
+
+async function loadArchivedSessions(): Promise<void> {
+  archivedLoading = true;
+  try {
+    const a = getApi();
+    const result = await a.listSessions({ archivedOnly: true });
+    archivedSessions = result.items;
+  } catch {
+    // Non-fatal.
+  } finally {
+    archivedLoading = false;
+  }
+}
+
+async function restoreSession(sessionId: string): Promise<void> {
+  const a = getApi();
+  const restored = await a.restoreSession(sessionId);
+  archivedSessions = archivedSessions.filter((s) => s.id !== sessionId);
+  rawState.sessions = [...rawState.sessions, restored];
+}
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -995,6 +1075,11 @@ export const client = {
   abortCurrentPrompt,
   uploadImage,
   openFilePreview,
+  /** Update the Dock badge — call from a component $effect. */
+  updateBadge: () => {
+    const count = unreadCount();
+    void tauriInvoke('set_badge_count', { count }).catch(() => {});
+  },
   closeFilePreview,
   setOnboarded,
   respondApproval,
@@ -1038,4 +1123,10 @@ export const client = {
   refreshUserSkills,
   saveUserSkill,
   deleteUserSkill,
+
+  // Archived sessions.
+  get archivedSessions() { return archivedSessions; },
+  get archivedLoading() { return archivedLoading; },
+  loadArchivedSessions,
+  restoreSession,
 };

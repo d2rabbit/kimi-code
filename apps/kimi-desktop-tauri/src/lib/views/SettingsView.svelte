@@ -191,7 +191,7 @@
 
   .settings-nav {
     width: 220px; flex: none; height: 100%;
-    background: rgba(13, 13, 15, 0.72);
+    background: rgba(18, 18, 22, 0.50);
     backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
     -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
     border-right: 1px solid var(--glass-divider, rgba(255,255,255,0.06));

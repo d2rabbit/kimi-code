@@ -159,19 +159,25 @@ summary {
 /* ===========================================================================
    GLASS MATERIAL + DESIGN TOKENS v3 (macOS glassmorphism redesign)
    Non-solid backgrounds with radial-gradient glows. Dual-mode (dark/light).
+   Enhanced transparency for real "see-through" glass effect.
    =========================================================================== */
 :root {
-  /* Glass material parameters */
-  --glass-blur: 24px;
-  --glass-saturate: 1.6;
-  --glass-bg-dark: rgba(28, 28, 30, 0.72);
-  --glass-bg-light: rgba(252, 252, 254, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  /* Glass material parameters — lower alpha for more transparency */
+  --glass-blur: 30px;
+  --glass-saturate: 1.8;
+  --glass-bg-dark: rgba(22, 22, 26, 0.55);
+  --glass-bg-light: rgba(248, 248, 252, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.10);
   --glass-border-light: rgba(0, 0, 0, 0.06);
-  --glass-highlight: rgba(255, 255, 255, 0.12);
-  --glass-divider: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.18);
-  --glass-shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.38), 0 8px 24px rgba(0, 0, 0, 0.22);
+  --glass-highlight: rgba(255, 255, 255, 0.15);
+  --glass-divider: rgba(255, 255, 255, 0.07);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.20);
+  --glass-shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.45), 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  /* Glass layer hierarchy — different opacity per depth */
+  --glass-opacity-base: 0.45;
+  --glass-opacity-raised: 0.55;
+  --glass-opacity-sunken: 0.35;
 
   /* Spring animation curves */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -182,14 +188,14 @@ summary {
 /* ---- Dark mode (default) ---- */
 html[data-color-scheme="dark"] {
   --color-bg: #0a0a0c;
-  --color-surface: rgba(28, 28, 30, 0.72);
-  --color-surface-raised: rgba(44, 44, 46, 0.80);
-  --color-surface-sunken: rgba(20, 20, 22, 0.60);
+  --color-surface: rgba(22, 22, 26, 0.45);
+  --color-surface-raised: rgba(32, 32, 38, 0.55);
+  --color-surface-sunken: rgba(16, 16, 20, 0.35);
   --color-text: rgba(255, 255, 255, 0.92);
   --color-text-muted: rgba(235, 235, 245, 0.60);
   --color-text-faint: rgba(235, 235, 245, 0.30);
-  --color-line: rgba(84, 84, 88, 0.65);
-  --color-line-strong: rgba(84, 84, 88, 0.40);
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.05);
   --color-accent: #2dd4bf;
   --color-accent-hover: #5eead4;
   --color-accent-soft: rgba(45, 212, 191, 0.14);
@@ -212,9 +218,9 @@ html[data-color-scheme="dark"] {
 /* ---- Light mode ---- */
 html[data-color-scheme="light"] {
   --color-bg: #f5f5f7;
-  --color-surface: rgba(252, 252, 254, 0.78);
-  --color-surface-raised: rgba(255, 255, 255, 0.90);
-  --color-surface-sunken: rgba(243, 243, 245, 0.70);
+  --color-surface: rgba(248, 248, 252, 0.55);
+  --color-surface-raised: rgba(255, 255, 255, 0.65);
+  --color-surface-sunken: rgba(240, 240, 244, 0.45);
   --color-text: rgba(0, 0, 0, 0.88);
   --color-text-muted: rgba(60, 60, 67, 0.60);
   --color-text-faint: rgba(60, 60, 67, 0.30);
@@ -304,34 +310,36 @@ html[data-color-scheme="light"] {
 /* ---- Radial-gradient backgrounds (non-solid, gives glass depth) ---- */
 html[data-color-scheme="dark"] body {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 212, 191, 0.07), transparent),
-    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(56, 189, 248, 0.05), transparent),
-    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
-    #0a0a0c;
+    radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.12), transparent),
+    radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.08), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.06), transparent),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(45, 212, 191, 0.03), transparent),
+    #08080a;
 }
 html[data-color-scheme="light"] body {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 212, 191, 0.06), transparent),
-    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(251, 146, 60, 0.04), transparent),
-    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.03), transparent),
-    #f5f5f7;
+    radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.10), transparent),
+    radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.06), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
+    #f0f0f4;
 }
 @media (prefers-color-scheme: dark) {
   html[data-color-scheme="system"] body {
     background:
-      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 212, 191, 0.07), transparent),
-      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(56, 189, 248, 0.05), transparent),
-      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
-      #0a0a0c;
+      radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.12), transparent),
+      radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.08), transparent),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.06), transparent),
+      radial-gradient(ellipse 40% 30% at 50% 50%, rgba(45, 212, 191, 0.03), transparent),
+      #08080a;
   }
 }
 @media (prefers-color-scheme: light) {
   html[data-color-scheme="system"] body {
     background:
-      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 212, 191, 0.06), transparent),
-      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(251, 146, 60, 0.04), transparent),
-      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.03), transparent),
-      #f5f5f7;
+      radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.10), transparent),
+      radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.06), transparent),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
+      #f0f0f4;
   }
 }
 
@@ -356,7 +364,7 @@ html[data-color-scheme="system"] .glass-panel {
 }
 
 .glass-header {
-  background: rgba(28, 28, 30, 0.6);
+  background: rgba(22, 22, 26, 0.45);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-bottom: 1px solid var(--glass-divider);
@@ -373,7 +381,7 @@ html[data-color-scheme="light"] .glass-header {
 }
 
 .glass-menu {
-  background: rgba(40, 40, 42, 0.82);
+  background: rgba(32, 32, 38, 0.65);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1209,7 +1217,7 @@ html[data-color-scheme="system"] .glass-panel {
 
 /* Glass header bar — for sidebar header, chat header, composer bar */
 .glass-header {
-  background: rgba(28, 28, 30, 0.6);
+  background: rgba(22, 22, 26, 0.45);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-bottom: 1px solid var(--glass-divider);
@@ -1228,7 +1236,7 @@ html[data-color-scheme="light"] .glass-header {
 
 /* Glass context menu (right-click / hover menu) */
 .glass-menu {
-  background: rgba(40, 40, 42, 0.82);
+  background: rgba(32, 32, 38, 0.65);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: 1px solid var(--glass-border-strong);

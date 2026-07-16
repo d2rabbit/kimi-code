@@ -436,7 +436,7 @@
     display: flex;
     align-items: flex-end;
     gap: 4px;
-    background: rgba(33, 33, 33, 0.72);
+    background: rgba(26, 26, 30, 0.50);
     backdrop-filter: blur(20px) saturate(1.4);
     -webkit-backdrop-filter: blur(20px) saturate(1.4);
     border: 1px solid var(--color-line, #2e2e2e);

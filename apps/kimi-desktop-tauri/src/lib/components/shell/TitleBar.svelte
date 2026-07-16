@@ -54,7 +54,7 @@
     padding: 0 12px;
     /* macOS: extra left padding to clear the traffic light buttons */
     padding-left: var(--titlebar-pad-left, 12px);
-    background: rgba(28, 28, 30, 0.6);
+    background: rgba(22, 22, 26, 0.45);
     backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
     -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
     border-bottom: 1px solid var(--glass-divider, rgba(255, 255, 255, 0.06));

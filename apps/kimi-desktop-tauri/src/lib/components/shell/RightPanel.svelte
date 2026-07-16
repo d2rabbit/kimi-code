@@ -1,5 +1,5 @@
 <!-- RightPanel.svelte — collapsible right tool panel with tab container.
-     Git / Tasks / Files / Thinking tabs. Uses mock data for visual preview. -->
+     Git / Tasks / Files / Thinking tabs. Falls back to mock data when no session. -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
   import FilePreview from '../chat/FilePreview.svelte';
@@ -12,6 +12,10 @@
   let collapsed = $state(false);
 
   function toggle() { collapsed = !collapsed; }
+
+  // Use real tasks from the store when available, fall back to mock for visual preview
+  const realTasks = $derived(client.tasks());
+  const hasActiveSession = $derived(!!client.activeSessionId());
 
   const tabs: { id: Tab; label: string; icon: IconName }[] = [
     { id: 'git', label: 'Git', icon: 'git-pull-request' },
@@ -96,28 +100,44 @@
           {/each}
         </div>
       {:else if activeTab === 'tasks'}
-        <!-- Task Panel -->
-        <div class="task-card">
-          <div class="task-header">
-            <span class="task-title">UI 美化与玻璃效果优化</span>
-            <span class="task-badge">{doneCount}/{taskItems.length}</span>
-          </div>
-          <div class="task-progress">
-            <div class="task-progress-bar" style="width: {(doneCount / taskItems.length) * 100}%;"></div>
-          </div>
-          <div class="task-list">
-            {#each taskItems as t (t.title)}
-              <div class="task-item" class:done={t.done}>
-                {#if t.done}
-                  <span class="task-check done"><Icon name="check" size="sm" /></span>
-                {:else}
-                  <span class="task-check"></span>
-                {/if}
-                <span class="task-text">{t.title}</span>
+        <!-- Task Panel — real data when available -->
+        {#if hasActiveSession && realTasks.length > 0}
+          {#each realTasks as task (task.id)}
+            <div class="task-card">
+              <div class="task-header">
+                <span class="task-title">{task.description}</span>
+                <span class="task-badge task-status-{task.status}">{task.status}</span>
               </div>
-            {/each}
+              <div class="task-meta">
+                {#if task.kind === 'subagent'}<span class="mono">🤖 subagent</span>{/if}
+                {#if task.kind === 'bash'}<span class="mono">$ bash</span>{/if}
+              </div>
+            </div>
+          {/each}
+        {:else}
+          <!-- Mock preview when no session -->
+          <div class="task-card">
+            <div class="task-header">
+              <span class="task-title">UI 美化与玻璃效果优化</span>
+              <span class="task-badge">{doneCount}/{taskItems.length}</span>
+            </div>
+            <div class="task-progress">
+              <div class="task-progress-bar" style="width: {(doneCount / taskItems.length) * 100}%;"></div>
+            </div>
+            <div class="task-list">
+              {#each taskItems as t (t.title)}
+                <div class="task-item" class:done={t.done}>
+                  {#if t.done}
+                    <span class="task-check done"><Icon name="check" size="sm" /></span>
+                  {:else}
+                    <span class="task-check"></span>
+                  {/if}
+                  <span class="task-text">{t.title}</span>
+                </div>
+              {/each}
+            </div>
           </div>
-        </div>
+        {/if}
       {:else if activeTab === 'thinking'}
         <!-- Thinking Panel -->
         <div class="thinking-content">
@@ -141,7 +161,7 @@
   .right-panel {
     flex: none; width: 320px; height: 100%;
     display: flex; flex-direction: column; overflow: hidden;
-    background: rgba(20, 20, 22, 0.6);
+    background: rgba(18, 18, 22, 0.40);
     backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
     -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
     border-left: 1px solid var(--glass-divider, rgba(255,255,255,0.06));
@@ -202,6 +222,11 @@
   .task-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .task-title { font-size: 13px; font-weight: 500; color: var(--color-text); }
   .task-badge { font-size: 11px; color: var(--color-accent); font-family: var(--font-mono, monospace); }
+  .task-status-completed { color: var(--color-success); }
+  .task-status-running { color: var(--color-accent); }
+  .task-status-failed { color: var(--color-danger); }
+  .task-status-cancelled { color: var(--color-text-faint); }
+  .task-meta { font-size: 11px; color: var(--color-text-faint); margin-top: 4px; }
   .task-progress { height: 4px; border-radius: 2px; background: rgba(45,212,191,0.15); overflow: hidden; margin-bottom: 12px; }
   .task-progress-bar { height: 100%; background: var(--color-accent, #2dd4bf); border-radius: 2px; transition: width 300ms var(--ease-out, ease-out); }
   .task-list { display: flex; flex-direction: column; gap: 6px; }
