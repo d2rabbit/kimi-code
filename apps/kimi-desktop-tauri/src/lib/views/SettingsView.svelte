@@ -103,11 +103,11 @@
         </div>
         <label class="card toggle-card">
           <div class="card-label"><span>遥测</span><span class="card-hint">发送匿名使用数据</span></div>
-          <button class="toggle" class:on={client.config()?.telemetry} onclick={() => toggleConfig('telemetry', !client.config()?.telemetry)}></button>
+          <button class="toggle" class:on={client.config()?.telemetry} onclick={() => toggleConfig('telemetry', !client.config()?.telemetry)} aria-label="切换遥测"></button>
         </label>
         <label class="card toggle-card">
           <div class="card-label"><span>合并所有 Skills</span><span class="card-hint">自动合并所有来源的技能</span></div>
-          <button class="toggle" class:on={client.config()?.mergeAllAvailableSkills} onclick={() => toggleConfig('mergeAllAvailableSkills', !client.config()?.mergeAllAvailableSkills)}></button>
+          <button class="toggle" class:on={client.config()?.mergeAllAvailableSkills} onclick={() => toggleConfig('mergeAllAvailableSkills', !client.config()?.mergeAllAvailableSkills)} aria-label="切换合并 Skills"></button>
         </label>
       </div>
 
@@ -145,23 +145,23 @@
           {#if showAddModel}
             <div class="card add-model-form">
               <div class="form-row-vertical">
-                <label class="form-lbl">别名</label>
+                <span class="form-lbl">别名</span>
                 <input class="form-input" bind:value={newModelAlias} placeholder="my-model" />
               </div>
               <div class="form-row-vertical">
-                <label class="form-lbl">供应商 ID</label>
+                <span class="form-lbl">供应商 ID</span>
                 <input class="form-input" bind:value={newModelProvider} placeholder="openai" />
               </div>
               <div class="form-row-vertical">
-                <label class="form-lbl">模型名</label>
+                <span class="form-lbl">模型名</span>
                 <input class="form-input" bind:value={newModelName} placeholder="gpt-4o" />
               </div>
               <div class="form-row-vertical">
-                <label class="form-lbl">Context 大小</label>
+                <span class="form-lbl">Context 大小</span>
                 <input class="form-input" type="number" bind:value={newModelContext} placeholder="128000" />
               </div>
               <div class="form-row-vertical">
-                <label class="form-lbl">显示名 (可选)</label>
+                <span class="form-lbl">显示名 (可选)</span>
                 <input class="form-input" bind:value={newModelDisplay} placeholder="GPT-4o" />
               </div>
               <div class="form-actions">
@@ -212,11 +212,11 @@
           {#if showAddProvider}
             <div class="card add-model-form">
               <div class="form-row-vertical">
-                <label class="form-lbl">供应商 ID</label>
+                <span class="form-lbl">供应商 ID</span>
                 <input class="form-input" bind:value={newProviderId} placeholder="my-openai" />
               </div>
               <div class="form-row-vertical">
-                <label class="form-lbl">类型</label>
+                <span class="form-lbl">类型</span>
                 <select class="form-input" bind:value={newProviderType}>
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
@@ -226,11 +226,11 @@
                 </select>
               </div>
               <div class="form-row-vertical">
-                <label class="form-lbl">API Key</label>
+                <span class="form-lbl">API Key</span>
                 <input class="form-input" type="password" bind:value={newProviderKey} placeholder="sk-..." />
               </div>
               <div class="form-row-vertical">
-                <label class="form-lbl">Base URL (可选)</label>
+                <span class="form-lbl">Base URL (可选)</span>
                 <input class="form-input" bind:value={newProviderUrl} placeholder="https://api.openai.com/v1" />
               </div>
               <div class="form-actions">
@@ -256,7 +256,7 @@
         {#if showEditProvider}
           <div class="card add-model-form" style="margin-top: 12px;">
             <div class="form-row-vertical">
-              <label class="form-lbl">更新 {editingProvider} 的 API Key</label>
+              <span class="form-lbl">更新 {editingProvider} 的 API Key</span>
               <input class="form-input" type="password" bind:value={providerApiKey} placeholder="输入新的 API Key" />
             </div>
             <div class="form-actions">

@@ -94,8 +94,10 @@
     <div
       class="glass-panel search-dialog animate-spring-in"
       onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
       role="dialog"
       aria-label="搜索会话"
+      tabindex="-1"
     >
       <div class="search-input-row">
         <Icon name="search" size="md" />

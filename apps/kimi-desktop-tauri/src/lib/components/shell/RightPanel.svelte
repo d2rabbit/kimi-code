@@ -121,7 +121,7 @@
           {#if Object.keys(gitData.entries).length > 0}
             <div class="git-files">
               {#each Object.entries(gitData.entries).slice(0, 50) as [path, status]}
-                <div class="git-file" onclick={() => client.client.openFilePreview(path, 'diff')} role="button" tabindex="0">
+                <div class="git-file" onclick={() => client.client.openFilePreview(path, 'diff')} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); client.client.openFilePreview(path, 'diff'); } }} role="button" tabindex="0">
                   <span class="file-status" style="color: {statusColor[status] ?? 'var(--color-text-faint)'};">{status}</span>
                   <span class="file-path" title={path}>{path}</span>
                 </div>
