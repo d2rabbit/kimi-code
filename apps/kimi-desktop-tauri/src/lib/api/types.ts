@@ -740,6 +740,10 @@ export interface KimiWebApi {
   getConfig(): Promise<AppConfig>;
   setConfig(patch: Partial<AppConfig>): Promise<AppConfig>;
 
+  // MCP servers — GET /mcp/servers + POST /mcp/servers/{id}:restart
+  listMcpServers(): Promise<Array<{ id: string; name: string; status: string; toolCount?: number; transport?: string }>>;
+  restartMcpServer(serverId: string): Promise<{ restarted: true }>;
+
   // Auth — REAL endpoints
   getAuth(): Promise<{
     ready: boolean;

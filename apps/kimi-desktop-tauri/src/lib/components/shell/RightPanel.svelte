@@ -1,7 +1,6 @@
 <!-- RightPanel.svelte — collapsible right tool panel with tab container.
      Git / Tasks / Files / Thinking tabs. Uses real data when session is active. -->
 <script lang="ts">
-  import { onMount } from 'svelte';
   import Icon from '../ui/Icon.svelte';
   import FilePreview from '../chat/FilePreview.svelte';
   import * as client from '../../stores/client.svelte';

@@ -16,9 +16,11 @@ const WEB_CLIENT_UI_MODE = 'desktop';
 /** The daemon origin resolved at runtime (set by the daemon store after ensure_server). */
 let runtimeDaemonOrigin: string | null = null;
 
-/** Override the daemon origin at runtime (e.g. after the Rust side resolves the real port). */
+/** Override the daemon origin at runtime (e.g. after the Rust side resolves the real port).
+ *  Pass '' for same-origin (browser dev mode via Vite proxy). */
 export function setDaemonOrigin(origin: string): void {
-  runtimeDaemonOrigin = normalizeServerOrigin(origin);
+  // Empty string = same-origin (browser dev proxy). Keep as-is.
+  runtimeDaemonOrigin = origin === '' ? '' : normalizeServerOrigin(origin);
 }
 
 export interface KimiApiConfig {
@@ -45,12 +47,15 @@ export function readKimiApiConfig(): KimiApiConfig {
 //  2. __KIMI_DAEMON_ORIGIN__ — injected at build time by Vite (default 127.0.0.1:58627).
 //  3. fallback — the well-known default.
 function daemonOrigin(): string {
-  if (runtimeDaemonOrigin) return runtimeDaemonOrigin;
+  // runtimeDaemonOrigin can be '' (browser dev mode, same-origin via proxy).
+  if (runtimeDaemonOrigin !== null) return runtimeDaemonOrigin;
   if (typeof __KIMI_DAEMON_ORIGIN__ !== 'undefined') return __KIMI_DAEMON_ORIGIN__;
   return 'http://127.0.0.1:58627';
 }
 
 export function normalizeServerOrigin(value: string | undefined): string {
+  // Empty string = same-origin (browser dev proxy). Preserve it.
+  if (value === '') return '';
   const raw = value && value.trim() ? value : daemonOrigin();
   const url = new URL(raw);
   url.pathname = url.pathname.replace(/\/v1\/?$/, '').replace(/\/$/, '');
@@ -69,14 +74,22 @@ export function serverEndpointLabel(): string {
 }
 
 // The real server serves everything (incl. healthz + ws) under the /api/v1 prefix.
+// Empty origin = same-origin (browser dev proxy).
 export function buildRestUrl(origin: string, path: string): string {
   return `${origin}/api/v1${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-export function buildWsUrl(origin: string, clientId: string): string {
-  const url = new URL(`${origin}/api/v1/ws`);
+export function buildWsUrl(origin: string, clientId: string, token?: string): string {
+  // Empty origin = same-origin; use location to build an absolute URL for WebSocket.
+  const base = origin || (typeof location !== 'undefined' ? location.origin : '');
+  const url = new URL(`${base}/api/v1/ws`);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   url.searchParams.set('client_id', clientId);
+  // In browser mode (no Tauri), the Vite proxy strips Sec-WebSocket-Protocol.
+  // Pass the token as a query param so the daemon can authenticate the upgrade.
+  if (token && !origin && typeof location !== 'undefined') {
+    url.searchParams.set('token', token);
+  }
   return url.toString();
 }
 

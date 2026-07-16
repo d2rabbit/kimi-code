@@ -3,6 +3,7 @@
 
 import type { KimiApiConfig } from '../config';
 import { buildRestUrl, buildWsUrl } from '../config';
+import { getCredential } from './serverAuth';
 import type {
   AppConfig,
   AppMessage,
@@ -1164,6 +1165,26 @@ export class DaemonKimiWebApi implements KimiWebApi {
   }
 
   // -------------------------------------------------------------------------
+  // MCP servers — GET /mcp/servers + POST /mcp/servers/{id}:restart
+  // -------------------------------------------------------------------------
+
+  async listMcpServers(): Promise<Array<{ id: string; name: string; status: string; toolCount?: number; transport?: string }>> {
+    const data = await this.http.get<{ servers: Array<{ id: string; name: string; status?: string; transport?: string; tools?: unknown[] }> }>('/mcp/servers');
+    return (data.servers ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      status: s.status ?? 'unknown',
+      toolCount: s.tools?.length,
+      transport: s.transport,
+    }));
+  }
+
+  async restartMcpServer(serverId: string): Promise<{ restarted: true }> {
+    await this.http.post(`/mcp/servers/${encodeURIComponent(serverId)}:restart`);
+    return { restarted: true };
+  }
+
+  // -------------------------------------------------------------------------
   // Auth — REAL endpoints
   // -------------------------------------------------------------------------
 
@@ -1269,7 +1290,9 @@ export class DaemonKimiWebApi implements KimiWebApi {
   // -------------------------------------------------------------------------
 
   connectEvents(handlers: KimiEventHandlers): KimiEventConnection {
-    const wsUrl = buildWsUrl(this.config.serverHttpUrl, this.config.clientId);
+    // Pass the credential for browser-mode WS auth via query param.
+    const credential = getCredential();
+    const wsUrl = buildWsUrl(this.config.serverHttpUrl, this.config.clientId, credential);
 
     // Per-session projector for raw agent-core events.
     // Keyed by session_id; reset when a session is re-subscribed or resynced.

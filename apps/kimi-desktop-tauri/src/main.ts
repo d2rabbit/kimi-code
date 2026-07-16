@@ -11,14 +11,16 @@ import './lib/styles/global.css';
 import App from './App.svelte';
 
 // Apply the persisted color scheme before mounting the app to avoid a flash.
-// This replaces the inline <script> that was blocked by Tauri's production CSP.
+// Default to dark (Codex-style) if no preference is stored.
 try {
   const scheme = localStorage.getItem('kimi-web.color-scheme');
   if (scheme === 'light' || scheme === 'dark' || scheme === 'system') {
     document.documentElement.dataset.colorScheme = scheme;
+  } else {
+    document.documentElement.dataset.colorScheme = 'dark';
   }
 } catch {
-  // localStorage may be unavailable.
+  document.documentElement.dataset.colorScheme = 'dark';
 }
 
 const app = mount(App, {

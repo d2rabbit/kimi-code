@@ -8,7 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use serde::Serialize;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::daemon::{ensure_daemon, kimi_home, server_log_path, EnsureResult};
 use crate::sea_path::resolve_sea_path;
@@ -86,6 +86,149 @@ pub fn get_kimi_home() -> String {
 }
 
 // ---------------------------------------------------------------------------
+// File read/write for AGENTS.md memory management
+// ---------------------------------------------------------------------------
+
+/// Read a text file (e.g. AGENTS.md) from an absolute path.
+/// Returns the file content as a string, or an error if the file doesn't exist.
+#[tauri::command]
+pub fn read_text_file(path: String) -> Result<String, String> {
+    stdfs::read_to_string(&path).map_err(|e| format!("Cannot read file {path}: {e}"))
+}
+
+/// Write text content to a file (e.g. AGENTS.md) at an absolute path.
+/// Creates the file if it doesn't exist, overwrites if it does.
+#[tauri::command]
+pub fn write_text_file(path: String, content: String) -> Result<(), String> {
+    stdfs::write(&path, &content).map_err(|e| format!("Cannot write file {path}: {e}"))
+}
+
+// ---------------------------------------------------------------------------
+// Plugin management (read installed.json + manifests from ~/.kimi-code/plugins/)
+// ---------------------------------------------------------------------------
+
+/// Information about an installed plugin, assembled from installed.json + the
+/// plugin's own manifest (kimi.plugin.json or package.json).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginInfo {
+    pub id: String,
+    pub root: String,
+    pub source: String,
+    pub enabled: bool,
+    pub installed_at: String,
+    pub original_source: String,
+    /// Display name from the manifest (falls back to id).
+    pub display_name: String,
+    /// Version from the manifest (falls back to "unknown").
+    pub version: String,
+    /// Description from the manifest.
+    pub description: String,
+    /// Developer/publisher name.
+    pub developer: String,
+    /// Whether this plugin provides MCP servers.
+    pub has_mcp: bool,
+}
+
+/// Read and parse the installed plugins registry + manifests.
+#[tauri::command]
+pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
+    let plugins_dir = kimi_home().join("plugins");
+    let installed_path = plugins_dir.join("installed.json");
+
+    let installed_content = stdfs::read_to_string(&installed_path)
+        .map_err(|e| format!("Cannot read installed.json: {e}"))?;
+
+    let installed: serde_json::Value = serde_json::from_str(&installed_content)
+        .map_err(|e| format!("Cannot parse installed.json: {e}"))?;
+
+    let plugins_arr = installed.get("plugins")
+        .and_then(|v| v.as_array())
+        .ok_or("installed.json has no 'plugins' array")?;
+
+    let mut result = Vec::new();
+    for entry in plugins_arr {
+        let id = entry.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let root = entry.get("root").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let source = entry.get("source").and_then(|v| v.as_str()).unwrap_or("unknown").to_string();
+        let enabled = entry.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
+        let installed_at = entry.get("installedAt").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let original_source = entry.get("originalSource").and_then(|v| v.as_str()).unwrap_or("").to_string();
+
+        // Try to read the manifest for richer metadata.
+        let mut display_name = id.clone();
+        let mut version = "unknown".to_string();
+        let mut description = String::new();
+        let mut developer = String::new();
+        let mut has_mcp = false;
+
+        // Try kimi.plugin.json first.
+        let kimi_manifest = std::path::PathBuf::from(&root).join("kimi.plugin.json");
+        if let Ok(content) = stdfs::read_to_string(&kimi_manifest) {
+            if let Ok(manifest) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(name) = manifest.get("interface").and_then(|v| v.get("displayName")).and_then(|v| v.as_str()) {
+                    display_name = name.to_string();
+                } else if let Some(name) = manifest.get("name").and_then(|v| v.as_str()) {
+                    display_name = name.to_string();
+                }
+                if let Some(v) = manifest.get("version").and_then(|v| v.as_str()) {
+                    version = v.to_string();
+                }
+                if let Some(desc) = manifest.get("description").and_then(|v| v.as_str()) {
+                    description = desc.to_string();
+                } else if let Some(desc) = manifest.get("interface").and_then(|v| v.get("shortDescription")).and_then(|v| v.as_str()) {
+                    description = desc.to_string();
+                }
+                if let Some(dev) = manifest.get("interface").and_then(|v| v.get("developerName")).and_then(|v| v.as_str()) {
+                    developer = dev.to_string();
+                }
+                if manifest.get("mcpServers").is_some() {
+                    has_mcp = true;
+                }
+            }
+        }
+
+        // Fall back to package.json.
+        if version == "unknown" {
+            let pkg_path = std::path::PathBuf::from(&root).join("package.json");
+            if let Ok(content) = stdfs::read_to_string(&pkg_path) {
+                if let Ok(pkg) = serde_json::from_str::<serde_json::Value>(&content) {
+                    if let Some(name) = pkg.get("name").and_then(|v| v.as_str()) {
+                        if display_name == id { display_name = name.to_string(); }
+                    }
+                    if let Some(v) = pkg.get("version").and_then(|v| v.as_str()) {
+                        version = v.to_string();
+                    }
+                    if description.is_empty() {
+                        if let Some(desc) = pkg.get("description").and_then(|v| v.as_str()) {
+                            description = desc.to_string();
+                        }
+                    }
+                }
+            }
+        }
+
+        result.push(PluginInfo {
+            id,
+            root,
+            source,
+            enabled,
+            installed_at,
+            original_source,
+            display_name,
+            version,
+            description,
+            developer,
+            has_mcp,
+        });
+    }
+
+    // Sort by display name for stable rendering.
+    result.sort_by(|a, b| a.display_name.to_lowercase().cmp(&b.display_name.to_lowercase()));
+    Ok(result)
+}
+
+// ---------------------------------------------------------------------------
 // Dock badge / taskbar overlay (unread session count)
 // ---------------------------------------------------------------------------
 
@@ -97,9 +240,9 @@ pub fn set_badge_count(app: AppHandle, count: u32) -> Result<(), String> {
         if count == 0 {
             let _ = window.set_badge_count(None);
         } else {
-            // Cap at 99+ to avoid overly wide badges.
-            let label = if count > 99 { "99+".to_string() } else { count.to_string() };
-            let _ = window.set_badge_count(Some(label));
+            // Cap at 99 to avoid overly wide badges.
+            let badge = if count > 99 { 99 } else { count as i64 };
+            let _ = window.set_badge_count(Some(badge));
         }
     }
     Ok(())

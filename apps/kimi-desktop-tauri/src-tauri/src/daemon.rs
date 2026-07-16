@@ -110,11 +110,18 @@ pub struct EnsureResult {
 
 /// Ensure the shared kimi-code daemon is running and return its origin.
 ///
-/// Mirrors the Electron version's `ensureServer()`:
-/// 1. Run `kimi server run` (reuses or starts the shared daemon).
-/// 2. Read the lock for the real port.
+/// 1. First check if the daemon is already running (read lock + healthz).
+/// 2. If not, run `kimi server run` to start/reuse it.
 /// 3. Poll `/healthz` until healthy (or timeout).
 pub async fn ensure_daemon(sea_path: &Path) -> Result<EnsureResult, String> {
+    // Fast path: check if daemon is already running and healthy.
+    if let Some(lock) = read_lock() {
+        let origin = origin_from_lock(&lock);
+        if is_healthy(&origin, Duration::from_millis(500)).await {
+            return Ok(EnsureResult { origin });
+        }
+    }
+
     // Step 1: run the SEA with an overall timeout.
     let run_future = run_server_run(sea_path);
     match tokio::time::timeout(RUN_TIMEOUT, run_future).await {

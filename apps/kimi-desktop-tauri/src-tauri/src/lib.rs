@@ -18,6 +18,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager, WindowEvent,
 };
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 /// The window title.
 const WINDOW_TITLE: &str = "Kimi Code Desktop";
@@ -93,9 +94,11 @@ pub fn run() {
                 .build(app)?;
 
             // --- Global shortcut: Cmd/Ctrl+Shift+K toggles window ---
+            // Non-fatal: if the hotkey is already registered by another app
+            // (common on Linux desktop environments), log and continue.
             let app_handle = app.handle().clone();
-            app.global_shortcut()
-                .on_shortcut("Super+Shift+K", move || {
+            let _ = app.global_shortcut()
+                .on_shortcut("Super+Shift+K", move |_app, _shortcut, _event| {
                     if let Some(window) = app_handle.get_webview_window("main") {
                         if window.is_visible().unwrap_or(false) {
                             let _ = window.hide();
@@ -104,7 +107,7 @@ pub fn run() {
                             let _ = window.set_focus();
                         }
                     }
-                })?;
+                });
 
             Ok(())
         })
@@ -129,6 +132,9 @@ pub fn run() {
             commands::get_server_log_path,
             commands::open_path,
             commands::get_kimi_home,
+            commands::read_text_file,
+            commands::write_text_file,
+            commands::list_installed_plugins,
             commands::set_badge_count,
             commands::list_user_skills,
             commands::write_user_skill,
@@ -185,7 +191,7 @@ fn restore_window_state(app: &tauri::App) {
     }
 }
 
-fn save_window_state(window: &tauri::WebviewWindow) {
+fn save_window_state(window: &tauri::Window) {
     let Some(scale) = window.scale_factor().ok() else {
         return;
     };

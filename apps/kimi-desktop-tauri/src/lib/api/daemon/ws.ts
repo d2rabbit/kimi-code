@@ -155,6 +155,11 @@ export class DaemonEventSocket {
 
   private scheduleReconnect(): void {
     if (this.closed || this.reconnectTimer !== null) return;
+    // Cap at 30s; after 10 attempts give up (daemon likely down or unreachable).
+    if (this.reconnectAttempts >= 10) {
+      traceWsLifecycle('reconnect-giving-up', { attempt: this.reconnectAttempts });
+      return;
+    }
     const base = Math.min(30_000, 1000 * 2 ** this.reconnectAttempts);
     const delay = base + Math.floor(Math.random() * 250); // jitter
     this.reconnectAttempts += 1;
