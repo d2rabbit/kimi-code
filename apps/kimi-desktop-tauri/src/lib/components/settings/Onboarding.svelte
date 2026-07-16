@@ -121,8 +121,8 @@
 
   .onboarding-card {
     width: min(480px, 100%);
-    background: var(--color-surface, #121214);
-    border: 1px solid var(--color-line, #2a2a2e);
+    background: var(--color-surface, rgba(28,28,30,0.72));
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
     border-radius: var(--radius-xl, 16px);
     padding: 32px;
     display: flex;
@@ -138,7 +138,7 @@
   }
   .ob-logo {
     font-size: 36px;
-    color: var(--color-accent, #7c8cff);
+    color: var(--color-accent, #2dd4bf);
     line-height: 1;
   }
   .ob-title {
@@ -147,7 +147,7 @@
   }
   .ob-sub {
     font-size: var(--text-sm, 13px);
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
     margin-top: 2px;
   }
 
@@ -159,7 +159,7 @@
   .ob-label {
     font-size: var(--text-sm, 13px);
     font-weight: var(--weight-medium, 500);
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
   }
 
   .ob-segmented {
@@ -174,17 +174,17 @@
     padding: 8px 12px;
     border: none;
     background: transparent;
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
     font-size: var(--text-sm, 13px);
     border-radius: var(--radius-sm, 6px);
     cursor: pointer;
     transition: background var(--duration-fast, 120ms), color var(--duration-fast, 120ms);
   }
   .ob-seg-btn:hover {
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
   }
   .ob-seg-btn.active {
-    background: var(--color-accent, #7c8cff);
+    background: var(--color-accent, #2dd4bf);
     color: #fff;
   }
 
@@ -196,7 +196,7 @@
     border-radius: var(--radius-sm, 6px);
     background: var(--color-accent-soft, rgba(124,140,255,0.06));
     font-size: var(--text-xs, 12px);
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
   }
 
   .ob-actions {

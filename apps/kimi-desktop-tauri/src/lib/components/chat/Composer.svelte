@@ -379,7 +379,7 @@
     height: 56px;
     border-radius: var(--radius-md, 8px);
     overflow: hidden;
-    border: 1px solid var(--color-line, #2a2a2e);
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
   }
   .attachment-chip img {
     width: 100%;
@@ -387,7 +387,7 @@
     object-fit: cover;
   }
   .attachment-chip.uploading img { opacity: 0.5; }
-  .attachment-chip.error { border-color: var(--color-danger, #ff6b6b); }
+  .attachment-chip.error { border-color: var(--color-danger, #ff453a); }
   .chip-remove {
     position: absolute;
     top: 2px;
@@ -417,7 +417,7 @@
     height: 14px;
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.2);
-    border-top-color: var(--color-accent, #7c8cff);
+    border-top-color: var(--color-accent, #2dd4bf);
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -453,7 +453,7 @@
     flex: 1;
     border: none;
     background: transparent;
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
     font-family: var(--font-ui, inherit);
     font-size: var(--ui-font-size, var(--text-base, 14px));
     line-height: var(--leading-normal, 1.5);
@@ -462,7 +462,7 @@
     max-height: 200px;
     padding: 6px 4px;
   }
-  .composer-input::placeholder { color: var(--color-text-faint, #6a6a72); }
+  .composer-input::placeholder { color: var(--color-text-faint, rgba(235,235,245,0.3)); }
   .composer-input.busy { opacity: 0.6; }
 
   .send-btn {

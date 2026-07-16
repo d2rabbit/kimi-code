@@ -1,13 +1,26 @@
-<!-- Sidebar.svelte — workspace groups + session list. -->
+<!-- Sidebar.svelte — ZCode-inspired compact sidebar with icon nav + workspace tree. -->
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import ConfigDialog from '../settings/ConfigDialog.svelte';
 
+  let {
+    sidebarCollapsed = false,
+    toggleSidebar = () => {},
+  }: {
+    sidebarCollapsed?: boolean;
+    toggleSidebar?: () => void;
+  } = $props();
+
   let showSettings = $state(false);
+  let menuSession = $state<{ id: string; title: string; x: number; y: number } | null>(null);
+  let menuWorkspace = $state<{ id: string; name: string; x: number; y: number } | null>(null);
+  let renamingId = $state<string | null>(null);
+  let renameValue = $state('');
 
   function handleSelect(e: Event, sessionId: string) {
+    if (renamingId === sessionId) return;
     e.preventDefault();
     void client.client.selectSession(sessionId);
   }
@@ -16,258 +29,284 @@
     client.client.clearActiveSession();
   }
 
-  let addWsError = $state<string | null>(null);
+  function openSessionMenu(e: MouseEvent, session: { id: string; title: string }) {
+    e.preventDefault();
+    e.stopPropagation();
+    menuSession = { id: session.id, title: session.title || '新对话', x: e.clientX, y: e.clientY };
+  }
+
+  function startRename(sessionId: string, currentTitle: string) {
+    renamingId = sessionId;
+    renameValue = currentTitle;
+    menuSession = null;
+  }
+
+  async function confirmRename(sessionId: string) {
+    if (renameValue.trim()) await client.client.renameSession(sessionId, renameValue.trim());
+    renamingId = null;
+  }
+
+  async function handleArchive(sessionId: string) {
+    menuSession = null;
+    await client.client.archiveSession(sessionId);
+  }
+
+  async function handleFork(sessionId: string) {
+    menuSession = null;
+    await client.client.forkSession(sessionId);
+  }
+
+  function openWorkspaceMenu(e: MouseEvent, ws: { id: string; name: string }) {
+    e.preventDefault();
+    e.stopPropagation();
+    menuWorkspace = { id: ws.id, name: ws.name, x: e.clientX, y: e.clientY };
+  }
+
+  async function handleDeleteWorkspace(wsId: string) {
+    menuWorkspace = null;
+    await client.client.deleteWorkspace(wsId);
+  }
+
+  function closeMenus() { menuSession = null; menuWorkspace = null; }
 
   async function handleAddWorkspace() {
-    addWsError = null;
-    const path = prompt('输入工作区路径 (如 /home/user/project):');
+    const path = prompt('输入工作区路径:');
     if (!path) return;
-    const ok = await client.client.addWorkspaceByPath(path);
-    if (!ok) {
-      addWsError = `无法添加工作区 "${path}"，请检查路径是否正确`;
-      setTimeout(() => { addWsError = null; }, 5000);
-    }
+    await client.client.addWorkspaceByPath(path);
   }
+
+  function openSearch() {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, ctrlKey: !navigator.platform.includes('Mac') }));
+  }
+
+  // User info from auth
+  const authStatus = $derived(client.authProvider());
 </script>
 
+<svelte:window onclick={closeMenus} />
+
 <div class="sidebar">
-  <!-- Header -->
-  <header class="sidebar-header">
-    <div class="brand">
-      <span class="brand-logo">◧</span>
-      <span class="brand-name">Kimi Code</span>
-    </div>
-    <IconButton name="settings" label="设置" size="sm" onclick={() => showSettings = true} />
-  </header>
-
-  <!-- New session button -->
-  <div class="new-session-row">
-    <button class="new-session-btn" onclick={handleNew}>
-      <Icon name="chat-new" size="sm" />
-      <span>新对话</span>
+  <!-- Nav bar -->
+  <nav class="nav-bar">
+    <button class="nav-btn" title="新建对话" onclick={handleNew}>
+      <Icon name="chat-new" size="md" />
     </button>
-  </div>
+    <button class="nav-btn" title="搜索 (Ctrl+K)" onclick={openSearch}>
+      <Icon name="search" size="md" />
+    </button>
+    <button class="nav-btn" title="设置" onclick={() => showSettings = true}>
+      <Icon name="settings" size="md" />
+    </button>
+    <div class="nav-spacer"></div>
+    <button class="nav-btn collapse-btn" title="折叠侧边栏" onclick={toggleSidebar}>
+      <Icon name="panel-collapse" size="md" />
+    </button>
+  </nav>
 
-  <!-- Workspaces + sessions.
-       Session→workspace matching: use the registered workspaceId if present,
-       otherwise fall back to matching cwd === workspace.root (the daemon may
-       not have populated workspaceId yet). -->
-  <div class="sidebar-body">
-    {#if client.workspaces.length > 0}
-      {#each client.workspaces as ws (ws.id)}
-        <div class="workspace-group">
-          <div class="workspace-header">
-            <Icon name="folder" size="sm" />
-            <span class="workspace-name" title={ws.name}>{ws.name}</span>
+  <!-- Session list -->
+  <div class="session-list">
+    {#if client.workspaces().length > 0}
+      {#each client.workspaces() as ws (ws.id)}
+        <div class="ws-group">
+          <div class="ws-header" oncontextmenu={(e) => openWorkspaceMenu(e, ws)} role="button" tabindex="0">
+            <span class="ws-name" title={ws.name}>{ws.name}</span>
+            <span class="ws-count">{client.sessions().filter(s => s.workspaceId === ws.id || (!s.workspaceId && s.cwd === ws.root)).length}</span>
           </div>
-          {#each client.sessions.filter((s) => s.workspaceId === ws.id || (!s.workspaceId && s.cwd === ws.root)) as session (session.id)}
-            <button
-              class="session-row"
-              class:active={session.id === client.activeSessionId}
-              onclick={(e) => handleSelect(e, session.id)}
-            >
-              <span class="session-title">{session.title || '新对话'}</span>
-            </button>
+          {#each client.sessions().filter(s => s.workspaceId === ws.id || (!s.workspaceId && s.cwd === ws.root)) as session (session.id)}
+            <div class="session-wrap" class:active={session.id === client.activeSessionId()}>
+              {#if renamingId === session.id}
+                <input class="rename-input" type="text" bind:value={renameValue}
+                  onkeydown={(e) => { if (e.key === 'Enter') confirmRename(session.id); if (e.key === 'Escape') renamingId = null; }}
+                  onblur={() => confirmRename(session.id)} onclick={(e) => e.stopPropagation()} />
+              {:else}
+                <button class="session-btn" class:active={session.id === client.activeSessionId()}
+                  onclick={(e) => handleSelect(e, session.id)} oncontextmenu={(e) => openSessionMenu(e, session)}>
+                  <span class="session-title">{session.title || '新对话'}</span>
+                </button>
+              {/if}
+              {#if renamingId !== session.id}
+                <button class="session-menu" onclick={(e) => openSessionMenu(e, session)} aria-label="更多">
+                  <span>⋯</span>
+                </button>
+              {/if}
+            </div>
           {/each}
         </div>
       {/each}
-      <!-- Sessions without a matching workspace (e.g. cwd not in any registered workspace) -->
-      {#each client.sessions.filter((s) => !client.workspaces.some((w) => w.id === s.workspaceId || w.root === s.cwd)) as session (session.id)}
-        <button
-          class="session-row"
-          class:active={session.id === client.activeSessionId}
-          onclick={(e) => handleSelect(e, session.id)}
-        >
-          <span class="session-title">{session.title || '新对话'}</span>
-        </button>
+      {#each client.sessions().filter(s => !client.workspaces().some(w => w.id === s.workspaceId || w.root === s.cwd)) as session (session.id)}
+        <div class="session-wrap" class:active={session.id === client.activeSessionId()}>
+          <button class="session-btn" class:active={session.id === client.activeSessionId()}
+            onclick={(e) => handleSelect(e, session.id)} oncontextmenu={(e) => openSessionMenu(e, session)}>
+            <span class="session-title">{session.title || '新对话'}</span>
+          </button>
+          <button class="session-menu" onclick={(e) => openSessionMenu(e, session)} aria-label="更多"><span>⋯</span></button>
+        </div>
       {/each}
     {:else}
-      <!-- No workspaces: show all sessions -->
-      {#each client.sessions as session (session.id)}
-        <button
-          class="session-row"
-          class:active={session.id === client.activeSessionId}
-          onclick={(e) => handleSelect(e, session.id)}
-        >
-          <span class="session-title">{session.title || '新对话'}</span>
-        </button>
+      {#each client.sessions() as session (session.id)}
+        <div class="session-wrap" class:active={session.id === client.activeSessionId()}>
+          <button class="session-btn" class:active={session.id === client.activeSessionId()}
+            onclick={(e) => handleSelect(e, session.id)} oncontextmenu={(e) => openSessionMenu(e, session)}>
+            <span class="session-title">{session.title || '新对话'}</span>
+          </button>
+          <button class="session-menu" onclick={(e) => openSessionMenu(e, session)} aria-label="更多"><span>⋯</span></button>
+        </div>
       {/each}
     {/if}
-
-    {#if client.sessions.length === 0}
-      <div class="empty-state">
-        <Icon name="chat-new" size="lg" />
-        <p>还没有对话</p>
-      </div>
+    {#if client.sessions().length === 0}
+      <div class="empty"><p>暂无会话</p></div>
     {/if}
   </div>
 
-  <!-- Footer -->
+  <!-- Footer: user + add workspace -->
   <footer class="sidebar-footer">
-    <button class="add-workspace-btn" onclick={handleAddWorkspace}>
-      <Icon name="folder-plus" size="sm" />
-      <span>添加工作区</span>
+    <button class="add-ws-btn" onclick={handleAddWorkspace}>
+      <Icon name="folder-plus" size="sm" /> 添加工作区
     </button>
-    {#if addWsError}
-      <div class="ws-error">{addWsError}</div>
-    {/if}
+    <div class="user-area">
+      <div class="user-avatar">{(authStatus?.name ?? 'U')[0].toUpperCase()}</div>
+      <div class="user-info">
+        <span class="user-name">{authStatus?.name ?? '未登录'}</span>
+        {#if authStatus?.status === 'authenticated'}
+          <span class="user-badge pro">Pro</span>
+        {/if}
+      </div>
+    </div>
   </footer>
 </div>
 
-<!-- Settings dialog -->
+<!-- Context menus -->
+{#if menuSession}
+  <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuSession.x, innerWidth - 170)}px; top: {Math.min(menuSession.y, innerHeight - 160)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} role="menu">
+    <button class="glass-menu-item" onclick={() => startRename(menuSession!.id, menuSession!.title)}><Icon name="edit" size="sm" /> 重命名</button>
+    <button class="glass-menu-item" onclick={() => handleFork(menuSession!.id)}><Icon name="git-branch" size="sm" /> Fork</button>
+    <div class="glass-menu-divider"></div>
+    <button class="glass-menu-item danger" onclick={() => handleArchive(menuSession!.id)}><Icon name="delete" size="sm" /> 归档</button>
+  </div>
+{/if}
+{#if menuWorkspace}
+  <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuWorkspace.x, innerWidth - 170)}px; top: {Math.min(menuWorkspace.y, innerHeight - 80)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} role="menu">
+    <button class="glass-menu-item danger" onclick={() => handleDeleteWorkspace(menuWorkspace!.id)}><Icon name="delete" size="sm" /> 删除工作区</button>
+  </div>
+{/if}
+
 <ConfigDialog bind:open={showSettings} />
 
 <style>
-  .sidebar {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  .sidebar { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
 
-  .sidebar-header {
+  /* Nav bar */
+  .nav-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 12px 14px;
-    flex: none;
-    -webkit-app-region: drag;
-  }
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .brand-logo {
-    font-size: 18px;
-    color: var(--color-accent, #7c8cff);
-  }
-  .brand-name {
-    font-weight: var(--weight-medium, 500);
-    font-size: var(--text-base, 14px);
-  }
-
-  .new-session-row {
-    padding: 0 10px 8px;
+    gap: 2px;
+    padding: 10px 10px 8px;
     flex: none;
   }
-  .new-session-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, #2a2a2e);
-    background: var(--color-surface-raised, transparent);
-    color: var(--color-text, #e7e7ea);
-    font-size: var(--text-base, 14px);
-    cursor: pointer;
-    transition: background var(--duration-fast, 120ms);
-  }
-  .new-session-btn:hover {
-    background: var(--color-hover, rgba(255, 255, 255, 0.06));
-  }
-
-  .sidebar-body {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0 6px;
-  }
-
-  .workspace-group {
-    margin-bottom: 4px;
-  }
-  .workspace-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    color: var(--color-text-faint, #6a6a72);
-    font-size: var(--text-xs, 12px);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: var(--weight-medium, 500);
-  }
-  .workspace-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .session-row {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 7px 10px;
-    border-radius: var(--radius-sm, 6px);
-    border: none;
+  .nav-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border: none; border-radius: 7px;
     background: transparent;
-    color: var(--color-text-muted, #9a9aa2);
-    font-size: var(--text-sm, 13px);
+    color: #777;
     cursor: pointer;
-    transition:
-      background var(--duration-fast, 120ms),
-      color var(--duration-fast, 120ms);
+    transition: all 0.12s;
   }
-  .session-row:hover {
-    background: var(--color-hover, rgba(255, 255, 255, 0.04));
-    color: var(--color-text, #e7e7ea);
+  .nav-btn:hover { background: rgba(255,255,255,0.06); color: #ccc; }
+  .nav-spacer { flex: 1; }
+  .collapse-btn { opacity: 0.5; }
+  .collapse-btn:hover { opacity: 1; }
+
+  /* Session list */
+  .session-list { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 6px; }
+
+  .ws-group { margin-bottom: 2px; }
+  .ws-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 10px 3px;
+    cursor: pointer; border-radius: 5px;
   }
-  .session-row.active {
-    background: var(--color-selected, rgba(124, 140, 255, 0.12));
-    color: var(--color-text, #e7e7ea);
+  .ws-name {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: #555;
+    font-family: "JetBrains Mono Variable", monospace;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .session-title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: block;
+  .ws-count {
+    font-size: 10px; color: #444; font-family: monospace;
+    flex-shrink: 0; margin-left: 4px;
   }
 
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 40px 20px;
-    color: var(--color-text-faint, #6a6a72);
+  .session-wrap {
+    position: relative; display: flex; align-items: center;
+    border-radius: 6px; transition: background 0.1s;
   }
-  .empty-state p {
-    font-size: var(--text-sm, 13px);
+  .session-wrap:hover { background: rgba(255,255,255,0.03); }
+  .session-wrap.active { background: rgba(255,255,255,0.07); }
+
+  .session-btn {
+    flex: 1; display: block; text-align: left;
+    padding: 5px 28px 5px 12px;
+    border: none; border-radius: 6px;
+    background: transparent;
+    color: #888; font-size: 13px;
+    cursor: pointer; overflow: hidden;
+    transition: color 0.1s;
+  }
+  .session-btn:hover { color: rgba(255,255,255,0.92); }
+  .session-btn.active { color: #fff; font-weight: 500; }
+  .session-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .session-menu {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    border: none; border-radius: 4px;
+    background: transparent; color: #555;
+    cursor: pointer; opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .session-wrap:hover .session-menu { opacity: 1; }
+  .session-menu:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.92); }
+  .session-menu span { font-size: 13px; line-height: 1; }
+
+  .rename-input {
+    flex: 1; padding: 3px 6px; margin: 0 4px;
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+    background: #0d0d0d; color: #fff; font-size: 13px; outline: none;
   }
 
+  .empty { padding: 30px 20px; text-align: center; color: #555; }
+
+  /* Footer */
   .sidebar-footer {
-    flex: none;
-    padding: 8px 10px;
-    border-top: 1px solid var(--color-line, #2a2a2e);
+    flex: none; padding: 8px 8px;
+    border-top: 1px solid rgba(255,255,255,0.04);
   }
-  .add-workspace-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    border-radius: var(--radius-sm, 6px);
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted, #9a9aa2);
-    font-size: var(--text-sm, 13px);
-    cursor: pointer;
-    transition: background var(--duration-fast, 120ms);
+  .add-ws-btn {
+    width: 100%; display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 6px; border: none;
+    background: transparent; color: #666; font-size: 12px;
+    cursor: pointer; transition: all 0.1s;
   }
-  .add-workspace-btn:hover {
-    background: var(--color-hover, rgba(255, 255, 255, 0.06));
-    color: var(--color-text, #e7e7ea);
+  .add-ws-btn:hover { background: rgba(255,255,255,0.04); color: #aaa; }
+
+  .user-area {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; padding: 4px 6px;
   }
-  .ws-error {
-    padding: 6px 10px;
-    margin-top: 4px;
-    font-size: var(--text-xs, 12px);
-    color: var(--color-danger, #ff6b6b);
-    background: var(--color-danger-soft, rgba(255, 107, 107, 0.1));
-    border-radius: var(--radius-sm, 6px);
+  .user-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #333; color: #aaa;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
   }
+  .user-info { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .user-name { font-size: 12px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-badge {
+    font-size: 9px; font-weight: 700; padding: 1px 5px;
+    border-radius: 999px; text-transform: uppercase;
+  }
+  .user-badge.pro { background: rgba(255,200,0,0.12); color: #eab308; }
 </style>

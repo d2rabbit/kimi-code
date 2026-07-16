@@ -78,8 +78,8 @@
     right: 0;
     max-height: 240px;
     overflow-y: auto;
-    background: var(--color-surface, #121214);
-    border: 1px solid var(--color-line, #2a2a2e);
+    background: var(--color-surface, rgba(28,28,30,0.72));
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
     border-radius: var(--radius-md, 8px);
     box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.3));
     z-index: var(--z-dropdown, 200);
@@ -93,7 +93,7 @@
     padding: 7px 12px;
     border: none;
     background: transparent;
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
     font-size: var(--text-sm, 13px);
     cursor: pointer;
     text-align: left;
@@ -107,14 +107,14 @@
   }
 
   .slash-name {
-    color: var(--color-accent, #7c8cff);
+    color: var(--color-accent, #2dd4bf);
     font-weight: var(--weight-medium, 500);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .slash-desc {
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

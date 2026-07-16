@@ -115,12 +115,12 @@
   .tool-card {
     margin: 4px 0;
     border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, #2a2a2e);
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
     overflow: hidden;
     transition: border-color var(--duration-fast, 120ms);
   }
   .tool-card:hover {
-    border-color: var(--color-line-strong, #3a3a3e);
+    border-color: var(--color-line-strong, rgba(84,84,88,0.4));
   }
 
   .tool-header {
@@ -131,7 +131,7 @@
     padding: 6px 10px;
     border: none;
     background: var(--color-surface-raised, transparent);
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
     font-size: var(--text-xs, 12px);
     cursor: pointer;
     text-align: left;
@@ -143,7 +143,7 @@
 
   .tool-name {
     font-weight: var(--weight-medium, 500);
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
     flex: none;
   }
   .tool-arg {
@@ -156,7 +156,7 @@
   }
   .tool-arg-link {
     cursor: pointer;
-    color: var(--color-accent, #7c8cff);
+    color: var(--color-accent, #2dd4bf);
     text-decoration: underline;
     text-underline-offset: 2px;
     opacity: 1;
@@ -166,7 +166,7 @@
   }
   .tool-timing {
     flex: none;
-    color: var(--color-text-faint, #6a6a72);
+    color: var(--color-text-faint, rgba(235,235,245,0.3));
     font-size: 11px;
   }
 
@@ -177,11 +177,11 @@
     border-radius: var(--radius-xs, 3px);
     font-weight: var(--weight-medium, 500);
   }
-  .diff-chip.add { background: var(--color-success-soft, rgba(78,201,176,0.15)); color: var(--color-success, #4ec9b0); }
-  .diff-chip.del { background: var(--color-danger-soft, rgba(255,107,107,0.15)); color: var(--color-danger, #ff6b6b); }
+  .diff-chip.add { background: var(--color-success-soft, rgba(78,201,176,0.15)); color: var(--color-success, #30d158); }
+  .diff-chip.del { background: var(--color-danger-soft, rgba(255,107,107,0.15)); color: var(--color-danger, #ff453a); }
 
   .tool-output {
-    border-top: 1px solid var(--color-line, #2a2a2e);
+    border-top: 1px solid var(--color-line, rgba(84,84,88,0.65));
     padding: 8px 10px;
     max-height: 300px;
     overflow-y: auto;
@@ -193,12 +193,12 @@
   .output-line {
     white-space: pre-wrap;
     word-break: break-all;
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
   }
-  .output-line.add { color: var(--color-success, #4ec9b0); }
-  .output-line.del { color: var(--color-danger, #ff6b6b); }
+  .output-line.add { color: var(--color-success, #30d158); }
+  .output-line.del { color: var(--color-danger, #ff453a); }
   .output-truncated {
-    color: var(--color-text-faint, #6a6a72);
+    color: var(--color-text-faint, rgba(235,235,245,0.3));
     font-style: italic;
     padding-top: 4px;
   }

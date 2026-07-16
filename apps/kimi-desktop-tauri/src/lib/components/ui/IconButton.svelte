@@ -44,7 +44,7 @@
     border: none;
     cursor: pointer;
     background: transparent;
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
     transition:
       background var(--duration-fast, 120ms),
       color var(--duration-fast, 120ms);
@@ -56,7 +56,7 @@
   }
   .icon-btn:not(:disabled):hover {
     background: var(--color-hover, rgba(255, 255, 255, 0.08));
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
   }
   .icon-btn:not(:disabled):active {
     transform: scale(0.95);

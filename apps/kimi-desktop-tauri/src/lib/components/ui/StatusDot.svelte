@@ -27,14 +27,14 @@
   .md { width: 10px; height: 10px; }
 
   .status-ok {
-    background: var(--color-success, #4ec9b0);
+    background: var(--color-success, #30d158);
   }
   .status-running {
-    background: var(--color-accent, #7c8cff);
+    background: var(--color-accent, #2dd4bf);
     animation: pulse 1.2s ease-in-out infinite;
   }
   .status-error {
-    background: var(--color-danger, #ff6b6b);
+    background: var(--color-danger, #ff453a);
   }
   @keyframes pulse {
     0%, 100% { opacity: 1; }

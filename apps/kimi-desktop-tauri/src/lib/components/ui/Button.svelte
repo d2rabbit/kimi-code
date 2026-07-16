@@ -73,15 +73,15 @@
 
   .btn-default {
     background: var(--color-surface-raised, transparent);
-    border-color: var(--color-line, #2a2a2e);
-    color: var(--color-text, #e7e7ea);
+    border-color: var(--color-line, rgba(84,84,88,0.65));
+    color: var(--color-text, rgba(255,255,255,0.92));
   }
   .btn-default:not(:disabled):hover {
     background: var(--color-hover, rgba(255, 255, 255, 0.06));
   }
 
   .btn-primary {
-    background: var(--color-accent, #7c8cff);
+    background: var(--color-accent, #2dd4bf);
     color: var(--color-text-on-accent, #fff);
   }
   .btn-primary:not(:disabled):hover {
@@ -90,15 +90,15 @@
 
   .btn-ghost {
     background: transparent;
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
   }
   .btn-ghost:not(:disabled):hover {
     background: var(--color-hover, rgba(255, 255, 255, 0.06));
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
   }
 
   .btn-danger {
-    background: var(--color-danger, #ff6b6b);
+    background: var(--color-danger, #ff453a);
     color: #fff;
   }
   .btn-danger:not(:disabled):hover {

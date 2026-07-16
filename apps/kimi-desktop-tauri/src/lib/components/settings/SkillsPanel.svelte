@@ -23,10 +23,10 @@
   // Combined skill list: user-level files (editable) + daemon skills (read-only,
   // may include project/builtin/extra). Deduplicated by name (user files win).
   const allSkills = $derived.by(() => {
-    const userNames = new Set(client.skillFiles.map((s) => s.name.toLowerCase()));
-    const daemonOnly = client.skills.filter((s) => !userNames.has(s.name.toLowerCase()));
+    const userNames = new Set(client.skillFiles().map((s) => s.name.toLowerCase()));
+    const daemonOnly = client.skills().filter((s) => !userNames.has(s.name.toLowerCase()));
     return [
-      ...client.skillFiles.map((s) => ({ name: s.name, path: s.path, content: s.content, description: '', editable: true, source: 'user' as const })),
+      ...client.skillFiles().map((s) => ({ name: s.name, path: s.path, content: s.content, description: '', editable: true, source: 'user' as const })),
       ...daemonOnly.map((s) => ({ name: s.name, description: s.description, path: '', content: '', editable: false, source: s.source })),
     ];
   });
@@ -283,7 +283,7 @@ You can use parameter placeholders:
     padding: 1px 7px;
     border-radius: var(--radius-full, 999px);
     background: var(--color-surface-raised, #1a1a1e);
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
     font-weight: var(--weight-regular, 400);
   }
 
@@ -292,15 +292,15 @@ You can use parameter placeholders:
     box-sizing: border-box;
     padding: 8px 12px;
     border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2a2a2e);
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
     background: var(--color-surface-raised, #1a1a1e);
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
     font-size: var(--text-sm, 13px);
     margin-bottom: 12px;
     outline: none;
   }
-  .skill-search:focus { border-color: var(--color-accent, #7c8cff); }
-  .skill-search::placeholder { color: var(--color-text-faint, #6a6a72); }
+  .skill-search:focus { border-color: var(--color-accent, #2dd4bf); }
+  .skill-search::placeholder { color: var(--color-text-faint, rgba(235,235,245,0.3)); }
 
   .skill-source {
     font-size: 10px;
@@ -309,12 +309,12 @@ You can use parameter placeholders:
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
-  .source-user { background: var(--color-accent-soft, rgba(124,140,255,0.15)); color: var(--color-accent, #7c8cff); }
-  .source-project { background: var(--color-success-soft, rgba(78,201,176,0.15)); color: var(--color-success, #4ec9b0); }
-  .source-builtin { background: var(--color-surface-raised, #1a1a1e); color: var(--color-text-faint, #6a6a72); }
+  .source-user { background: var(--color-accent-soft, rgba(124,140,255,0.15)); color: var(--color-accent, #2dd4bf); }
+  .source-project { background: var(--color-success-soft, rgba(78,201,176,0.15)); color: var(--color-success, #30d158); }
+  .source-builtin { background: var(--color-surface-raised, #1a1a1e); color: var(--color-text-faint, rgba(235,235,245,0.3)); }
   .source-extra { background: var(--color-warning-soft, rgba(255,193,7,0.15)); color: var(--color-warning, #ffc107); }
 
-  .hint { font-size: var(--text-xs, 12px); color: var(--color-text-faint, #6a6a72); margin: 0 0 16px; }
+  .hint { font-size: var(--text-xs, 12px); color: var(--color-text-faint, rgba(235,235,245,0.3)); margin: 0 0 16px; }
   .hint code, .sub-hint code {
     font-family: var(--font-mono, monospace);
     background: var(--color-surface-raised, #1a1a1e);
@@ -329,7 +329,7 @@ You can use parameter placeholders:
     align-items: center;
     gap: 8px;
     padding: 48px 20px;
-    color: var(--color-text-faint, #6a6a72);
+    color: var(--color-text-faint, rgba(235,235,245,0.3));
   }
   .empty-state p { margin: 0; font-size: var(--text-sm, 13px); }
   .sub-hint { font-size: var(--text-xs, 12px) !important; opacity: 0.7; }
@@ -342,10 +342,10 @@ You can use parameter placeholders:
     justify-content: space-between;
     padding: 12px 14px;
     border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, #2a2a2e);
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
     transition: border-color var(--duration-fast, 120ms);
   }
-  .skill-row:hover { border-color: var(--color-line-strong, #3a3a3e); }
+  .skill-row:hover { border-color: var(--color-line-strong, rgba(84,84,88,0.4)); }
 
   .skill-info { flex: 1; min-width: 0; }
   .skill-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
@@ -355,17 +355,17 @@ You can use parameter placeholders:
     padding: 1px 6px;
     border-radius: var(--radius-full, 999px);
     background: var(--color-surface-raised, #1a1a1e);
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
   .skill-badge { font-size: 10px; padding: 1px 6px; border-radius: var(--radius-full, 999px); }
-  .skill-badge.ok { background: var(--color-success-soft, rgba(78,201,176,0.15)); color: var(--color-success, #4ec9b0); }
+  .skill-badge.ok { background: var(--color-success-soft, rgba(78,201,176,0.15)); color: var(--color-success, #30d158); }
   .skill-badge.warn { background: var(--color-warning-soft, rgba(255,193,7,0.15)); color: var(--color-warning, #ffc107); }
 
   .skill-desc {
     font-size: var(--text-xs, 12px);
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -378,7 +378,7 @@ You can use parameter placeholders:
     border-radius: var(--radius-sm, 6px);
     font-size: var(--text-sm, 13px);
     background: var(--color-danger-soft, rgba(255,107,107,0.12));
-    color: var(--color-danger, #ff6b6b);
+    color: var(--color-danger, #ff453a);
     margin-bottom: 12px;
   }
 
@@ -396,7 +396,7 @@ You can use parameter placeholders:
   .editor-hint summary {
     cursor: pointer;
     font-size: var(--text-xs, 12px);
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
     padding: 4px 0;
   }
   .format-help {
@@ -405,14 +405,14 @@ You can use parameter placeholders:
     border-radius: var(--radius-sm, 6px);
     margin-top: 8px;
     font-size: var(--text-xs, 12px);
-    color: var(--color-text-muted, #9a9aa2);
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
   }
   .format-help p { margin: 0 0 4px; }
   .format-help ul { margin: 0 0 8px; padding-left: 16px; }
   .format-help li { margin: 2px 0; }
   .format-help code {
     font-family: var(--font-mono, monospace);
-    background: var(--color-surface, #121214);
+    background: var(--color-surface, rgba(28,28,30,0.72));
     padding: 1px 4px;
     border-radius: 3px;
   }
@@ -422,9 +422,9 @@ You can use parameter placeholders:
     min-height: 400px;
     padding: 14px;
     border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, #2a2a2e);
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
     background: var(--color-surface-raised, #1a1a1e);
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
     font-family: var(--font-mono, monospace);
     font-size: 13px;
     line-height: 1.6;
@@ -433,6 +433,6 @@ You can use parameter placeholders:
     box-sizing: border-box;
   }
   .skill-editor-textarea:focus {
-    border-color: var(--color-accent, #7c8cff);
+    border-color: var(--color-accent, #2dd4bf);
   }
 </style>

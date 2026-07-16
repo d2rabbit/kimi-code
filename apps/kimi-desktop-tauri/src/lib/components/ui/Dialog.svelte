@@ -28,8 +28,9 @@
   }
 </script>
 
+<svelte:window onkeydown={open ? onKeydown : undefined} />
+
 {#if open}
-  <svelte:window onkeydown={onKeydown} />
   <div class="dialog-backdrop" onclick={close} role="presentation">
     <div class="dialog" role="dialog" aria-modal="true" aria-label={title} onclick={(e) => e.stopPropagation()}>
       <header class="dialog-header">
@@ -51,33 +52,37 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
     animation: fadeIn 0.15s ease;
   }
   @keyframes fadeIn {
     from { opacity: 0; }
   }
   .dialog {
-    background: var(--color-surface, #121214);
-    border: 1px solid var(--color-line, #2a2a2e);
+    background: rgba(28, 28, 30, 0.82);
+    backdrop-filter: blur(30px) saturate(1.6);
+    -webkit-backdrop-filter: blur(30px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-xl, 16px);
     width: min(640px, 90vw);
     max-height: 80vh;
     display: flex;
     flex-direction: column;
-    box-shadow: var(--shadow-lg, 0 20px 60px rgba(0, 0, 0, 0.4));
-    animation: slideUp 0.2s var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.2);
+    animation: springIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  @keyframes slideUp {
-    from { transform: translateY(16px); opacity: 0; }
+  @keyframes springIn {
+    from { transform: scale(0.92) translateY(12px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
   }
   .dialog-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    border-bottom: 1px solid var(--color-line, #2a2a2e);
+    border-bottom: 1px solid var(--color-line, rgba(84,84,88,0.65));
     flex: none;
   }
   .dialog-header h2 {

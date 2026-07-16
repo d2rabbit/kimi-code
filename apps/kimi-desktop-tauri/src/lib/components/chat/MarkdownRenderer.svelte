@@ -159,7 +159,7 @@
   :global(.md-body) {
     font-size: var(--ui-font-size, var(--text-base, 14px));
     line-height: var(--leading-normal, 1.6);
-    color: var(--color-text, #e7e7ea);
+    color: var(--color-text, rgba(255,255,255,0.92));
     word-break: break-word;
   }
   :global(.md-body p) {
@@ -194,15 +194,15 @@
     border-radius: var(--radius-xs, 4px);
   }
   :global(.md-body a) {
-    color: var(--color-accent, #7c8cff);
+    color: var(--color-accent, #2dd4bf);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
   :global(.md-body blockquote) {
     margin: 0 0 12px;
     padding-left: 12px;
-    border-left: 3px solid var(--color-line-strong, #3a3a3e);
-    color: var(--color-text-muted, #9a9aa2);
+    border-left: 3px solid var(--color-line-strong, rgba(84,84,88,0.4));
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
   }
   :global(.md-body table) {
     border-collapse: collapse;
@@ -211,13 +211,13 @@
   }
   :global(.md-body th),
   :global(.md-body td) {
-    border: 1px solid var(--color-line, #2a2a2e);
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
     padding: 6px 10px;
     text-align: left;
   }
   :global(.md-body hr) {
     border: none;
-    border-top: 1px solid var(--color-line, #2a2a2e);
+    border-top: 1px solid var(--color-line, rgba(84,84,88,0.65));
     margin: 16px 0;
   }
 
@@ -226,8 +226,8 @@
     margin: 0 0 12px;
     padding: 12px 14px;
     border-radius: var(--radius-md, 8px);
-    background: var(--color-surface-raised, #0d0d0f);
-    border: 1px solid var(--color-line, #2a2a2e);
+    background: var(--color-surface-raised, rgba(28,28,30,0.72));
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
     overflow-x: auto;
     font-family: var(--font-mono, monospace);
     font-size: 13px;
@@ -243,7 +243,7 @@
     margin: 0 0 12px;
     padding: 12px 14px;
     border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, #2a2a2e);
+    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
     overflow-x: auto;
     font-size: 13px;
     line-height: 1.5;
@@ -254,17 +254,17 @@
     white-space: pre;
   }
   :global(.md-body .diff-add) {
-    color: var(--color-success, #4ec9b0);
+    color: var(--color-success, #30d158);
     background: var(--color-success-soft, rgba(78,201,176,0.08));
     display: block;
   }
   :global(.md-body .diff-del) {
-    color: var(--color-danger, #ff6b6b);
+    color: var(--color-danger, #ff453a);
     background: var(--color-danger-soft, rgba(255,107,107,0.08));
     display: block;
   }
   :global(.md-body .diff-meta) {
-    color: var(--color-accent, #7c8cff);
+    color: var(--color-accent, #2dd4bf);
     display: block;
   }
 
@@ -273,7 +273,7 @@
     display: inline-block;
     width: 2px;
     height: 1.1em;
-    background: var(--color-accent, #7c8cff);
+    background: var(--color-accent, #2dd4bf);
     animation: blink 1s steps(2) infinite;
     vertical-align: text-bottom;
     margin-left: 1px;
