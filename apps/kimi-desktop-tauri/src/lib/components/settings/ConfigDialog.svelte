@@ -414,8 +414,8 @@
 
       <!-- Add model form -->
       {#if showModelForm}
-        <div class="form-overlay" onclick={() => showModelForm = false}>
-          <div class="form-card" onclick={(e) => e.stopPropagation()}>
+        <div class="form-overlay" onclick={() => showModelForm = false} onkeydown={(e) => { if (e.key === "Escape") showModelForm = false; }} role="presentation" tabindex="-1">
+          <div class="form-card" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
             <h4>添加模型别名</h4>
             <label>别名 (用于选择模型)
               <input bind:value={modelForm.alias} placeholder="如 gpt-4o" />
@@ -482,8 +482,8 @@
 
       <!-- Add/edit provider form -->
       {#if showProviderForm}
-        <div class="form-overlay" onclick={() => showProviderForm = false}>
-          <div class="form-card" onclick={(e) => e.stopPropagation()}>
+        <div class="form-overlay" onclick={() => showProviderForm = false} onkeydown={(e) => { if (e.key === "Escape") showProviderForm = false; }} role="presentation" tabindex="-1">
+          <div class="form-card" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
             <h4>{editingProviderId ? '编辑 Provider' : '添加 Provider'}</h4>
             <label>名称 (唯一标识)
               <input bind:value={providerForm.id} placeholder="如 my-openai" disabled={!!editingProviderId} />

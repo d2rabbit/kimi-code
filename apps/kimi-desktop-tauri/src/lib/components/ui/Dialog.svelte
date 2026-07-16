@@ -31,8 +31,8 @@
 <svelte:window onkeydown={open ? onKeydown : undefined} />
 
 {#if open}
-  <div class="dialog-backdrop" onclick={close} role="presentation">
-    <div class="dialog" role="dialog" aria-modal="true" aria-label={title} onclick={(e) => e.stopPropagation()}>
+  <div class="dialog-backdrop" onclick={close} onkeydown={(e) => { if (e.key === "Escape") close(); }} role="presentation" tabindex="-1">
+    <div class="dialog" role="dialog" aria-modal="true" aria-label={title} tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <header class="dialog-header">
         <h2>{title}</h2>
         <IconButton name="close" label="关闭" size="sm" onclick={close} />
