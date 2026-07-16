@@ -42,6 +42,25 @@
     if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K';
     return String(n);
   }
+
+  // Model/provider CRUD state
+  let showAddModel = $state(false);
+  let newModelAlias = $state('');
+  let newModelProvider = $state('');
+  let newModelName = $state('');
+  let newModelContext = $state('128000');
+  let newModelDisplay = $state('');
+
+  let showAddProvider = $state(false);
+  let newProviderId = $state('');
+  let newProviderType = $state('openai');
+  let newProviderKey = $state('');
+  let newProviderUrl = $state('');
+
+  let showEditProvider = $state(false);
+  let editingProvider = $state('');
+  let providerApiKey = $state('');
+  let archivedLoaded = $state(false);
 </script>
 
 <div class="settings-page">
@@ -95,6 +114,10 @@
     {:else if active === 'models'}
       <div class="panel">
         <h2>模型设置</h2>
+        <p class="sub-desc">管理模型供应商和别名。设置后可在 Composer 模型选择器中使用。</p>
+
+        <!-- Model list -->
+        <h3>模型列表</h3>
         {#if client.models().length > 0}
           <div class="card-list">
             {#each client.models() as m (m.id)}
@@ -103,25 +126,154 @@
                   <span class="model-name">{m.displayName || m.id}</span>
                   <span class="model-meta">{m.provider} · {kFmt(m.maxContextSize)} context</span>
                 </div>
-                {#if m.id === client.defaultModel()}<span class="badge-default">默认</span>{/if}
+                <div class="model-actions">
+                  {#if m.id === client.defaultModel()}
+                    <span class="badge-default">默认</span>
+                  {:else}
+                    <button class="text-btn" onclick={() => { void client.client.setDefaultModel(m.id); }} type="button">设为默认</button>
+                  {/if}
+                </div>
               </div>
             {/each}
           </div>
         {:else}
-          <p class="empty-text">暂无模型配置。请在供应商中添加 API Key。</p>
+          <p class="empty-text">暂无模型。请先在下方添加供应商。</p>
         {/if}
+
+        <!-- Add custom model alias -->
+        <div class="add-model-section">
+          {#if showAddModel}
+            <div class="card add-model-form">
+              <div class="form-row-vertical">
+                <label class="form-lbl">别名</label>
+                <input class="form-input" bind:value={newModelAlias} placeholder="my-model" />
+              </div>
+              <div class="form-row-vertical">
+                <label class="form-lbl">供应商 ID</label>
+                <input class="form-input" bind:value={newModelProvider} placeholder="openai" />
+              </div>
+              <div class="form-row-vertical">
+                <label class="form-lbl">模型名</label>
+                <input class="form-input" bind:value={newModelName} placeholder="gpt-4o" />
+              </div>
+              <div class="form-row-vertical">
+                <label class="form-lbl">Context 大小</label>
+                <input class="form-input" type="number" bind:value={newModelContext} placeholder="128000" />
+              </div>
+              <div class="form-row-vertical">
+                <label class="form-lbl">显示名 (可选)</label>
+                <input class="form-input" bind:value={newModelDisplay} placeholder="GPT-4o" />
+              </div>
+              <div class="form-actions">
+                <button class="text-btn" onclick={() => showAddModel = false} type="button">取消</button>
+                <button class="primary-btn" onclick={async () => {
+                  if (!newModelAlias.trim() || !newModelProvider.trim() || !newModelName.trim()) return;
+                  await client.client.saveModelAlias(newModelAlias.trim(), {
+                    provider: newModelProvider.trim(),
+                    model: newModelName.trim(),
+                    maxContextSize: parseInt(newModelContext) || 128000,
+                    displayName: newModelDisplay.trim() || undefined,
+                  });
+                  showAddModel = false;
+                  newModelAlias = ''; newModelProvider = ''; newModelName = '';
+                  newModelContext = '128000'; newModelDisplay = '';
+                }} type="button">添加</button>
+              </div>
+            </div>
+          {:else}
+            <button class="dashed-btn" onclick={() => showAddModel = true} type="button">+ 添加自定义模型</button>
+          {/if}
+        </div>
+
+        <!-- Providers -->
         <h3>供应商</h3>
         <div class="card-list">
           {#each client.providers() as p (p.id)}
             <div class="card model-card">
               <div class="model-info">
                 <span class="model-name">{p.id}</span>
-                <span class="model-meta">{p.type}</span>
+                <span class="model-meta">{p.type}{#if p.baseUrl} · {p.baseUrl}{/if}</span>
               </div>
-              {#if p.hasApiKey}<span class="badge-ok">已配置</span>{:else}<span class="badge-warn">未配置</span>{/if}
+              <div class="model-actions">
+                {#if p.hasApiKey}
+                  <span class="badge-ok">已配置</span>
+                  <button class="text-btn" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }} type="button">更新 Key</button>
+                {:else}
+                  <span class="badge-warn">未配置</span>
+                  <button class="text-btn" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }} type="button">配置</button>
+                {/if}
+              </div>
             </div>
           {/each}
         </div>
+
+        <!-- Add provider -->
+        <div class="add-model-section">
+          {#if showAddProvider}
+            <div class="card add-model-form">
+              <div class="form-row-vertical">
+                <label class="form-lbl">供应商 ID</label>
+                <input class="form-input" bind:value={newProviderId} placeholder="my-openai" />
+              </div>
+              <div class="form-row-vertical">
+                <label class="form-lbl">类型</label>
+                <select class="form-input" bind:value={newProviderType}>
+                  <option value="openai">OpenAI</option>
+                  <option value="anthropic">Anthropic</option>
+                  <option value="kimi">Kimi</option>
+                  <option value="google-genai">Google GenAI</option>
+                  <option value="openai_responses">OpenAI Responses</option>
+                </select>
+              </div>
+              <div class="form-row-vertical">
+                <label class="form-lbl">API Key</label>
+                <input class="form-input" type="password" bind:value={newProviderKey} placeholder="sk-..." />
+              </div>
+              <div class="form-row-vertical">
+                <label class="form-lbl">Base URL (可选)</label>
+                <input class="form-input" bind:value={newProviderUrl} placeholder="https://api.openai.com/v1" />
+              </div>
+              <div class="form-actions">
+                <button class="text-btn" onclick={() => showAddProvider = false} type="button">取消</button>
+                <button class="primary-btn" onclick={async () => {
+                  if (!newProviderId.trim()) return;
+                  await client.client.saveProvider(newProviderId.trim(), {
+                    type: newProviderType,
+                    apiKey: newProviderKey.trim() || undefined,
+                    baseUrl: newProviderUrl.trim() || undefined,
+                  });
+                  showAddProvider = false;
+                  newProviderId = ''; newProviderKey = ''; newProviderUrl = '';
+                }} type="button">添加</button>
+              </div>
+            </div>
+          {:else}
+            <button class="dashed-btn" onclick={() => showAddProvider = true} type="button">+ 添加供应商</button>
+          {/if}
+        </div>
+
+        <!-- Edit provider key dialog -->
+        {#if showEditProvider}
+          <div class="card add-model-form" style="margin-top: 12px;">
+            <div class="form-row-vertical">
+              <label class="form-lbl">更新 {editingProvider} 的 API Key</label>
+              <input class="form-input" type="password" bind:value={providerApiKey} placeholder="输入新的 API Key" />
+            </div>
+            <div class="form-actions">
+              <button class="text-btn" onclick={() => showEditProvider = false} type="button">取消</button>
+              <button class="primary-btn" onclick={async () => {
+                if (!editingProvider || !providerApiKey.trim()) return;
+                const existing = client.providers().find((p) => p.id === editingProvider);
+                await client.client.saveProvider(editingProvider, {
+                  type: existing?.type ?? 'openai',
+                  apiKey: providerApiKey.trim(),
+                  baseUrl: existing?.baseUrl,
+                });
+                showEditProvider = false; providerApiKey = '';
+              }} type="button">保存</button>
+            </div>
+          </div>
+        {/if}
       </div>
 
     {:else if active === 'skills'}
@@ -158,12 +310,45 @@
     {:else if active === 'guide'}
       <div class="panel">
         <h2>引导</h2>
-        <p class="empty-text">重新查看引导流程。</p>
+        <p class="sub-desc">重新查看引导流程或了解快捷键。</p>
+        <div class="card">
+          <div class="card-label">
+            <span class="card-title">重新查看引导</span>
+            <span class="card-hint">重置引导状态，下次启动时显示</span>
+          </div>
+          <button class="text-btn" onclick={() => { client.client.setOnboarded(false); }} type="button">重置引导 →</button>
+        </div>
+        <h3>快捷键</h3>
+        <div class="card-list">
+          {#each [['⌘K', '命令面板'], ['⌘N', '新建对话'], ['⌘B', '切换侧栏'], ['⌘J', '切换右栏'], ['⌘S', 'Steer (注入运行中)'], ['⌘.', '中断当前'], ['⌘Q', '退出']] as [key, desc]}
+            <div class="card" style="justify-content: space-between;">
+              <span style="font-size: 13px; color: var(--color-text-muted);">{desc}</span>
+              <kbd style="font-size: 11px; padding: 3px 10px; border-radius: var(--radius-md, 10px); background: var(--color-accent-soft); color: var(--color-accent); font-family: var(--font-mono, monospace); border: 1px solid var(--color-accent-bd);">{key}</kbd>
+            </div>
+          {/each}
+        </div>
       </div>
     {:else if active === 'archived'}
       <div class="panel">
         <h2>归档会话</h2>
-        <p class="empty-text">已归档的会话将在此显示。</p>
+        <p class="sub-desc">已归档的会话可以恢复。</p>
+        {#if !archivedLoaded}
+          <button class="dashed-btn" onclick={async () => { await client.client.loadArchivedSessions(); archivedLoaded = true; }} type="button">加载归档列表</button>
+        {:else if client.client.archivedSessions && client.client.archivedSessions.length > 0}
+          <div class="card-list">
+            {#each client.client.archivedSessions as s (s.id)}
+              <div class="card">
+                <div class="card-label">
+                  <span class="card-title">{s.title || '新对话'}</span>
+                  <span class="card-hint">{s.cwd} · {new Date(s.updatedAt).toLocaleDateString()}</span>
+                </div>
+                <button class="text-btn" onclick={async () => { await client.client.restoreSession(s.id); }} type="button">恢复</button>
+              </div>
+            {/each}
+          </div>
+        {:else}
+          <p class="empty-text">没有已归档的会话。</p>
+        {/if}
       </div>
     {:else if active === 'preview'}
       <div class="panel">
@@ -256,4 +441,20 @@
 
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 8px; background: var(--color-surface-raised); color: var(--color-success); font-size: 12px; z-index: 500; }
   .toast.err { color: var(--color-danger); }
+
+  /* Model/provider CRUD */
+  .model-actions { display: flex; align-items: center; gap: 8px; }
+  .text-btn { border: none; background: transparent; color: var(--color-accent); font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 6px; font-family: inherit; }
+  .text-btn:hover { background: var(--color-accent-soft); }
+  .primary-btn { border: none; border-radius: var(--radius-md, 10px); background: var(--color-accent); color: #0a0a0c; font-size: 12px; padding: 5px 14px; cursor: pointer; font-weight: 500; font-family: inherit; }
+  .primary-btn:hover { background: var(--color-accent-hover); }
+  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--color-line-strong); border-radius: var(--radius-lg, 14px); background: transparent; color: var(--color-accent); font-size: 13px; cursor: pointer; transition: border-color 120ms; font-family: inherit; }
+  .dashed-btn:hover { border-color: var(--color-accent); background: var(--color-accent-soft); }
+  .add-model-section { margin-top: 8px; }
+  .add-model-form { display: flex; flex-direction: column; gap: 10px; }
+  .form-row-vertical { display: flex; flex-direction: column; gap: 3px; }
+  .form-lbl { font-size: 11px; color: var(--color-text-faint); }
+  .form-input { padding: 6px 10px; border-radius: var(--radius-md, 10px); background: rgba(0,0,0,0.25); border: 1px solid var(--color-line); color: var(--color-text); font-size: 12px; outline: none; font-family: inherit; }
+  .form-input:focus { border-color: var(--color-accent); }
+  .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
 </style>
