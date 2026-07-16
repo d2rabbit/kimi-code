@@ -1,9 +1,11 @@
 <!-- RightPanel.svelte — collapsible right tool panel with tab container.
-     Git / Tasks / Files / Thinking tabs. Falls back to mock data when no session. -->
+     Git / Tasks / Files / Thinking tabs. Uses real data when session is active. -->
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Icon from '../ui/Icon.svelte';
   import FilePreview from '../chat/FilePreview.svelte';
   import * as client from '../../stores/client.svelte';
+  import { getKimiWebApi } from '../../api';
   import type { IconName } from '../../lib/icon-types';
 
   type Tab = 'git' | 'tasks' | 'files' | 'thinking';
@@ -13,9 +15,44 @@
 
   function toggle() { collapsed = !collapsed; }
 
-  // Use real tasks from the store when available, fall back to mock for visual preview
+  // Real data
   const realTasks = $derived(client.tasks());
   const hasActiveSession = $derived(!!client.activeSessionId());
+  const activeSessionId = $derived(client.activeSessionId());
+
+  // Git status state
+  let gitData = $state<{
+    branch: string; ahead: number; behind: number;
+    entries: Record<string, string>; additions: number; deletions: number;
+  } | null>(null);
+  let gitLoading = $state(false);
+
+  async function loadGitStatus() {
+    if (!activeSessionId) return;
+    gitLoading = true;
+    try {
+      const api = getKimiWebApi();
+      gitData = await api.getGitStatus(activeSessionId);
+    } catch { gitData = null; }
+    finally { gitLoading = false; }
+  }
+
+  // Auto-load git status when switching to git tab or session changes
+  $effect(() => {
+    void activeSessionId;
+    if (activeTab === 'git' && activeSessionId) void loadGitStatus();
+  });
+
+  // Thinking — extract from latest AI turn
+  const latestTurns = $derived(client.turns());
+  const thinkingText = $derived(() => {
+    const lastAi = [...latestTurns].reverse().find((t) => t.role === 'assistant');
+    if (!lastAi?.blocks) return '';
+    return lastAi.blocks
+      .filter((b) => b.kind === 'thinking')
+      .map((b) => b.kind === 'thinking' ? b.thinking : '')
+      .join('\n\n');
+  });
 
   const tabs: { id: Tab; label: string; icon: IconName }[] = [
     { id: 'git', label: 'Git', icon: 'git-pull-request' },
@@ -24,20 +61,13 @@
     { id: 'thinking', label: '思考', icon: 'sparkles' },
   ];
 
-  // Mock data for visual preview
-  const gitChanges = [
-    { path: 'src/components/chat/Composer.svelte', status: 'M' as const, add: 210, del: 29 },
-    { path: 'src/lib/views/SettingsView.svelte', status: 'M' as const, add: 259, del: 10 },
-    { path: 'src/lib/styles/global.css', status: 'M' as const, add: 446, del: 62 },
-    { path: 'src/lib/components/ui/Icon.svelte', status: 'M' as const, add: 60, del: 12 },
-    { path: 'src/lib/components/shell/TitleBar.svelte', status: 'A' as const, add: 95, del: 0 },
-    { path: 'src/lib/components/shell/RightPanel.svelte', status: 'A' as const, add: 130, del: 0 },
-    { path: 'src/lib/components/shell/Resizer.svelte', status: 'A' as const, add: 45, del: 0 },
-    { path: 'src/lib/components/shell/CommandPalette.svelte', status: 'A' as const, add: 180, del: 0 },
-    { path: 'src/lib/lib/icons.ts', status: 'D' as const, add: 0, del: 197 },
+  // Mock fallback data (for visual preview when no session)
+  const mockGitChanges = [
+    { path: 'src/components/chat/Composer.svelte', status: 'M', add: 210, del: 29 },
+    { path: 'src/lib/styles/global.css', status: 'M', add: 446, del: 62 },
+    { path: 'src/lib/components/shell/TitleBar.svelte', status: 'A', add: 95, del: 0 },
+    { path: 'src/lib/lib/icons.ts', status: 'D', add: 0, del: 197 },
   ];
-  const totalAdd = gitChanges.reduce((s, f) => s + f.add, 0);
-  const totalDel = gitChanges.reduce((s, f) => s + f.del, 0);
 
   const taskItems = [
     { title: 'macOS 玻璃细节打磨', done: true },
@@ -45,11 +75,9 @@
     { title: 'lucide-svelte 图标迁移', done: true },
     { title: '三栏布局壳', done: true },
     { title: 'Composer 底部工具栏', done: true },
-    { title: '侧栏搜索框 + 注意力标记', done: true },
     { title: '命令面板 ⌘K', done: true },
     { title: '设置页 11 项导航', done: true },
     { title: 'ChatDock 玻璃化', done: true },
-    { title: '差异化品牌调整 (teal)', done: true },
   ];
   const doneCount = taskItems.filter((t) => t.done).length;
 
@@ -57,6 +85,8 @@
     M: 'var(--color-warning, #ffd60a)',
     A: 'var(--color-success, #30d158)',
     D: 'var(--color-danger, #ff453a)',
+    R: 'var(--color-purple, #bf5af2)',
+    U: 'var(--color-orange, #ff9f0a)',
   };
 </script>
 
@@ -79,26 +109,50 @@
       {:else if activeTab === 'files'}
         <div class="placeholder"><p>暂无预览文件</p></div>
       {:else if activeTab === 'git'}
-        <!-- Git Panel -->
-        <div class="git-summary">
-          <div class="git-branch"><Icon name="git-branch" size="sm" /><span class="mono">feat/kimi-desktop-tauri</span></div>
-          <div class="git-stats">
-            <span class="stat-add">+{totalAdd}</span>
-            <span class="stat-del">-{totalDel}</span>
-          </div>
-        </div>
-        <div class="git-files">
-          {#each gitChanges as f (f.path)}
-            <div class="git-file">
-              <span class="file-status" style="color: {statusColor[f.status]};">{f.status}</span>
-              <span class="file-path" title={f.path}>{f.path.replace('src/', '')}</span>
-              <span class="file-diff">
-                {#if f.add}<span class="add">+{f.add}</span>{/if}
-                {#if f.del}<span class="del">-{f.del}</span>{/if}
-              </span>
+        <!-- Git Panel — real data when available -->
+        {#if hasActiveSession && gitData}
+          <div class="git-summary">
+            <div class="git-branch"><Icon name="git-branch" size="sm" /><span class="mono">{gitData.branch}</span></div>
+            <div class="git-stats">
+              <span class="stat-add">+{gitData.additions}</span>
+              <span class="stat-del">-{gitData.deletions}</span>
             </div>
-          {/each}
-        </div>
+          </div>
+          {#if Object.keys(gitData.entries).length > 0}
+            <div class="git-files">
+              {#each Object.entries(gitData.entries).slice(0, 50) as [path, status]}
+                <div class="git-file" onclick={() => client.client.openFilePreview(path, 'diff')} role="button" tabindex="0">
+                  <span class="file-status" style="color: {statusColor[status] ?? 'var(--color-text-faint)'};">{status}</span>
+                  <span class="file-path" title={path}>{path}</span>
+                </div>
+              {/each}
+            </div>
+          {:else}
+            <div class="placeholder"><p>工作区干净，无改动</p></div>
+          {/if}
+        {:else if hasActiveSession && gitLoading}
+          <div class="placeholder"><p>加载 Git 状态…</p></div>
+        {:else if hasActiveSession && !gitData}
+          <div class="placeholder"><p>无法获取 Git 状态</p><p class="hint">可能不是 Git 仓库</p></div>
+        {:else}
+          <!-- Mock preview -->
+          <div class="git-summary">
+            <div class="git-branch"><Icon name="git-branch" size="sm" /><span class="mono">feat/kimi-desktop-tauri</span></div>
+            <div class="git-stats">
+              <span class="stat-add">+{mockGitChanges.reduce((s, f) => s + f.add, 0)}</span>
+              <span class="stat-del">-{mockGitChanges.reduce((s, f) => s + f.del, 0)}</span>
+            </div>
+          </div>
+          <div class="git-files">
+            {#each mockGitChanges as f (f.path)}
+              <div class="git-file">
+                <span class="file-status" style="color: {statusColor[f.status]};">{f.status}</span>
+                <span class="file-path" title={f.path}>{f.path.replace('src/', '')}</span>
+                <span class="file-diff">{#if f.add}<span class="add">+{f.add}</span>{/if}{#if f.del}<span class="del">-{f.del}</span>{/if}</span>
+              </div>
+            {/each}
+          </div>
+        {/if}
       {:else if activeTab === 'tasks'}
         <!-- Task Panel — real data when available -->
         {#if hasActiveSession && realTasks.length > 0}
@@ -139,15 +193,20 @@
           </div>
         {/if}
       {:else if activeTab === 'thinking'}
-        <!-- Thinking Panel -->
-        <div class="thinking-content">
-          <div class="think-line">分析当前 UI 组件结构…</div>
-          <div class="think-line">确定三栏布局方案：侧栏 + 聊天 + 右栏抽屉</div>
-          <div class="think-line">选择 macOS 玻璃材质作为设计语言基础</div>
-          <div class="think-line">定义 teal 强调色 #2dd4bf 作为品牌色</div>
-          <div class="think-line">引入 @lucide/svelte 替换手动 SVG 图标</div>
-          <div class="think-line dim">规划 Composer 底部工具栏控件布局…</div>
-        </div>
+        <!-- Thinking Panel — real thinking from latest AI turn -->
+        {#if hasActiveSession && thinkingText()}
+          <div class="thinking-content">
+            {#each thinkingText().split('\n') as line}
+              {#if line.trim()}
+                <div class="think-line">{line}</div>
+              {/if}
+            {/each}
+          </div>
+        {:else if hasActiveSession}
+          <div class="placeholder"><p>暂无思考内容</p><p class="hint">AI 回复中的推理过程将在此显示</p></div>
+        {:else}
+          <div class="placeholder"><p>暂无思考内容</p></div>
+        {/if}
       {/if}
     </div>
   </aside>

@@ -189,6 +189,19 @@
   function handleInput() { historyBrowsing = false; }
 
   function handleKeydown(e: KeyboardEvent) {
+    // Steer: ⌘S / Ctrl+S injects into running turn
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      e.preventDefault();
+      const t = text.trim();
+      if (t && running) {
+        void client.client.steerPrompt([]).then(() => {
+          // Also send as a new prompt that gets steered
+          void client.client.sendPrompt(t);
+          text = '';
+        });
+      }
+      return;
+    }
     if (showSlash) {
       if (e.key === 'ArrowDown') { e.preventDefault(); slashIndex++; return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); slashIndex = Math.max(0, slashIndex - 1); return; }
