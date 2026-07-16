@@ -40,7 +40,7 @@
   }
 
   const diffLines = $derived(
-    client.previewDiff() ? renderDiff(client.previewDiff()) : [],
+    client.previewDiff() ? renderDiff(client.previewDiff() ?? '') : [],
   );
 </script>
 
@@ -57,14 +57,14 @@
           name="git-pull-request"
           label="查看 diff"
           size="sm"
-          onclick={() => client.previewPath() && client.client.openFilePreview(client.previewPath(), 'diff')}
+          onclick={() => client.previewPath() && client.client.openFilePreview(client.previewPath()!, 'diff')}
         />
       {:else if client.previewMode() === 'diff' && client.previewPath()}
         <IconButton
           name="file-text"
           label="查看文件"
           size="sm"
-          onclick={() => client.previewPath() && client.client.openFilePreview(client.previewPath(), 'file')}
+          onclick={() => client.previewPath() && client.client.openFilePreview(client.previewPath()!, 'file')}
         />
       {/if}
       <IconButton name="close" label="关闭" size="sm" onclick={() => client.client.closeFilePreview()} />
@@ -93,14 +93,14 @@
         {/each}
       </pre>
     {:else if client.previewContent() !== null && client.previewPath()}
-      {#if isMarkdown(client.previewPath())}
+      {#if isMarkdown(client.previewPath() ?? '')}
         <!-- Markdown render -->
         <div class="fp-markdown">
-          <MarkdownRenderer text={client.previewContent()} />
+          <MarkdownRenderer text={client.previewContent() ?? ''} />
         </div>
       {:else}
         <!-- Code view -->
-        <pre class="code-view" data-lang={detectLang(client.previewPath())}><code>{client.previewContent()}</code></pre>
+        <pre class="code-view" data-lang={detectLang(client.previewPath() ?? "")}><code>{client.previewContent() ?? ""}</code></pre>
       {/if}
     {:else}
       <div class="fp-empty">

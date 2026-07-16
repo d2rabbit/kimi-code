@@ -10,7 +10,7 @@
 
   let { onnavigate = () => {} }: { onnavigate?: () => void } = $props();
 
-  type Section = 'general' | 'preview' | 'models' | 'skills' | 'subagents' | 'mcp' | 'plugins' | 'usage' | 'guide' | 'archived' | 'advanced';
+  type Section = 'general' | 'preview' | 'models' | 'skills' | 'subagents' | 'mcp' | 'plugins' | 'memory' | 'usage' | 'guide' | 'archived' | 'advanced';
   let active = $state<Section>('general');
 
   const navItems: { id: Section; label: string; icon: IconName }[] = [
@@ -27,7 +27,7 @@
     { id: 'advanced', label: '高级', icon: 'tools' },
   ];
 
-  let saving = $state(false);
+  let saving = false; void saving;
   let msg = $state<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   async function toggleConfig(key: 'telemetry' | 'mergeAllAvailableSkills', value: boolean) {

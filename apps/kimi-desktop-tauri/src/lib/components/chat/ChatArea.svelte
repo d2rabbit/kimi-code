@@ -1,7 +1,6 @@
 <!-- ChatArea.svelte — clean chat view: header + messages + composer. -->
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
-  import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import Composer from './Composer.svelte';
   import MarkdownRenderer from './MarkdownRenderer.svelte';

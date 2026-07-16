@@ -21,7 +21,7 @@
   async function loadAgentsMd() {
     agentsLoading = true;
     agentsError = null;
-    const sid = client.rawState.activeSessionId;
+    const sid = client.activeSessionId();
     const session = client.sessions().find((s) => s.id === sid);
     if (!session?.cwd) {
       // Try to find any session with a cwd
@@ -95,7 +95,7 @@
   let compactMsg = $state<{ type: 'success' | 'error'; text: string } | null>(null);
 
   async function handleCompact() {
-    const sid = client.rawState.activeSessionId;
+    const sid = client.activeSessionId();
     if (!sid) return;
     compacting = true;
     compactMsg = null;

@@ -4,8 +4,8 @@
      In browser mode, reads from the daemon's config endpoint as a fallback. -->
 <script lang="ts">
   import { invoke as tauriInvoke } from '@tauri-apps/api/core';
-  import { getKimiWebApi } from '../../api';
   import Icon from '../ui/Icon.svelte';
+  import type { IconName } from '../../lib/icon-types';
 
   interface PluginInfo {
     id: string;
@@ -64,7 +64,7 @@
     }
   }
 
-  function sourceIcon(source: string): string {
+  function sourceIcon(source: string): IconName {
     switch (source) {
       case 'github': return 'github';
       case 'zip-url': return 'download';

@@ -2,7 +2,6 @@
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
   import Icon from '../ui/Icon.svelte';
-  import IconButton from '../ui/IconButton.svelte';
   import ConfigDialog from '../settings/ConfigDialog.svelte';
 
   let {
@@ -12,6 +11,7 @@
     sidebarCollapsed?: boolean;
     toggleSidebar?: () => void;
   } = $props();
+  void sidebarCollapsed; void toggleSidebar;
 
   let showSettings = $state(false);
   let menuSession = $state<{ id: string; title: string; x: number; y: number } | null>(null);
@@ -177,7 +177,7 @@
 
 <!-- Context menus -->
 {#if menuSession}
-  <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuSession.x, innerWidth - 170)}px; top: {Math.min(menuSession.y, innerHeight - 160)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} role="menu">
+  <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuSession.x, innerWidth - 170)}px; top: {Math.min(menuSession.y, innerHeight - 160)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
     <button class="glass-menu-item" onclick={() => startRename(menuSession!.id, menuSession!.title)}><Icon name="edit" size="sm" /> 重命名</button>
     <button class="glass-menu-item" onclick={() => handleFork(menuSession!.id)}><Icon name="git-branch" size="sm" /> Fork</button>
     <div class="glass-menu-divider"></div>
@@ -185,7 +185,7 @@
   </div>
 {/if}
 {#if menuWorkspace}
-  <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuWorkspace.x, innerWidth - 170)}px; top: {Math.min(menuWorkspace.y, innerHeight - 80)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} role="menu">
+  <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuWorkspace.x, innerWidth - 170)}px; top: {Math.min(menuWorkspace.y, innerHeight - 80)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
     <button class="glass-menu-item danger" onclick={() => handleDeleteWorkspace(menuWorkspace!.id)}><Icon name="delete" size="sm" /> 删除工作区</button>
   </div>
 {/if}

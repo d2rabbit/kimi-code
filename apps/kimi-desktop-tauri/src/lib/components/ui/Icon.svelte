@@ -13,6 +13,7 @@
     Pause, Play, Square, Star, MoreHorizontal,
     FilePen as EditIcon, Trash2, Archive, Brain, Minimize2 as ContractIcon,
     CircleAlert, Puzzle, RefreshCw, Server, Wrench as ToolsIcon,
+    Store, Code as GithubIcon,
   } from '@lucide/svelte';
   import type { IconName, IconSize } from '../../lib/icon-types';
 
@@ -45,6 +46,7 @@
     'git-branch': GitBranch, 'brain': Brain, 'contract': ContractIcon,
     'error-warning': CircleAlert, 'information': Info,
     'plugin': Puzzle, 'refresh': RefreshCw, 'server': Server, 'tools': ToolsIcon,
+    'store': Store, 'github': GithubIcon,
   };
 
   let { name, size = 'md' as IconSize, class: cls = '' }: {

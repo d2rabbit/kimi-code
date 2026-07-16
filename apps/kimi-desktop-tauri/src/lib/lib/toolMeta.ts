@@ -4,7 +4,7 @@
 import { i18n } from '../i18n';
 import { iconSvg, type IconName } from './icon-types';
 
-const t = i18n.global.t;
+const t = i18n.global.t as (key: string, params?: Record<string, unknown>) => string;
 
 // ---------------------------------------------------------------------------
 // toolLabel: human-readable, localized label for a tool name

@@ -23,7 +23,7 @@
         id: s.id,
         title: s.title || '新对话',
         workspaceName: ws?.name ?? '',
-        modelId: s.modelId ?? '',
+        modelId: s.model ?? '',
       };
     });
 

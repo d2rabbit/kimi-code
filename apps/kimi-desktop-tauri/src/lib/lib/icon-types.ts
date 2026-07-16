@@ -16,7 +16,8 @@ export type IconName =
   | 'user' | 'info' | 'help-circle' | 'alert-triangle' | 'clock' | 'sparkles'
   | 'target' | 'pause' | 'play' | 'stop' | 'star' | 'star-outline' | 'dots-horizontal'
   | 'edit' | 'delete' | 'archive' | 'brain' | 'contract' | 'error-warning'
-  | 'information' | 'plugin' | 'refresh' | 'server' | 'tools';
+  | 'information' | 'plugin' | 'refresh' | 'server' | 'tools'
+  | 'store' | 'github';
 
 // 临时桩函数 — toolMeta.ts 的字符串渲染将在后续计划中重构为组件方式
 export function iconSvg(_name: IconName, _size?: IconSize): string {

@@ -9,12 +9,20 @@ export function isTraceEnabled(): boolean {
 }
 
 interface Traceable {
-  readonly method: string;
-  readonly url: string;
+  readonly method?: string;
+  readonly url?: string;
   readonly path?: string;
   readonly status?: number;
   readonly bodyPreview?: string;
   readonly phase?: string;
+  readonly requestId?: string;
+  readonly durationMs?: number;
+  readonly body?: string;
+  readonly error?: unknown;
+  readonly code?: string | number;
+  readonly msg?: string;
+  readonly envelopeRequestId?: string;
+  readonly data?: unknown;
 }
 
 export function traceRestRequest(_entry: Traceable): void {
@@ -26,13 +34,12 @@ export function traceRestResponse(_entry: Traceable): void {
 export function traceRestFailure(_entry: Traceable): void {
   void _entry;
 }
-export function traceWsIn(_msg: unknown): void {
-  void _msg;
+export function traceWsIn(_entry: Traceable): void {
+  void _entry;
 }
-export function traceWsOut(_msg: unknown): void {
-  void _msg;
+export function traceWsOut(_entry: Traceable): void {
+  void _entry;
 }
-export function traceWsLifecycle(_event: string, _detail?: unknown): void {
-  void _event;
-  void _detail;
+export function traceWsLifecycle(_entry: Traceable): void {
+  void _entry;
 }

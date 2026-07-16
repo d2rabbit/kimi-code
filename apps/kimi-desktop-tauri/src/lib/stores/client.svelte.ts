@@ -18,6 +18,7 @@ import type {
   AppWorkspace,
   AppModel,
   AppProvider,
+  AppSession,
   AppSkill,
 } from '../api/types';
 import type { KimiEventHandlers, KimiEventConnection } from '../api/types';
@@ -213,7 +214,7 @@ export const activeSessionModel = () => {
   const sid = rawState.activeSessionId;
   if (!sid) return '';
   const session = rawState.sessions.find((s) => s.id === sid);
-  return session?.modelId ?? '';
+  return session?.model ?? '';
 };
 
 // Unread session count (sessions with attention — pending approvals or questions).
@@ -449,7 +450,7 @@ async function selectSession(sessionId: string): Promise<void> {
       const result = await a.listMessages(sessionId);
       // Discard if a newer selection has superseded this one.
       if (myToken !== selectToken) return;
-      rawState.messagesBySession[sessionId] = result.messages;
+      rawState.messagesBySession[sessionId] = result.items;
     }
     // Subscribe to events — only if this selection is still current.
     if (myToken === selectToken && eventConn) {
@@ -702,7 +703,7 @@ async function setModel(modelId: string): Promise<boolean> {
     await a.updateSession(sid, { model: modelId });
     // Update session status.
     rawState.sessions = rawState.sessions.map((s) =>
-      s.id === sid ? { ...s, modelId } : s,
+      s.id === sid ? { ...s, model: modelId } : s,
     );
     return true;
   } catch {

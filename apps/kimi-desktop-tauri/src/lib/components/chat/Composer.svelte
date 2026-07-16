@@ -12,7 +12,7 @@
   let mentionQuery = $state('');
   let mentionResults = $state<FileResult[]>([]);
   let mentionIndex = $state(0);
-  const showMention = $derived(mentionQuery !== '' && !running);
+  
 
   async function searchMention(query: string) {
     const sid = client.activeSessionId();
@@ -39,6 +39,8 @@
     running: boolean;
     onsubmit: (attachments?: { fileId: string; kind: 'image' | 'video' }[]) => void;
   } = $props();
+
+  const showMention = $derived(mentionQuery !== '' && !running);
 
   let textareaEl: HTMLTextAreaElement | null = $state(null);
   let fileInputEl: HTMLInputElement | null = $state(null);

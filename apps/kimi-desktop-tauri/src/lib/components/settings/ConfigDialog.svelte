@@ -3,6 +3,7 @@
      Lets users configure everything through GUI without editing TOML. -->
 <script lang="ts">
   import Dialog from '../ui/Dialog.svelte';
+  import { daemon } from '../../stores/daemon.svelte';
   import Button from '../ui/Button.svelte';
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
