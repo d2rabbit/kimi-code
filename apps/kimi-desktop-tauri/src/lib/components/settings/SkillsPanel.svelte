@@ -315,7 +315,7 @@ You can use parameter placeholders:
   .source-extra { background: var(--color-warning-soft, rgba(255,193,7,0.15)); color: var(--color-warning, #ffc107); }
 
   .hint { font-size: var(--text-xs, 12px); color: var(--color-text-faint, rgba(235,235,245,0.3)); margin: 0 0 16px; }
-  .hint code, .sub-hint code {
+  .hint code {
     font-family: var(--font-mono, monospace);
     background: var(--color-surface-raised, #1a1a1e);
     padding: 1px 5px;

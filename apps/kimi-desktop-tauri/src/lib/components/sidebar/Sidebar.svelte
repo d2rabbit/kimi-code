@@ -11,7 +11,10 @@
     sidebarCollapsed?: boolean;
     toggleSidebar?: () => void;
   } = $props();
-  void sidebarCollapsed; void toggleSidebar;
+
+  // Silence unused prop warnings
+  $effect(() => { void sidebarCollapsed; void toggleSidebar; });
+  
 
   let showSettings = $state(false);
   let menuSession = $state<{ id: string; title: string; x: number; y: number } | null>(null);

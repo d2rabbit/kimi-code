@@ -61,6 +61,11 @@
   let editingProvider = $state('');
   let providerApiKey = $state('');
   let archivedLoaded = $state(false);
+
+  // Preview preferences (localStorage-backed)
+  let previewMode = $state(typeof localStorage !== 'undefined' ? (localStorage.getItem('kode.preview-mode') ?? 'source') : 'source');
+  let diffAutoExpand = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('kode.diff-expand') === 'true' : false);
+  let hlTheme = $state(typeof localStorage !== 'undefined' ? (localStorage.getItem('kode.hl-theme') ?? 'one-dark') : 'one-dark');
 </script>
 
 <div class="settings-page">
@@ -353,7 +358,39 @@
     {:else if active === 'preview'}
       <div class="panel">
         <h2>代码预览</h2>
-        <p class="empty-text">文件预览偏好设置。</p>
+        <p class="sub-desc">文件预览和 Diff 显示偏好。</p>
+        <div class="card">
+          <div class="card-label">
+            <span class="card-title">默认渲染模式</span>
+            <span class="card-hint">文件预览的默认显示方式</span>
+          </div>
+          <div class="seg">
+            <button class="seg-btn" class:active={previewMode === 'source'} onclick={() => { previewMode = 'source'; localStorage.setItem('kode.preview-mode', 'source'); }} type="button">源码</button>
+            <button class="seg-btn" class:active={previewMode === 'markdown'} onclick={() => { previewMode = 'markdown'; localStorage.setItem('kode.preview-mode', 'markdown'); }} type="button">Markdown</button>
+            <button class="seg-btn" class:active={previewMode === 'html'} onclick={() => { previewMode = 'html'; localStorage.setItem('kode.preview-mode', 'html'); }} type="button">HTML</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">
+            <span class="card-title">Diff 展开方式</span>
+            <span class="card-hint">工具调用中的 diff 默认状态</span>
+          </div>
+          <div class="seg">
+            <button class="seg-btn" class:active={!diffAutoExpand} onclick={() => { diffAutoExpand = false; localStorage.setItem('kode.diff-expand', 'false'); }} type="button">折叠</button>
+            <button class="seg-btn" class:active={diffAutoExpand} onclick={() => { diffAutoExpand = true; localStorage.setItem('kode.diff-expand', 'true'); }} type="button">展开</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">
+            <span class="card-title">语法高亮主题</span>
+            <span class="card-hint">代码块配色方案</span>
+          </div>
+          <div class="seg">
+            <button class="seg-btn" class:active={hlTheme === 'one-dark'} onclick={() => { hlTheme = 'one-dark'; localStorage.setItem('kode.hl-theme', 'one-dark'); }} type="button">One Dark</button>
+            <button class="seg-btn" class:active={hlTheme === 'github-dark'} onclick={() => { hlTheme = 'github-dark'; localStorage.setItem('kode.hl-theme', 'github-dark'); }} type="button">GitHub Dark</button>
+            <button class="seg-btn" class:active={hlTheme === 'dracula'} onclick={() => { hlTheme = 'dracula'; localStorage.setItem('kode.hl-theme', 'dracula'); }} type="button">Dracula</button>
+          </div>
+        </div>
       </div>
     {:else if active === 'advanced'}
       <div class="panel">

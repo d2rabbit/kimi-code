@@ -7,7 +7,7 @@
   // Guard against non-Tauri environments (e.g. browser dev preview)
   const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
-  let appWindow: { minimize: () => void; toggleMaximize: () => void; close: () => void } | null = null;
+  let appWindow: { minimize: () => void; toggleMaximize: () => void; close: () => void } | null = $state(null);
   let isLinux = $state(false);
 
   onMount(async () => {

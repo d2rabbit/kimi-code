@@ -591,12 +591,6 @@
       rgba(255,255,255,0.1) 0
     );
   }
-  .context-bar.warning .context-ring {
-    background: conic-gradient(
-      var(--color-warning, #d29922) calc(var(--pct, 0) * 1%),
-      rgba(255,255,255,0.1) 0
-    );
-  }
   .context-text {
     display: flex;
     align-items: center;

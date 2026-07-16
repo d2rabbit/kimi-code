@@ -31,7 +31,7 @@
   let step = $state(0);
   let minimized = $state(false);
   // Per-question answers: Record<questionId, answer>
-  let answers: Record<string, string | string[]> = {};
+  let answers = $state<Record<string, string | string[]>>({});
 
   const total = $derived(question.questions.length);
   const current = $derived(question.questions[step] ?? question.questions[0]);

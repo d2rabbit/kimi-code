@@ -15,7 +15,8 @@
   } = $props();
 
   // Auto-expand running tools, collapse completed ones.
-  let expanded = $state(tool.status === 'running');
+  const isRunning = $derived(tool.status === 'running');
+  let expanded = $state(isRunning);
 
   // Extract file path from arg for click-to-preview.
   const filePath = $derived.by(() => {
