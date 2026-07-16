@@ -190,10 +190,10 @@ html[data-color-scheme="dark"] {
   --color-text-faint: rgba(235, 235, 245, 0.30);
   --color-line: rgba(84, 84, 88, 0.65);
   --color-line-strong: rgba(84, 84, 88, 0.40);
-  --color-accent: #0a84ff;
-  --color-accent-hover: #409cff;
-  --color-accent-soft: rgba(10, 132, 255, 0.16);
-  --color-accent-bd: rgba(10, 132, 255, 0.30);
+  --color-accent: #2dd4bf;
+  --color-accent-hover: #5eead4;
+  --color-accent-soft: rgba(45, 212, 191, 0.14);
+  --color-accent-bd: rgba(45, 212, 191, 0.28);
   --color-success: #30d158;
   --color-success-soft: rgba(48, 209, 88, 0.16);
   --color-warning: #ffd60a;
@@ -220,8 +220,8 @@ html[data-color-scheme="light"] {
   --color-text-faint: rgba(60, 60, 67, 0.30);
   --color-line: rgba(60, 60, 67, 0.29);
   --color-line-strong: rgba(60, 60, 67, 0.18);
-  --color-accent: #007aff;
-  --color-accent-hover: #0066d6;
+  --color-accent: #0d9488;
+  --color-accent-hover: #0f766e;
   --color-accent-soft: rgba(0, 122, 255, 0.10);
   --color-accent-bd: rgba(0, 122, 255, 0.25);
   --color-success: #34c759;
@@ -251,10 +251,10 @@ html[data-color-scheme="light"] {
     --color-text-faint: rgba(235, 235, 245, 0.30);
     --color-line: rgba(84, 84, 88, 0.65);
     --color-line-strong: rgba(84, 84, 88, 0.40);
-    --color-accent: #0a84ff;
-    --color-accent-hover: #409cff;
-    --color-accent-soft: rgba(10, 132, 255, 0.16);
-    --color-accent-bd: rgba(10, 132, 255, 0.30);
+    --color-accent: #2dd4bf;
+    --color-accent-hover: #5eead4;
+    --color-accent-soft: rgba(45, 212, 191, 0.14);
+    --color-accent-bd: rgba(45, 212, 191, 0.28);
     --color-success: #30d158;
     --color-success-soft: rgba(48, 209, 88, 0.16);
     --color-warning: #ffd60a;
@@ -304,33 +304,33 @@ html[data-color-scheme="light"] {
 /* ---- Radial-gradient backgrounds (non-solid, gives glass depth) ---- */
 html[data-color-scheme="dark"] body {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(59, 130, 246, 0.08), transparent),
-    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139, 92, 246, 0.06), transparent),
-    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(14, 165, 233, 0.05), transparent),
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 212, 191, 0.07), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(56, 189, 248, 0.05), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
     #0a0a0c;
 }
 html[data-color-scheme="light"] body {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(59, 130, 246, 0.06), transparent),
-    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(251, 146, 60, 0.05), transparent),
-    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(14, 165, 233, 0.04), transparent),
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 212, 191, 0.06), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(251, 146, 60, 0.04), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.03), transparent),
     #f5f5f7;
 }
 @media (prefers-color-scheme: dark) {
   html[data-color-scheme="system"] body {
     background:
-      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(59, 130, 246, 0.08), transparent),
-      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139, 92, 246, 0.06), transparent),
-      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(14, 165, 233, 0.05), transparent),
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 212, 191, 0.07), transparent),
+      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(56, 189, 248, 0.05), transparent),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
       #0a0a0c;
   }
 }
 @media (prefers-color-scheme: light) {
   html[data-color-scheme="system"] body {
     background:
-      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(59, 130, 246, 0.06), transparent),
-      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(251, 146, 60, 0.05), transparent),
-      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(14, 165, 233, 0.04), transparent),
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 212, 191, 0.06), transparent),
+      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(251, 146, 60, 0.04), transparent),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.03), transparent),
       #f5f5f7;
   }
 }
@@ -669,13 +669,13 @@ html[data-color-scheme="dark"][data-accent="mono"] {
   --space-6: 24px;
   --space-8: 32px;
 
-  /* -- radius -------------------------------------------------------------- */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
+  /* -- radius (slightly larger for softer, more organic feel) -------------- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
   --radius-full: 999px;
 
   /* -- elevation / z-index ------------------------------------------------- */
