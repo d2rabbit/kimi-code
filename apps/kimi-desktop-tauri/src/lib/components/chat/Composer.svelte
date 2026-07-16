@@ -5,6 +5,24 @@
   import IconButton from '../ui/IconButton.svelte';
   import SlashMenu from './SlashMenu.svelte';
   import * as client from '../../stores/client.svelte';
+  import { getKimiWebApi } from '../../api';
+
+  // --- File mention (@) ---
+  interface FileResult { path: string; name: string; }
+  let mentionQuery = $state('');
+  let mentionResults = $state<FileResult[]>([]);
+  let mentionIndex = $state(0);
+  const showMention = $derived(mentionQuery !== '' && !running);
+
+  async function searchMention(query: string) {
+    const sid = client.activeSessionId();
+    if (!sid || !query) { mentionResults = []; return; }
+    try {
+      const api = getKimiWebApi();
+      const result = await api.searchFiles(sid, { query, limit: 10 });
+      mentionResults = result.items.map((i) => ({ path: i.path, name: i.name }));
+    } catch { mentionResults = []; }
+  }
 
   function kFmt(n: number): string {
     if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -186,7 +204,20 @@
 
   const allUploaded = $derived(attachments.length > 0 && attachments.every((a) => a.fileId && !a.uploading));
 
-  function handleInput() { historyBrowsing = false; }
+  function handleInput() {
+    historyBrowsing = false;
+    // Detect @ mention
+    const cursorPos = textareaEl?.selectionStart ?? 0;
+    const beforeCursor = text.slice(0, cursorPos);
+    const atMatch = beforeCursor.match(/@([^\s@]*)$/);
+    if (atMatch) {
+      mentionQuery = atMatch[1] ?? '';
+      void searchMention(mentionQuery);
+    } else {
+      mentionQuery = '';
+      mentionResults = [];
+    }
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     // Steer: ⌘S / Ctrl+S injects into running turn
@@ -206,6 +237,24 @@
       if (e.key === 'ArrowDown') { e.preventDefault(); slashIndex++; return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); slashIndex = Math.max(0, slashIndex - 1); return; }
       if (e.key === 'Escape') { e.preventDefault(); text = ''; return; }
+    }
+    if (showMention) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); mentionIndex = Math.min(mentionResults.length - 1, mentionIndex + 1); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); mentionIndex = Math.max(0, mentionIndex - 1); return; }
+      if (e.key === 'Escape') { e.preventDefault(); mentionQuery = ''; mentionResults = []; return; }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const selected = mentionResults[mentionIndex];
+        if (selected) {
+          const cursorPos = textareaEl?.selectionStart ?? 0;
+          const beforeAt = text.slice(0, cursorPos).lastIndexOf('@');
+          if (beforeAt >= 0) {
+            text = text.slice(0, beforeAt) + `@${selected.path} ` + text.slice(cursorPos);
+            mentionQuery = ''; mentionResults = [];
+          }
+        }
+        return;
+      }
     }
     if (!showSlash && !running) {
       if (e.key === 'ArrowUp' && textareaEl?.selectionStart === 0) { e.preventDefault(); recallHistory('up'); return; }
@@ -268,6 +317,26 @@
   <div class="composer-inner" style="position: relative;">
     {#if showSlash}
       <SlashMenu query={slashQuery} skills={client.skills()} activeIndex={slashIndex} onselect={handleSlashSelect} />
+    {/if}
+    {#if showMention && mentionResults.length > 0}
+      <div class="mention-menu glass-menu animate-spring-in">
+        {#each mentionResults as item, i (item.path)}
+          <button class="mention-item" class:selected={i === mentionIndex}
+            onclick={() => {
+              const cursorPos = textareaEl?.selectionStart ?? 0;
+              const beforeAt = text.slice(0, cursorPos).lastIndexOf('@');
+              if (beforeAt >= 0) {
+                text = text.slice(0, beforeAt) + `@${item.path} ` + text.slice(cursorPos);
+              }
+              mentionQuery = ''; mentionResults = [];
+              textareaEl?.focus();
+            }}
+            type="button">
+            <Icon name="file-text" size="sm" />
+            <span class="mention-path">{item.path}</span>
+          </button>
+        {/each}
+      </div>
     {/if}
     <IconButton name="image" label="添加图片" size="sm" onclick={openFilePicker} />
     <textarea
@@ -619,4 +688,20 @@
   .model-select:hover {
     background: var(--color-selected, rgba(255,255,255,0.1));
   }
+  /* Mention menu */
+  .mention-menu {
+    position: absolute; bottom: 100%; left: 0; right: 0; z-index: 200;
+    max-height: 240px; overflow-y: auto; margin-bottom: 4px;
+    min-width: 280px;
+  }
+  .mention-item {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 7px 10px; border: none; border-radius: var(--radius-sm, 8px);
+    background: transparent; color: var(--color-text-muted, rgba(235,235,245,0.6));
+    font-size: 12px; cursor: pointer; text-align: left; font-family: inherit;
+    transition: background 80ms;
+  }
+  .mention-item.selected { background: var(--color-selected, rgba(45,212,191,0.12)); color: var(--color-text); }
+  .mention-item.selected :global(svg) { color: var(--color-accent, #2dd4bf); }
+  .mention-path { font-family: var(--font-mono, monospace); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
