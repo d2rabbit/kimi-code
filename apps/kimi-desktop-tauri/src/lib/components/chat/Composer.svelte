@@ -6,6 +6,12 @@
   import SlashMenu from './SlashMenu.svelte';
   import * as client from '../../stores/client.svelte';
 
+  function kFmt(n: number): string {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K';
+    return String(n);
+  }
+
   let {
     text = $bindable(''),
     running = false,
@@ -125,7 +131,7 @@
   }
 
   function recordHistory(entry: string) {
-    const sid = client.activeSessionId;
+    const sid = client.activeSessionId();
     if (!sid) return;
     const entries = loadHistory(sid);
     if (entries[entries.length - 1] !== entry) {
@@ -135,7 +141,7 @@
   }
 
   function recallHistory(direction: 'up' | 'down') {
-    const sid = client.activeSessionId;
+    const sid = client.activeSessionId();
     if (!sid) return;
     const entries = loadHistory(sid);
     if (entries.length === 0) return;
@@ -176,7 +182,7 @@
   const showSlash = $derived(slashQuery !== '' && !running);
 
   $effect(() => { void slashQuery; slashIndex = 0; });
-  $effect(() => { void client.activeSessionId; historyBrowsing = false; });
+  $effect(() => { void client.activeSessionId(); historyBrowsing = false; });
 
   const allUploaded = $derived(attachments.length > 0 && attachments.every((a) => a.fileId && !a.uploading));
 
@@ -248,7 +254,7 @@
 
   <div class="composer-inner" style="position: relative;">
     {#if showSlash}
-      <SlashMenu query={slashQuery} skills={client.skills} activeIndex={slashIndex} onselect={handleSlashSelect} />
+      <SlashMenu query={slashQuery} skills={client.skills()} activeIndex={slashIndex} onselect={handleSlashSelect} />
     {/if}
     <IconButton name="image" label="添加图片" size="sm" onclick={openFilePicker} />
     <textarea
@@ -257,7 +263,7 @@
       onkeydown={handleKeydown}
       oninput={handleInput}
       onpaste={handlePaste}
-      placeholder="输入消息… (Enter 发送, Shift+Enter 换行, / 命令, ↑ 历史, 📎 或粘贴图片)"
+      placeholder="Ask anything…  ( / for commands)"
       rows="1"
       spellcheck="false"
       autocomplete="off"
@@ -284,8 +290,69 @@
       <Icon name="send" size="md" />
     </button>
   </div>
-  <div class="composer-hint">
-    <kbd>Enter</kbd> 发送 · <kbd>Shift+Enter</kbd> 换行 · <kbd>/</kbd> 命令 · <kbd>↑</kbd> 历史 · 📎 粘贴/选择图片
+
+  <!-- Composer toolbar: permission pill + mode toggles + context ring + model picker -->
+  <div class="composer-toolbar">
+    <!-- Permission pill -->
+    <button
+      class="toolbar-pill perm-pill perm-{client.permission()}"
+      onclick={() => {
+        const modes = ['manual', 'auto', 'yolo'] as const;
+        const idx = modes.indexOf(client.permission());
+        client.client.setPermission(modes[(idx + 1) % 3]!);
+      }}
+      type="button"
+    >
+      {client.permission() === 'manual' ? '手动' : client.permission() === 'auto' ? '自动' : '完全访问'}
+    </button>
+
+    <!-- Mode toggles -->
+    <button
+      class="toolbar-pill mode-toggle"
+      class:active={client.planMode()}
+      onclick={() => client.client.togglePlanMode()}
+      type="button"
+    >Plan</button>
+    <button
+      class="toolbar-pill mode-toggle"
+      class:active={client.goalMode()}
+      onclick={() => client.client.toggleGoalMode()}
+      type="button"
+    >Goal</button>
+    <button
+      class="toolbar-pill mode-toggle"
+      class:active={client.swarmMode()}
+      onclick={() => client.client.toggleSwarmMode()}
+      type="button"
+    >Swarm</button>
+
+    <div class="toolbar-spacer"></div>
+
+    <!-- Context ring -->
+    {#if client.activeSessionUsage() && client.activeSessionUsage()!.contextLimit}
+      {@const usage = client.activeSessionUsage()!}
+      {@const pct = usage.contextLimit > 0 ? Math.min(100, (usage.contextTokens / usage.contextLimit) * 100) : 0}
+      <div class="ctx-indicator" class:warning={pct >= 80}>
+        <div class="ctx-ring" style="--pct: {pct}"></div>
+        <span>{kFmt(usage.contextTokens)}/{kFmt(usage.contextLimit)}</span>
+        {#if pct >= 80}
+          <button class="compact-btn" onclick={() => client.client.compact()} type="button">/compact</button>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- Model picker -->
+    {#if client.models().length > 0}
+      <select
+        class="model-select"
+        value={client.activeSessionModel() || client.defaultModel()}
+        onchange={(e) => client.client.setModel((e.target as HTMLSelectElement).value)}
+      >
+        {#each client.models() as m (m.id)}
+          <option value={m.id}>{m.displayName || m.id}</option>
+        {/each}
+      </select>
+    {/if}
   </div>
 </div>
 
@@ -369,13 +436,18 @@
     display: flex;
     align-items: flex-end;
     gap: 4px;
-    background: var(--color-surface, #121214);
-    border: 1px solid var(--color-line, #2a2a2e);
+    background: rgba(33, 33, 33, 0.72);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid var(--color-line, #2e2e2e);
     border-radius: var(--radius-lg, 12px);
     padding: 6px 6px 6px 6px;
-    transition: border-color var(--duration-fast, 120ms);
+    transition: border-color var(--duration-fast, 120ms), box-shadow var(--duration-fast, 120ms);
   }
-  .composer-inner:focus-within { border-color: var(--color-accent, #7c8cff); }
+  .composer-inner:focus-within {
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
+  }
 
   .composer-input {
     flex: 1;
@@ -395,34 +467,143 @@
 
   .send-btn {
     flex: none;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--radius-full, 999px);
     border: none;
-    background: var(--color-accent, #7c8cff);
-    color: var(--color-text-on-accent, #fff);
+    background: var(--color-text, #ececec);
+    color: #1a1a1a;
     cursor: pointer;
-    transition: opacity var(--duration-fast, 120ms), transform var(--duration-fast, 120ms);
+    transition: all var(--duration-fast, 120ms);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
-  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .send-btn:not(:disabled):hover { opacity: 0.9; }
+  .send-btn:disabled { opacity: 0.25; cursor: not-allowed; box-shadow: none; }
+  .send-btn:not(:disabled):hover { transform: scale(1.06); box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
   .send-btn:not(:disabled):active { transform: scale(0.95); }
 
-  .composer-hint {
-    text-align: center;
-    font-size: var(--text-xs, 12px);
-    color: var(--color-text-faint, #6a6a72);
-    margin-top: 6px;
+  /* Context usage bar */
+  .context-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 0 0;
+    font-size: var(--text-xs, 11px);
+    color: var(--color-text-faint, #555);
+    font-family: var(--font-mono, monospace);
   }
-  kbd {
+  .context-bar.warning {
+    color: var(--color-warning, #d29922);
+  }
+  .context-ring {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: conic-gradient(
+      var(--color-text-muted, #999) calc(var(--pct, 0) * 1%),
+      rgba(255,255,255,0.1) 0
+    );
+  }
+  .context-bar.warning .context-ring {
+    background: conic-gradient(
+      var(--color-warning, #d29922) calc(var(--pct, 0) * 1%),
+      rgba(255,255,255,0.1) 0
+    );
+  }
+  .context-text {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .compact-btn {
+    border: none;
+    background: rgba(255,255,255,0.06);
+    color: var(--color-warning, #d29922);
+    font-family: var(--font-mono, monospace);
+    font-size: var(--text-xs, 11px);
+    padding: 1px 6px;
+    border-radius: var(--radius-xs, 4px);
+    cursor: pointer;
+  }
+  .compact-btn:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
+  /* ---- Composer toolbar ---- */
+  .composer-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 4px 0;
+    font-size: 12px;
+  }
+  .toolbar-spacer { flex: 1; }
+  .toolbar-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 10px;
+    border: none;
+    border-radius: var(--radius-full, 999px);
+    background: var(--color-hover, rgba(255,255,255,0.06));
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 120ms, color 120ms;
+    white-space: nowrap;
+  }
+  .toolbar-pill:hover {
+    background: var(--color-selected, rgba(255,255,255,0.1));
+    color: var(--color-text, rgba(255,255,255,0.92));
+  }
+  .perm-pill.perm-manual { color: var(--color-text-muted); }
+  .perm-pill.perm-auto { color: var(--color-warning, #ffd60a); }
+  .perm-pill.perm-yolo { color: var(--color-danger, #ff453a); }
+
+  .mode-toggle.active {
+    background: var(--color-accent-soft, rgba(10,132,255,0.16));
+    color: var(--color-accent, #0a84ff);
+  }
+
+  .ctx-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-family: var(--font-mono, monospace);
     font-size: 11px;
-    background: var(--color-surface-raised, #1a1a1e);
-    border: 1px solid var(--color-line, #2a2a2e);
-    border-radius: var(--radius-xs, 4px);
-    padding: 1px 5px;
+    color: var(--color-text-faint, rgba(235,235,245,0.3));
+  }
+  .ctx-indicator.warning { color: var(--color-warning, #ffd60a); }
+  .ctx-ring {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: conic-gradient(
+      var(--color-text-muted, #999) calc(var(--pct, 0) * 1%),
+      rgba(255,255,255,0.1) 0
+    );
+  }
+  .ctx-indicator.warning .ctx-ring {
+    background: conic-gradient(
+      var(--color-warning, #ffd60a) calc(var(--pct, 0) * 1%),
+      rgba(255,255,255,0.1) 0
+    );
+  }
+
+  .model-select {
+    border: none;
+    border-radius: var(--radius-full, 999px);
+    background: var(--color-hover, rgba(255,255,255,0.06));
+    color: var(--color-text-muted, rgba(235,235,245,0.6));
+    font-size: 12px;
+    padding: 3px 8px;
+    cursor: pointer;
+    outline: none;
+  }
+  .model-select:hover {
+    background: var(--color-selected, rgba(255,255,255,0.1));
   }
 </style>
