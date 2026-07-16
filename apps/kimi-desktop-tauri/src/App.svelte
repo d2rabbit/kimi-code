@@ -6,6 +6,7 @@
   import WorkspaceView from './lib/views/WorkspaceView.svelte';
   import SettingsView from './lib/views/SettingsView.svelte';
   import TitleBar from './lib/components/shell/TitleBar.svelte';
+  import CommandPalette from './lib/components/shell/CommandPalette.svelte';
   import Onboarding from './lib/components/settings/Onboarding.svelte';
   import SearchSessions from './lib/components/sidebar/SearchSessions.svelte';
 
@@ -13,6 +14,7 @@
   let currentView = $state<View>('workspace');
   let showOnboarding = $state(false);
   let showSearch = $state(false);
+  let showPalette = $state(false);
 
   onMount(async () => {
     await daemon.connect();
@@ -55,6 +57,7 @@
   {/if}
 
   <SearchSessions bind:open={showSearch} />
+  <CommandPalette bind:open={showPalette} onnavigate={() => navigate('settings')} />
 </div>
 
 <style>
