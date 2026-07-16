@@ -104,8 +104,11 @@
   <div
     class="palette-backdrop"
     onclick={() => { open = false; query = ''; }}
+    onkeydown={(e) => { if (e.key === 'Escape') { open = false; query = ''; } }}
+    role="button"
+    tabindex="-1"
   >
-    <div class="palette-modal glass-panel animate-spring-in" onclick={(e) => e.stopPropagation()} role="dialog">
+    <div class="palette-modal glass-panel animate-spring-in" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" tabindex="-1" aria-modal="true">
       <!-- Search input -->
       <div class="palette-search">
         <Icon name="search" size="md" />

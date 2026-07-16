@@ -54,7 +54,7 @@
     <div class="ob-brand">
       <div class="ob-logo">◧</div>
       <div class="ob-brand-text">
-        <div class="ob-title">欢迎使用 Kimi Code Desktop</div>
+        <div class="ob-title">欢迎使用 Kode</div>
         <div class="ob-sub">选择一些偏好设置 —— 之后随时可以在设置中修改</div>
       </div>
     </div>
@@ -115,7 +115,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg, #0b0b0c);
+    background: rgba(8, 8, 10, 0.85);
+    backdrop-filter: blur(12px);
     padding: 24px;
   }
 

@@ -120,7 +120,7 @@
 </aside>
 
 {#if menuSession}
-  <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuSession.x, innerWidth - 170)}px; top: {Math.min(menuSession.y, innerHeight - 160)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} role="menu">
+  <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuSession.x, innerWidth - 170)}px; top: {Math.min(menuSession.y, innerHeight - 160)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
     <button class="glass-menu-item" onclick={() => startRename(menuSession!.id, menuSession!.title)}><Icon name="pencil" size="sm" /> 重命名</button>
     <button class="glass-menu-item" onclick={() => fork(menuSession!.id)}><Icon name="git-branch" size="sm" /> Fork</button>
     <div class="glass-menu-divider"></div>
