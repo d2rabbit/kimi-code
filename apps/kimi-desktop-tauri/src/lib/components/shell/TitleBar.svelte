@@ -1,5 +1,6 @@
 <!-- TitleBar.svelte — platform-aware custom title bar with breadcrumb + window controls. -->
 <script lang="ts">
+  import { onMount } from 'svelte';
   import * as client from '../../stores/client.svelte';
   import Icon from '../ui/Icon.svelte';
 
@@ -7,16 +8,17 @@
   const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
   let appWindow: { minimize: () => void; toggleMaximize: () => void; close: () => void } | null = null;
-  let isLinux = false;
+  let isLinux = $state(false);
 
-  if (isTauri) {
+  onMount(async () => {
+    if (!isTauri) return;
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const { platform } = await import('@tauri-apps/plugin-os');
       appWindow = getCurrentWindow();
       isLinux = platform() === 'linux';
     } catch { /* non-Tauri: appWindow stays null */ }
-  }
+  });
 
   const wsName = $derived(client.activeWorkspaceName() || '');
   const sessionTitle = $derived(client.activeSession()?.title || '新对话');
