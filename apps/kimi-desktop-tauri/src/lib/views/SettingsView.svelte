@@ -73,9 +73,9 @@
         <div class="card">
           <div class="card-label"><span>界面主题</span><span class="card-hint">外观偏好</span></div>
           <div class="seg">
-            <button class="seg-btn" class:active={!client.colorScheme() || client.colorScheme() === 'dark'}>深色</button>
-            <button class="seg-btn" class:active={client.colorScheme() === 'light'}>浅色</button>
-            <button class="seg-btn" class:active={client.colorScheme() === 'system'}>跟随系统</button>
+            <button class="seg-btn" class:active={!client.colorScheme() || client.colorScheme() === 'dark'} onclick={() => client.client.setColorScheme('dark')}>深色</button>
+            <button class="seg-btn" class:active={client.colorScheme() === 'light'} onclick={() => client.client.setColorScheme('light')}>浅色</button>
+            <button class="seg-btn" class:active={client.colorScheme() === 'system'} onclick={() => client.client.setColorScheme('system')}>跟随系统</button>
           </div>
         </div>
         <div class="card">

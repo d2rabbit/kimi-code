@@ -97,8 +97,8 @@
             </div>
           {/if}
         {/each}
-        {#if approval}<ApprovalCard />{/if}
-        {#if question}<QuestionCard />{/if}
+        {#if approval}<ApprovalCard request={approval} />{/if}
+        {#if question}<QuestionCard question={question} />{/if}
       {/if}
     </div>
   </div>
