@@ -174,13 +174,13 @@
 
   /* Welcome */
   .welcome { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 60px 20px 40px; text-align: center; }
-  .welcome-logo { font-size: 36px; color: #666; }
-  .welcome h1 { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin: 0; color: #e0e0e0; }
+  .welcome-logo { font-size: 36px; color: var(--color-text-faint, rgba(235,235,245,0.3)); }
+  .welcome h1 { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin: 0; color: var(--color-text, rgba(255,255,255,0.92)); }
   .welcome-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 440px; }
   .chip {
     padding: 7px 14px; border-radius: 999px;
     border: 1px solid rgba(255,255,255,0.08);
-    background: transparent; color: #999; font-size: 12px; cursor: pointer;
+    background: transparent; color: var(--color-text-muted, rgba(235,235,245,0.6)); font-size: 12px; cursor: pointer;
     transition: all 0.12s;
   }
   .chip:hover { border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.92); background: rgba(255,255,255,0.03); }
@@ -190,23 +190,23 @@
   .msg { display: flex; flex-direction: column; gap: 6px; }
   .user-msg { align-items: flex-end; }
   .msg-bubble { max-width: 85%; padding: 8px 14px; border-radius: 16px 16px 4px 16px; }
-  .user-bubble { background: rgba(255,255,255,0.08); color: #e0e0e0; }
+  .user-bubble { background: rgba(255,255,255,0.08); color: var(--color-text, rgba(255,255,255,0.92)); }
   .msg-images { display: flex; gap: 6px; flex-wrap: wrap; max-width: 85%; }
   .msg-images img { max-width: 120px; border-radius: 8px; }
   .assistant-msg { width: 100%; }
-  .msg-text { color: #ccc; line-height: 1.6; }
-  .thinking { font-size: 12px; color: #666; margin: 4px 0; }
-  .thinking summary { cursor: pointer; color: #555; }
+  .msg-text { color: var(--color-text, rgba(255,255,255,0.92)); line-height: 1.6; }
+  .thinking { font-size: 12px; color: var(--color-text-faint, rgba(235,235,245,0.3)); margin: 4px 0; }
+  .thinking summary { cursor: pointer; color: var(--color-text-faint, rgba(235,235,245,0.3)); }
   .thinking-body { padding: 8px 12px; font-family: monospace; white-space: pre-wrap; }
 
   .tool-group { margin: 4px 0; }
   .tg-toggle {
-    font-size: 11px; color: #666; cursor: pointer;
+    font-size: 11px; color: var(--color-text-faint, rgba(235,235,245,0.3)); cursor: pointer;
     background: none; border: none; padding: 2px 0;
   }
 
   .compaction {
-    text-align: center; font-size: 11px; color: #555;
+    text-align: center; font-size: 11px; color: var(--color-text-faint, rgba(235,235,245,0.3));
     padding: 8px; border-top: 1px solid rgba(255,255,255,0.04);
     border-bottom: 1px solid rgba(255,255,255,0.04);
   }

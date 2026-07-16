@@ -397,7 +397,7 @@
     border-radius: 50%;
     border: none;
     background: rgba(0,0,0,0.6);
-    color: #fff;
+    color: var(--color-text, rgba(255,255,255,0.92));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -428,7 +428,7 @@
     align-items: center;
     justify-content: center;
     background: var(--color-danger-soft, rgba(255,107,107,0.8));
-    color: #fff;
+    color: var(--color-text, rgba(255,255,255,0.92));
     font-weight: bold;
   }
 
@@ -475,7 +475,7 @@
     border-radius: var(--radius-full, 999px);
     border: none;
     background: var(--color-text, #ececec);
-    color: #1a1a1a;
+    color: var(--color-bg);
     cursor: pointer;
     transition: all var(--duration-fast, 120ms);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
