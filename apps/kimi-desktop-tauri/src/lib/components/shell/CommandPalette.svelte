@@ -14,7 +14,7 @@
 
   let query = $state('');
   let selectedIndex = $state(0);
-  let inputEl: HTMLInputElement | $state(null) = null;
+  let inputEl: HTMLInputElement | null = $state(null);
 
   type CommandCategory = 'action' | 'session';
   interface CommandItem {

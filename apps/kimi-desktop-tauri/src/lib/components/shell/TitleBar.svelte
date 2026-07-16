@@ -1,13 +1,22 @@
 <!-- TitleBar.svelte — platform-aware custom title bar with breadcrumb + window controls. -->
 <script lang="ts">
-  import { getCurrentWindow } from '@tauri-apps/api/window';
-  import { platform as getPlatform } from '@tauri-apps/plugin-os';
   import * as client from '../../stores/client.svelte';
   import Icon from '../ui/Icon.svelte';
 
-  const appWindow = getCurrentWindow();
-  const os = typeof window !== 'undefined' ? getPlatform() : undefined;
-  const isLinux = os === 'linux';
+  // Guard against non-Tauri environments (e.g. browser dev preview)
+  const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+  let appWindow: { minimize: () => void; toggleMaximize: () => void; close: () => void } | null = null;
+  let isLinux = false;
+
+  if (isTauri) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const { platform } = await import('@tauri-apps/plugin-os');
+      appWindow = getCurrentWindow();
+      isLinux = platform() === 'linux';
+    } catch { /* non-Tauri: appWindow stays null */ }
+  }
 
   const wsName = $derived(client.activeWorkspaceName() || '');
   const sessionTitle = $derived(client.activeSession()?.title || '新对话');
@@ -21,15 +30,15 @@
     {/if}
     <span class="crumb current">{sessionTitle}</span>
   </div>
-  {#if isLinux}
+  {#if isLinux && appWindow}
     <div class="window-controls">
-      <button class="wc-btn" onclick={() => appWindow.minimize()} aria-label="最小化" type="button">
+      <button class="wc-btn" onclick={() => appWindow!.minimize()} aria-label="最小化" type="button">
         <Icon name="minus" size="sm" />
       </button>
-      <button class="wc-btn" onclick={() => appWindow.toggleMaximize()} aria-label="最大化" type="button">
+      <button class="wc-btn" onclick={() => appWindow!.toggleMaximize()} aria-label="最大化" type="button">
         <Icon name="expand" size="sm" />
       </button>
-      <button class="wc-btn wc-close" onclick={() => appWindow.close()} aria-label="关闭" type="button">
+      <button class="wc-btn wc-close" onclick={() => appWindow!.close()} aria-label="关闭" type="button">
         <Icon name="close" size="sm" />
       </button>
     </div>
