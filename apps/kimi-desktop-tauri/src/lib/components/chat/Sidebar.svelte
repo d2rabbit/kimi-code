@@ -129,7 +129,7 @@
 {/if}
 
 <style>
-  .sidebar { width: var(--sidebar-width, 220px); flex: none; height: 100%; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%), rgba(13, 13, 15, 0.90); backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); border-right: none; overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
+  .sidebar { width: var(--sidebar-width, 220px); flex: none; height: 100%; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%), rgba(13, 13, 15, 0.90); backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); border-right: 1px solid rgba(255,255,255,0.06); overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
 
   .search-box {
     display: flex; align-items: center; gap: 6px; margin: 10px 10px 4px;
@@ -144,7 +144,7 @@
 
   .icon-nav { display: flex; align-items: center; gap: 2px; padding: 4px 10px 6px; flex: none; }
   .icon-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: none; border-radius: 6px; background: transparent; color: var(--color-text-faint, rgba(235,235,245,0.3)); cursor: pointer; transition: all 0.1s; }
-  .icon-btn:hover { background: #222222; color: var(--color-text-muted, rgba(235,235,245,0.6)); }
+  .icon-btn:hover { background: rgba(255,255,255,0.04); color: var(--color-text-muted, rgba(235,235,245,0.6)); }
   .nav-gap { flex: 1; }
 
   .sessions { flex: 1; overflow-y: auto; padding: 0 6px; }
@@ -154,8 +154,8 @@
   .ws-count { font-size: 10px; color: var(--color-text-faint); font-family: monospace; }
 
   .s-row { position: relative; display: flex; align-items: center; border-radius: 4px; }
-  .s-row:hover { background: #222222; }
-  .s-row.active { background: #2a2a2a; }
+  .s-row:hover { background: rgba(255,255,255,0.04); }
+  .s-row.active { background: rgba(255,255,255,0.08); }
   .s-btn { flex: 1; display: flex; align-items: center; gap: 6px; text-align: left; padding: 4px 22px 4px 10px; border: none; border-radius: 4px; background: transparent; color: var(--color-text-muted, rgba(235,235,245,0.6)); font-size: 12px; cursor: pointer; overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
   .s-btn:hover { color: var(--color-text, rgba(255,255,255,0.92)); }
   .s-btn.active { color: var(--color-text, rgba(255,255,255,0.92)); font-weight: 500; }

@@ -113,7 +113,7 @@
   .dot-run { width: 6px; height: 6px; border-radius: 50%; background: var(--color-success, #30d158); animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .hdr-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
-  .stop-btn { padding: 3px 10px; border-radius: 5px; border: 1px solid var(--color-danger-bd, rgba(255,69,58,0.3)); background: #1a1a1a; color: var(--color-danger, #ff453a); font-size: 11px; cursor: pointer; }
+  .stop-btn { padding: 3px 10px; border-radius: 5px; border: 1px solid var(--color-danger-bd, rgba(255,69,58,0.3)); background: transparent; color: var(--color-danger, #ff453a); font-size: 11px; cursor: pointer; }
 
   .msgs { flex: 1; overflow-y: auto; }
   .msgs-inner { max-width: 740px; margin: 0 auto; padding: 12px 16px 6px; display: flex; flex-direction: column; gap: 8px; }
@@ -122,7 +122,7 @@
   .w-logo { font-size: 32px; color: var(--color-text-faint); }
   .welcome h1 { font-size: 18px; font-weight: 500; color: var(--color-text); margin: 0; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 420px; }
-  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-line); background: #1a1a1a; color: var(--color-text-muted); font-size: 12px; cursor: pointer; }
+  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-line); background: transparent; color: var(--color-text-muted); font-size: 12px; cursor: pointer; }
   .chip:hover { border-color: var(--color-line-strong); color: var(--color-text); background: var(--color-hover); }
 
   .msg { display: flex; flex-direction: column; gap: 4px; }

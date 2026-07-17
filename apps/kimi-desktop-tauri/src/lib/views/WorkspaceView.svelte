@@ -28,5 +28,5 @@
 <style>
   .workspace { display: flex; height: 100%; width: 100%; overflow: hidden; }
   .sidebar-col { flex: none; height: 100%; overflow: hidden; }
-  .chat-col { flex: 1; min-width: 0; height: 100%; overflow: hidden; background: #1a1a1a; }
+  .chat-col { flex: 1; min-width: 0; height: 100%; overflow: hidden; background: transparent; }
 </style>

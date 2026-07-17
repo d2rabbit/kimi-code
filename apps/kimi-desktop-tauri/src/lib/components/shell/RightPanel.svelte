@@ -222,7 +222,7 @@
     background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%), rgba(15, 15, 18, 0.88);
     backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
     -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
-    border-left: 1px solid #2a2a2a;
+    border-left: 1px solid rgba(255,255,255,0.06);
   }
   :global(html[data-color-scheme="light"]) .right-panel {
     background: rgba(248, 248, 250, 0.7);

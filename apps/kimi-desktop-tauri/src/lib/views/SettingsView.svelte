@@ -114,27 +114,38 @@
           <div class="card-label"><span>合并所有 Skills</span><span class="card-hint">自动合并所有来源的技能</span></div>
           <button class="toggle" class:on={client.config()?.mergeAllAvailableSkills} onclick={() => toggleConfig('mergeAllAvailableSkills', !client.config()?.mergeAllAvailableSkills)} aria-label="切换合并 Skills"></button>
         </label>
-        <h3 style="margin-top: 24px;">账号</h3>
-        <div class="card">
-          <div class="card-label">
-            <span class="card-title">Kimi 账号</span>
-            <span class="card-hint">{client.authProvider()?.status === 'authenticated' ? '已登录: ' + (client.authProvider()?.name ?? 'Kimi') : '登录 Kimi 账号以使用第一方模型'}</span>
-          </div>
-          {#if client.authProvider()?.status === 'authenticated'}
-            <button class="text-btn" onclick={() => { void client.client.logout(); }} type="button">退出登录</button>
-          {:else}
-            <button class="primary-btn" onclick={() => { void client.client.startOAuthLogin(); }} type="button">登录 Kimi</button>
-          {/if}
-        </div>
       </div>
 
     {:else if active === 'models'}
       <div class="panel">
         <h2>模型设置</h2>
-        <p class="sub-desc">管理模型供应商和别名。设置后可在 Composer 模型选择器中使用。</p>
+        <p class="sub-desc">管理模型供应商和别名。配置后可在聊天时选择使用。</p>
 
-        <!-- Model list -->
-        <h3>模型列表</h3>
+        <!-- Kimi first-party account login -->
+        <div class="kimi-provider-card">
+          <div class="kimi-provider-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="kimi-brand">Kimi</span>
+              {#if client.authProvider()?.status === 'authenticated'}
+                <span class="badge-ok">已启用</span>
+              {/if}
+            </div>
+            <div style="font-size: 12px; color: rgba(235,235,245,0.6);">
+              {#if client.authProvider()?.status === 'authenticated'}
+                {client.authProvider()?.name ?? '已登录'}
+                <button class="text-btn" onclick={() => { void client.client.logout(); }} type="button" style="margin-left: 8px;">退出</button>
+              {:else}
+                <button class="primary-btn" onclick={() => { void client.client.startOAuthLogin(); }} type="button">登录 Kimi</button>
+              {/if}
+            </div>
+          </div>
+          <div class="kimi-provider-body">
+            <div>
+              <div class="card-title">第一方模型</div>
+              <div class="card-hint">登录后可使用 Kimi K2 等第一方模型，无需配置 API Key</div>
+            </div>
+          </div>
+        </div>
         {#if client.models().length > 0}
           <div class="card-list">
             {#each client.models() as m (m.id)}
@@ -438,7 +449,7 @@
     background: rgba(18, 18, 22, 0.50);
     backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
     -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
-    border-right: 1px solid #2a2a2a;
+    border-right: 1px solid rgba(255,255,255,0.06);
     padding: 12px 8px; overflow-y: auto;
     display: flex; flex-direction: column;
   }
@@ -463,8 +474,8 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 12px 14px; margin-bottom: 8px;
     border-radius: 8px;
-    background: #1e1e1e;
-    border: 1px solid #2a2a2a;
+    background: rgba(44,44,46,0.8);
+    border: 1px solid rgba(84,84,88,0.65);
   }
   .toggle-card { cursor: pointer; }
   .card-label { display: flex; flex-direction: column; gap: 2px; }
@@ -516,4 +527,24 @@
   .form-input { padding: 6px 10px; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-line); color: var(--color-text); font-size: 12px; outline: none; font-family: inherit; }
   .form-input:focus { border-color: var(--color-accent); }
   .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* Kimi provider card — gradient highlight matching HTML design */
+  .kimi-provider-card {
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(45,212,191,0.08), rgba(56,189,248,0.04));
+    border: 1px solid rgba(45,212,191,0.25);
+    padding: 18px;
+    margin-bottom: 12px;
+  }
+  .kimi-provider-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .kimi-brand {
+    font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.92);
+  }
+  .kimi-provider-body {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-top: 1px solid rgba(84,84,88,0.4);
+  }
 </style>
