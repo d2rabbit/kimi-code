@@ -243,7 +243,7 @@
     cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
   .collapse-btn:hover { background: var(--color-hover); color: var(--color-text-muted); }
-  .panel-content { flex: 1; overflow-y: auto; padding: 8px; }
+  .panel-content { flex: 1; overflow-y: auto; padding: 6px; }
   .placeholder { text-align: center; padding: 40px 20px; color: var(--color-text-faint); font-size: 13px; }
 
   /* Git Panel */

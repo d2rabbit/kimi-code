@@ -443,7 +443,7 @@
 <style>
   .composer {
     flex: none;
-    padding: 8px 24px 12px;
+    padding: 6px 20px 10px;
     max-width: var(--p-content-max, 760px);
     width: 100%;
     margin: 0 auto;

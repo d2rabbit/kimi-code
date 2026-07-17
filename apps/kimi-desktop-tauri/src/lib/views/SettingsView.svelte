@@ -432,7 +432,7 @@
   .user-name { font-size: 11px; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .badge-pro { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 999px; background: var(--color-success-soft); color: var(--color-success); }
 
-  .settings-content { flex: 1; overflow-y: auto; padding: 32px 40px; display: flex; justify-content: center; }
+  .settings-content { flex: 1; overflow-y: auto; padding: 24px 32px; display: flex; justify-content: center; }
   .panel { max-width: 640px; width: 100%; }
   .panel h2 { font-size: 18px; font-weight: 600; color: var(--color-text); margin: 0 0 20px; }
   .panel h3 { font-size: 13px; font-weight: 600; color: var(--color-text-muted); margin: 24px 0 12px; text-transform: uppercase; letter-spacing: 0.04em; }

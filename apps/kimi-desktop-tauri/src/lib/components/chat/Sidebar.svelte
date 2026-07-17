@@ -156,7 +156,7 @@
   .s-row { position: relative; display: flex; align-items: center; border-radius: 5px; }
   .s-row:hover { background: var(--color-hover, rgba(255,255,255,0.06)); }
   .s-row.active { background: var(--color-selected, rgba(255,255,255,0.1)); }
-  .s-btn { flex: 1; display: flex; align-items: center; gap: 6px; text-align: left; padding: 5px 24px 5px 10px; border: none; border-radius: 5px; background: transparent; color: var(--color-text-muted, rgba(235,235,245,0.6)); font-size: 13px; cursor: pointer; overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
+  .s-btn { flex: 1; display: flex; align-items: center; gap: 6px; text-align: left; padding: 4px 22px 4px 10px; border: none; border-radius: 5px; background: transparent; color: var(--color-text-muted, rgba(235,235,245,0.6)); font-size: 12px; cursor: pointer; overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
   .s-btn:hover { color: var(--color-text, rgba(255,255,255,0.92)); }
   .s-btn.active { color: var(--color-text, rgba(255,255,255,0.92)); font-weight: 500; }
   .s-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -169,7 +169,7 @@
   .s-row:hover .s-more { opacity: 1; }
   .s-more:hover { background: var(--color-hover); color: var(--color-text-muted); }
   .s-more span { font-size: 12px; }
-  .rename { flex: 1; padding: 3px 6px; border: 1px solid var(--color-line-strong); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-size: 13px; outline: none; margin: 0 4px; }
+  .rename { flex: 1; padding: 3px 6px; border: 1px solid var(--color-line-strong); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-size: 12px; outline: none; margin: 0 4px; }
 
   .empty { padding: 30px; text-align: center; color: var(--color-text-faint); font-size: 12px; }
 

@@ -64,7 +64,7 @@
   :global(html, body) { height: 100%; margin: 0; }
   :global(body) {
     color: var(--color-text, rgba(255,255,255,0.92));
-    font: 13px/1.5 "Inter Variable","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font: 12px/1.45 "Inter Variable","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     overflow: hidden; -webkit-font-smoothing: antialiased;
   }
   :global(*::-webkit-scrollbar) { width: 4px; height: 4px; }

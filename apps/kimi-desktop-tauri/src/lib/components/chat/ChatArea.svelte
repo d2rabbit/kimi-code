@@ -116,7 +116,7 @@
   .stop-btn { padding: 3px 10px; border-radius: 5px; border: 1px solid var(--color-danger-bd, rgba(255,69,58,0.3)); background: transparent; color: var(--color-danger, #ff453a); font-size: 11px; cursor: pointer; }
 
   .msgs { flex: 1; overflow-y: auto; }
-  .msgs-inner { max-width: 740px; margin: 0 auto; padding: 16px 20px 8px; display: flex; flex-direction: column; gap: 12px; }
+  .msgs-inner { max-width: 740px; margin: 0 auto; padding: 12px 16px 6px; display: flex; flex-direction: column; gap: 8px; }
 
   .welcome { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 50px 20px; text-align: center; }
   .w-logo { font-size: 32px; color: var(--color-text-faint); }
