@@ -89,6 +89,64 @@
     }
   }
 
+  // Install/Uninstall via kimi CLI
+  let showInstallForm = $state(false);
+  let installSource = $state('');
+  let installing = $state(false);
+  let installMsg = $state<string | null>(null);
+
+  async function installPlugin() {
+    if (!installSource.trim()) return;
+    installing = true;
+    installMsg = null;
+    try {
+      // Use Tauri shell plugin to run kimi CLI
+      const { Command } = await import('@tauri-apps/plugin-shell');
+      const cmd = Command.sidecar('kimi', ['plugin', 'install', installSource.trim()]);
+      const output = await cmd.execute();
+      if (output.code === 0) {
+        installMsg = `安装成功`;
+        showInstallForm = false;
+        installSource = '';
+        await loadPlugins();
+      } else {
+        installMsg = `安装失败: ${output.stderr || output.stdout}`;
+      }
+    } catch (e) {
+      installMsg = `安装失败: ${e instanceof Error ? e.message : String(e)}`;
+    } finally {
+      installing = false;
+    }
+  }
+
+  async function uninstallPlugin(pluginId: string, displayName: string) {
+    if (!confirm(`确认卸载插件 ${displayName}?`)) return;
+    try {
+      const { Command } = await import('@tauri-apps/plugin-shell');
+      const cmd = Command.sidecar('kimi', ['plugin', 'remove', pluginId]);
+      const output = await cmd.execute();
+      if (output.code === 0) {
+        await loadPlugins();
+      } else {
+        error = `卸载失败: ${output.stderr || output.stdout}`;
+      }
+    } catch (e) {
+      error = `卸载失败: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
+
+  async function togglePlugin(pluginId: string, currentEnabled: boolean) {
+    try {
+      const { Command } = await import('@tauri-apps/plugin-shell');
+      const action = currentEnabled ? 'disable' : 'enable';
+      const cmd = Command.sidecar('kimi', ['plugin', action, pluginId]);
+      await cmd.execute();
+      await loadPlugins();
+    } catch (e) {
+      error = `操作失败: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
+
   $effect(() => {
     void loadPlugins();
   });
@@ -100,11 +158,35 @@
       <h3>已安装插件</h3>
       <p class="plugin-desc">管理通过 Kimi Code CLI 安装的技能、MCP 服务器和数据源插件。</p>
     </div>
-    <button class="refresh-btn" onclick={loadPlugins} disabled={loading}>
-      <Icon name="refresh" size="sm" />
-      刷新
-    </button>
+    <div style="display: flex; gap: 6px;">
+      <button class="refresh-btn" onclick={loadPlugins} disabled={loading}>
+        <Icon name="refresh" size="sm" />
+        刷新
+      </button>
+      {#if isTauri}
+        <button class="refresh-btn" onclick={() => showInstallForm = !showInstallForm} style="color: var(--color-accent); border-color: var(--color-accent-bd);">
+          <Icon name="plus" size="sm" />
+          安装
+        </button>
+      {/if}
+    </div>
   </div>
+
+  {#if showInstallForm}
+    <div class="plugin-install-form">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <label style="font-size: 11px; color: var(--color-text-faint);">插件源 (GitHub repo / 名称 / ZIP URL)</label>
+        <input bind:value={installSource} placeholder="owner/repo 或 plugin-name" style="padding: 5px 10px; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); color: var(--color-text); font-size: 12px; outline: none;" onkeydown={(e) => { if (e.key === 'Enter') installPlugin(); }} />
+      </div>
+      {#if installMsg}<p style="font-size: 11px; color: var(--color-text-faint);">{installMsg}</p>{/if}
+      <div style="display: flex; justify-content: flex-end; gap: 6px;">
+        <button class="refresh-btn" onclick={() => showInstallForm = false}>取消</button>
+        <button class="refresh-btn" style="color: var(--color-accent); border-color: var(--color-accent-bd);" onclick={installPlugin} disabled={installing}>
+          {installing ? '安装中…' : '安装'}
+        </button>
+      </div>
+    </div>
+  {/if}
 
   {#if loading}
     <div class="plugin-loading">
@@ -166,18 +248,28 @@
               {#if plugin.developer}<span class="footer-item">{plugin.developer}</span>{/if}
               {#if plugin.installedAt}<span class="footer-item">安装于 {formatDate(plugin.installedAt)}</span>{/if}
             </div>
-            {#if plugin.originalSource}
-              <a
-                class="plugin-link"
-                href={plugin.originalSource}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={plugin.originalSource}
-              >
-                <Icon name="external-link" size="sm" />
-                源
-              </a>
-            {/if}
+            <div style="display: flex; gap: 6px; align-items: center;">
+              {#if plugin.originalSource}
+                <a
+                  class="plugin-link"
+                  href={plugin.originalSource}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={plugin.originalSource}
+                >
+                  <Icon name="external-link" size="sm" />
+                  源
+                </a>
+              {/if}
+              {#if isTauri}
+                <button class="refresh-btn" style="font-size: 11px; padding: 3px 8px;" onclick={() => togglePlugin(plugin.id, plugin.enabled)}>
+                  {plugin.enabled ? '禁用' : '启用'}
+                </button>
+                <button class="refresh-btn" style="font-size: 11px; padding: 3px 8px; color: var(--color-danger);" onclick={() => uninstallPlugin(plugin.id, plugin.displayName)}>
+                  卸载
+                </button>
+              {/if}
+            </div>
           </div>
         </div>
       {/each}
