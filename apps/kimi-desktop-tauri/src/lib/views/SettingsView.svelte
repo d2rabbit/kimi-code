@@ -204,6 +204,10 @@
 
         <!-- Providers -->
         <h3>供应商</h3>
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <button class="text-btn" onclick={() => { void client.client.refreshProviders(); }} type="button">↻ 刷新全部</button>
+          <button class="text-btn" onclick={() => { void client.client.refreshProviderModels('oauth'); }} type="button">↻ 刷新 OAuth 模型</button>
+        </div>
         <div class="card-list">
           {#each client.providers() as p (p.id)}
             <div class="card model-card">
@@ -212,11 +216,17 @@
                 <span class="model-meta">{p.type}{#if p.baseUrl} · {p.baseUrl}{/if}</span>
               </div>
               <div class="model-actions">
-                {#if p.hasApiKey}
-                  <span class="badge-ok">已配置</span>
-                  <button class="text-btn" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }} type="button">更新 Key</button>
+                {#if p.status === 'connected'}
+                  <span class="badge-ok">已连接</span>
+                {:else if p.status === 'error'}
+                  <span class="badge-warn">错误</span>
                 {:else}
                   <span class="badge-warn">未配置</span>
+                {/if}
+                {#if p.hasApiKey}
+                  <button class="text-btn" onclick={() => { void client.client.refreshProviderModels(p.id); }} type="button">↻ 刷新模型</button>
+                  <button class="text-btn" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }} type="button">更新 Key</button>
+                {:else}
                   <button class="text-btn" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }} type="button">配置</button>
                 {/if}
               </div>
