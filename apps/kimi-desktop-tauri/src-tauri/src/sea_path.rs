@@ -57,20 +57,42 @@ pub fn resolve_sea_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let exe = executable_name();
 
     if cfg!(debug_assertions) {
-        // Dev mode: resolve relative to the workspace root.
-        // CARGO_MANIFEST_DIR = .../apps/kimi-desktop-tauri/src-tauri
-        // ancestors: [0]=src-tauri, [1]=kimi-desktop-tauri, [2]=apps, [3]=repo root
+        // Dev mode: try multiple paths in order:
+        // 1. apps/kimi-code/dist-native/bin/<target>/kimi (built from source)
+        // 2. ~/.kimi-code/bin/kimi (installed via kimi install/update)
+        // 3. src-tauri/bin/<target>/kimi (manually placed for testing)
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let apps_dir = manifest_dir
             .ancestors()
             .nth(2)
             .ok_or("Cannot determine apps directory")?;
+
+        // Path 1: built from source
         let dev_path = apps_dir
             .join("kimi-code")
             .join("dist-native")
             .join("bin")
             .join(&target)
             .join(exe);
+        if dev_path.exists() {
+            return Ok(dev_path);
+        }
+
+        // Path 2: installed kimi CLI
+        if let Some(home) = dirs::home_dir() {
+            let installed_path = home.join(".kimi-code").join("bin").join("kimi");
+            if installed_path.exists() {
+                return Ok(installed_path);
+            }
+        }
+
+        // Path 3: manually placed in src-tauri/bin
+        let local_path = manifest_dir.join("bin").join(&target).join(exe);
+        if local_path.exists() {
+            return Ok(local_path);
+        }
+
+        // Fallback: return path 1 (will error clearly when spawned)
         return Ok(dev_path);
     }
 
