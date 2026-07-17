@@ -350,7 +350,7 @@
           {#each [['⌘K', '命令面板'], ['⌘N', '新建对话'], ['⌘B', '切换侧栏'], ['⌘J', '切换右栏'], ['⌘S', 'Steer (注入运行中)'], ['⌘.', '中断当前'], ['⌘Q', '退出']] as [key, desc]}
             <div class="card" style="justify-content: space-between;">
               <span style="font-size: 13px; color: var(--color-text-muted);">{desc}</span>
-              <kbd style="font-size: 11px; padding: 3px 10px; border-radius: var(--radius-md, 10px); background: var(--color-accent-soft); color: var(--color-accent); font-family: var(--font-mono, monospace); border: 1px solid var(--color-accent-bd);">{key}</kbd>
+              <kbd style="font-size: 11px; padding: 3px 10px; border-radius: 8px; background: var(--color-accent-soft); color: var(--color-accent); font-family: var(--font-mono, monospace); border: 1px solid var(--color-accent-bd);">{key}</kbd>
             </div>
           {/each}
         </div>
@@ -442,10 +442,10 @@
     padding: 12px 8px; overflow-y: auto;
     display: flex; flex-direction: column;
   }
-  .back-btn { display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 10px; border: none; border-radius: 6px; background: transparent; color: var(--color-text-muted); font-size: 13px; cursor: pointer; }
+  .back-btn { display: flex; align-items: center; gap: 6px; width: 100%; padding: 8px 10px; border: none; border-radius: 8px; background: transparent; color: var(--color-text-muted); font-size: 13px; cursor: pointer; }
   .back-btn:hover { background: var(--color-hover); color: var(--color-text); }
   .nav-divider { height: 1px; background: var(--glass-divider, rgba(255,255,255,0.06)); margin: 8px 4px; }
-  .nav-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: none; border-radius: 6px; background: transparent; color: var(--color-text-muted); font-size: 13px; cursor: pointer; text-align: left; transition: all 0.1s; }
+  .nav-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: none; border-radius: 8px; background: transparent; color: var(--color-text-muted); font-size: 13px; cursor: pointer; text-align: left; transition: all 0.1s; }
   .nav-item:hover { background: var(--color-hover); color: var(--color-text); }
   .nav-item.active { background: var(--color-selected); color: var(--color-text); }
 
@@ -462,16 +462,16 @@
   .card {
     display: flex; align-items: center; justify-content: space-between;
     padding: 12px 14px; margin-bottom: 8px;
-    border-radius: var(--radius-md, 10px);
-    background: #252525;
-    border: 1px solid #333;
+    border-radius: 8px;
+    background: #1e1e1e;
+    border: 1px solid #2a2a2a;
   }
   .toggle-card { cursor: pointer; }
   .card-label { display: flex; flex-direction: column; gap: 2px; }
   .card-label span:first-child { font-size: 13px; color: var(--color-text); }
   .card-hint { font-size: 11px; color: var(--color-text-faint); }
 
-  .seg { display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-line-strong); }
+  .seg { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-line-strong); }
   .seg-btn { padding: 5px 12px; border: none; background: transparent; color: var(--color-text-muted); font-size: 12px; cursor: pointer; }
   .seg-btn.active { background: var(--color-selected); color: var(--color-text); }
 
@@ -503,17 +503,17 @@
 
   /* Model/provider CRUD */
   .model-actions { display: flex; align-items: center; gap: 8px; }
-  .text-btn { border: none; background: transparent; color: var(--color-accent); font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 6px; font-family: inherit; }
+  .text-btn { border: none; background: transparent; color: var(--color-accent); font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 8px; font-family: inherit; }
   .text-btn:hover { background: var(--color-accent-soft); }
-  .primary-btn { border: none; border-radius: var(--radius-md, 10px); background: var(--color-accent); color: #0a0a0c; font-size: 12px; padding: 5px 14px; cursor: pointer; font-weight: 500; font-family: inherit; }
+  .primary-btn { border: none; border-radius: 8px; background: var(--color-accent); color: #0a0a0c; font-size: 12px; padding: 5px 14px; cursor: pointer; font-weight: 500; font-family: inherit; }
   .primary-btn:hover { background: var(--color-accent-hover); }
-  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--color-line-strong); border-radius: var(--radius-md, 10px); background: transparent; color: var(--color-accent); font-size: 13px; cursor: pointer; transition: border-color 120ms; font-family: inherit; }
+  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--color-line-strong); border-radius: 8px; background: transparent; color: var(--color-accent); font-size: 13px; cursor: pointer; transition: border-color 120ms; font-family: inherit; }
   .dashed-btn:hover { border-color: var(--color-accent); background: var(--color-accent-soft); }
   .add-model-section { margin-top: 8px; }
   .add-model-form { display: flex; flex-direction: column; gap: 10px; }
   .form-row-vertical { display: flex; flex-direction: column; gap: 3px; }
   .form-lbl { font-size: 11px; color: var(--color-text-faint); }
-  .form-input { padding: 6px 10px; border-radius: var(--radius-md, 10px); background: rgba(0,0,0,0.25); border: 1px solid var(--color-line); color: var(--color-text); font-size: 12px; outline: none; font-family: inherit; }
+  .form-input { padding: 6px 10px; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-line); color: var(--color-text); font-size: 12px; outline: none; font-family: inherit; }
   .form-input:focus { border-color: var(--color-accent); }
   .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
 </style>
