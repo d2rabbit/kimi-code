@@ -438,7 +438,7 @@
     background: rgba(18, 18, 22, 0.50);
     backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
     -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
-    border-right: 1px solid var(--glass-divider, rgba(255,255,255,0.06));
+    border-right: 1px solid #2a2a2a;
     padding: 12px 8px; overflow-y: auto;
     display: flex; flex-direction: column;
   }
@@ -463,8 +463,8 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 12px 14px; margin-bottom: 8px;
     border-radius: var(--radius-md, 10px);
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: #252525;
+    border: 1px solid #333;
   }
   .toggle-card { cursor: pointer; }
   .card-label { display: flex; flex-direction: column; gap: 2px; }
