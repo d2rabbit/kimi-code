@@ -215,7 +215,7 @@
 
         <!-- Providers -->
         <h3>供应商</h3>
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
           <button class="text-btn" onclick={() => { void client.client.refreshProviders(); }} type="button">↻ 刷新全部</button>
           <button class="text-btn" onclick={() => { void client.client.refreshProviderModels('oauth'); }} type="button">↻ 刷新 OAuth 模型</button>
         </div>
@@ -361,7 +361,7 @@
           {#each [['⌘K', '命令面板'], ['⌘N', '新建对话'], ['⌘B', '切换侧栏'], ['⌘J', '切换右栏'], ['⌘S', 'Steer (注入运行中)'], ['⌘.', '中断当前'], ['⌘Q', '退出']] as [key, desc]}
             <div class="card" style="justify-content: space-between;">
               <span style="font-size: 13px; color: var(--color-text-muted);">{desc}</span>
-              <kbd style="font-size: 11px; padding: 3px 10px; border-radius: 8px; background: var(--color-accent-soft); color: var(--color-accent); font-family: var(--font-mono, monospace); border: 1px solid var(--color-accent-bd);">{key}</kbd>
+              <kbd style="font-size: 11px; padding: 3px 10px; border-radius: 14px; background: var(--color-accent-soft); color: var(--color-accent); font-family: var(--font-mono, monospace); border: 1px solid var(--color-accent-bd);">{key}</kbd>
             </div>
           {/each}
         </div>
@@ -453,10 +453,10 @@
     padding: 12px 8px; overflow-y: auto;
     display: flex; flex-direction: column;
   }
-  .back-btn { display: flex; align-items: center; gap: 6px; width: 100%; padding: 8px 10px; border: none; border-radius: 8px; background: transparent; color: var(--color-text-muted); font-size: 13px; cursor: pointer; }
+  .back-btn { display: flex; align-items: center; gap: 6px; width: 100%; padding: 8px 10px; border: none; border-radius: 14px; background: transparent; color: var(--color-text-muted); font-size: 13px; cursor: pointer; }
   .back-btn:hover { background: var(--color-hover); color: var(--color-text); }
   .nav-divider { height: 1px; background: var(--glass-divider, rgba(255,255,255,0.06)); margin: 8px 4px; }
-  .nav-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: none; border-radius: 8px; background: transparent; color: var(--color-text-muted); font-size: 13px; cursor: pointer; text-align: left; transition: all 0.1s; }
+  .nav-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: none; border-radius: 14px; background: transparent; color: var(--color-text-muted); font-size: 13px; cursor: pointer; text-align: left; transition: all 0.1s; }
   .nav-item:hover { background: var(--color-hover); color: var(--color-text); }
   .nav-item.active { background: var(--color-selected); color: var(--color-text); }
 
@@ -472,8 +472,8 @@
 
   .card {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 14px; margin-bottom: 8px;
-    border-radius: 8px;
+    padding: 14px 18px; margin-bottom: 10px;
+    border-radius: 14px;
     background: rgba(44,44,46,0.8);
     border: 1px solid rgba(84,84,88,0.65);
   }
@@ -482,7 +482,7 @@
   .card-label span:first-child { font-size: 13px; color: var(--color-text); }
   .card-hint { font-size: 11px; color: var(--color-text-faint); }
 
-  .seg { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-line-strong); }
+  .seg { display: flex; border-radius: 14px; overflow: hidden; border: 1px solid var(--color-line-strong); }
   .seg-btn { padding: 5px 12px; border: none; background: transparent; color: var(--color-text-muted); font-size: 12px; cursor: pointer; }
   .seg-btn.active { background: var(--color-selected); color: var(--color-text); }
 
@@ -509,22 +509,22 @@
   .usage-label { font-size: 11px; color: var(--color-text-faint); display: block; }
   .usage-val { font-size: 14px; color: var(--color-text); font-family: var(--font-mono, monospace); }
 
-  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 8px; background: var(--color-surface-raised); color: var(--color-success); font-size: 12px; z-index: 500; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 14px; background: var(--color-surface-raised); color: var(--color-success); font-size: 12px; z-index: 500; }
   .toast.err { color: var(--color-danger); }
 
   /* Model/provider CRUD */
   .model-actions { display: flex; align-items: center; gap: 8px; }
-  .text-btn { border: none; background: transparent; color: var(--color-accent); font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 8px; font-family: inherit; }
+  .text-btn { border: none; background: transparent; color: var(--color-accent); font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 14px; font-family: inherit; }
   .text-btn:hover { background: var(--color-accent-soft); }
-  .primary-btn { border: none; border-radius: 8px; background: var(--color-accent); color: #0a0a0c; font-size: 12px; padding: 5px 14px; cursor: pointer; font-weight: 500; font-family: inherit; }
+  .primary-btn { border: none; border-radius: 14px; background: var(--color-accent); color: #0a0a0c; font-size: 12px; padding: 5px 14px; cursor: pointer; font-weight: 500; font-family: inherit; }
   .primary-btn:hover { background: var(--color-accent-hover); }
-  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--color-line-strong); border-radius: 8px; background: transparent; color: var(--color-accent); font-size: 13px; cursor: pointer; transition: border-color 120ms; font-family: inherit; }
+  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--color-line-strong); border-radius: 14px; background: transparent; color: var(--color-accent); font-size: 13px; cursor: pointer; transition: border-color 120ms; font-family: inherit; }
   .dashed-btn:hover { border-color: var(--color-accent); background: var(--color-accent-soft); }
   .add-model-section { margin-top: 8px; }
   .add-model-form { display: flex; flex-direction: column; gap: 10px; }
   .form-row-vertical { display: flex; flex-direction: column; gap: 3px; }
   .form-lbl { font-size: 11px; color: var(--color-text-faint); }
-  .form-input { padding: 6px 10px; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-line); color: var(--color-text); font-size: 12px; outline: none; font-family: inherit; }
+  .form-input { padding: 6px 10px; border-radius: 14px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-line); color: var(--color-text); font-size: 12px; outline: none; font-family: inherit; }
   .form-input:focus { border-color: var(--color-accent); }
   .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
