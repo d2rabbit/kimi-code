@@ -3,6 +3,7 @@
      Configuration is file-driven (POST /config or edit config file). -->
 <script lang="ts">
   import { getKimiWebApi } from '../../api';
+  import { invoke as tauriInvoke } from '@tauri-apps/api/core';
   import Icon from '../ui/Icon.svelte';
 
   interface McpServer {
@@ -17,6 +18,32 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
   let restarting = $state<string | null>(null);
+
+  // Add/Edit form state
+  let showForm = $state(false);
+  let editingId = $state<string | null>(null);
+  let formData = $state({
+    name: '',
+    command: '',
+    args: '',
+    env: '',
+    cwd: '',
+    transport: 'stdio' as 'stdio' | 'http' | 'sse',
+    url: '',
+    headers: '',
+  });
+  let configPath = '';
+
+  async function getConfigPath(): Promise<string> {
+    if (configPath) return configPath;
+    try {
+      const home = await tauriInvoke<string>('get_kimi_home');
+      configPath = `${home}/config.toml`;
+    } catch {
+      configPath = '~/.kimi-code/config.toml';
+    }
+    return configPath;
+  }
 
   async function loadServers() {
     loading = true;
@@ -44,6 +71,91 @@
     }
   }
 
+  function openAddForm() {
+    editingId = null;
+    formData = { name: '', command: '', args: '', env: '', cwd: '', transport: 'stdio', url: '', headers: '' };
+    showForm = true;
+  }
+
+  async function saveMcpServer() {
+    const path = await getConfigPath();
+    let config = '';
+    try {
+      config = await tauriInvoke<string>('read_text_file', { path });
+    } catch { config = ''; }
+
+    const serverName = formData.name.trim();
+    if (!serverName) return;
+
+    // Build TOML snippet for this server
+    let snippet = `\n[mcp_servers.${serverName}]\n`;
+    if (formData.transport === 'stdio') {
+      snippet += `command = "${formData.command.trim()}"\n`;
+      if (formData.args.trim()) {
+        const argList = formData.args.split(/\s+/).filter(Boolean);
+        snippet += `args = [${argList.map(a => `"${a}"`).join(', ')}]\n`;
+      }
+      if (formData.env.trim()) {
+        snippet += `[mcp_servers.${serverName}.env]\n`;
+        for (const line of formData.env.split('\n')) {
+          const [k, v] = line.split('=').map(s => s.trim());
+          if (k && v) snippet += `${k} = "${v}"\n`;
+        }
+      }
+      if (formData.cwd.trim()) snippet += `cwd = "${formData.cwd.trim()}"\n`;
+    } else {
+      snippet += `url = "${formData.url.trim()}"\n`;
+      if (formData.headers.trim()) {
+        snippet += `[mcp_servers.${serverName}.headers]\n`;
+        for (const line of formData.headers.split('\n')) {
+          const [k, v] = line.split('=').map(s => s.trim());
+          if (k && v) snippet += `${k} = "${v}"\n`;
+        }
+      }
+    }
+
+    // Remove existing entry if editing
+    if (editingId) {
+      const regex = new RegExp(`\\n\\[mcp_servers\\.${editingId}\\][\\s\\S]*?(?=\\n\\[|$)`, 'g');
+      config = config.replace(regex, '');
+    }
+
+    // Append new entry
+    config += snippet;
+
+    try {
+      await tauriInvoke('write_text_file', { path, content: config });
+      showForm = false;
+      // Restart the server to apply
+      try {
+        const api = getKimiWebApi();
+        await api.restartMcpServer(serverName);
+      } catch {}
+      await loadServers();
+    } catch (e) {
+      error = `写入配置失败: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
+
+  async function deleteMcpServer(serverName: string) {
+    const path = await getConfigPath();
+    let config = '';
+    try {
+      config = await tauriInvoke<string>('read_text_file', { path });
+    } catch { return; }
+
+    // Remove the server block
+    const regex = new RegExp(`\\n\\[mcp_servers\\.${serverName}\\][\\s\\S]*?(?=\\n\\[|$)`, 'g');
+    config = config.replace(regex, '');
+
+    try {
+      await tauriInvoke('write_text_file', { path, content: config });
+      await loadServers();
+    } catch (e) {
+      error = `删除失败: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
+
   // Load on mount.
   $effect(() => {
     void loadServers();
@@ -56,11 +168,65 @@
       <h3>MCP 服务器</h3>
       <p class="mcp-desc">Model Context Protocol 服务器为 Agent 提供外部工具和数据源。</p>
     </div>
-    <button class="refresh-btn" onclick={loadServers} disabled={loading}>
-      <Icon name="refresh" size="sm" />
-      刷新
-    </button>
+    <div style="display: flex; gap: 6px;">
+      <button class="refresh-btn" onclick={loadServers} disabled={loading}>
+        <Icon name="refresh" size="sm" />
+        刷新
+      </button>
+      <button class="refresh-btn" onclick={openAddForm} style="color: var(--color-accent); border-color: var(--color-accent-bd);">
+        <Icon name="plus" size="sm" />
+        添加
+      </button>
+    </div>
   </div>
+
+  {#if showForm}
+    <div class="mcp-form">
+      <div class="form-row">
+        <label>名称</label>
+        <input bind:value={formData.name} placeholder="my-server" />
+      </div>
+      <div class="form-row">
+        <label>传输方式</label>
+        <select bind:value={formData.transport}>
+          <option value="stdio">stdio (本地进程)</option>
+          <option value="http">http (远程 API)</option>
+          <option value="sse">sse (Server-Sent Events)</option>
+        </select>
+      </div>
+      {#if formData.transport === 'stdio'}
+        <div class="form-row">
+          <label>命令</label>
+          <input bind:value={formData.command} placeholder="npx" />
+        </div>
+        <div class="form-row">
+          <label>参数 (空格分隔)</label>
+          <input bind:value={formData.args} placeholder="@modelcontextprotocol/server-filesystem /tmp" />
+        </div>
+        <div class="form-row">
+          <label>环境变量 (每行 KEY=VALUE)</label>
+          <textarea bind:value={formData.env} rows="2" placeholder="API_KEY=xxx"></textarea>
+        </div>
+        <div class="form-row">
+          <label>工作目录 (可选)</label>
+          <input bind:value={formData.cwd} placeholder="/home/user" />
+        </div>
+      {:else}
+        <div class="form-row">
+          <label>URL</label>
+          <input bind:value={formData.url} placeholder="https://api.example.com/mcp" />
+        </div>
+        <div class="form-row">
+          <label>Headers (每行 KEY=VALUE)</label>
+          <textarea bind:value={formData.headers} rows="2" placeholder="Authorization=Bearer xxx"></textarea>
+        </div>
+      {/if}
+      <div class="form-actions">
+        <button class="refresh-btn" onclick={() => showForm = false}>取消</button>
+        <button class="refresh-btn" style="color: var(--color-accent); border-color: var(--color-accent-bd);" onclick={saveMcpServer}>保存并重启</button>
+      </div>
+    </div>
+  {/if}
 
   {#if loading}
     <div class="mcp-loading">
@@ -91,18 +257,27 @@
               </div>
               <span class="mcp-id">{server.id}</span>
             </div>
-            <button
-              class="restart-btn"
-              onclick={() => handleRestart(server.id)}
-              disabled={restarting === server.id}
-            >
-              {#if restarting === server.id}
-                <div class="mini-spinner"></div>
-              {:else}
-                <Icon name="refresh" size="sm" />
-              {/if}
-              重启
-            </button>
+            <div style="display: flex; gap: 4px;">
+              <button
+                class="restart-btn"
+                onclick={() => handleRestart(server.id)}
+                disabled={restarting === server.id}
+              >
+                {#if restarting === server.id}
+                  <div class="mini-spinner"></div>
+                {:else}
+                  <Icon name="refresh" size="sm" />
+                {/if}
+                重启
+              </button>
+              <button
+                class="restart-btn"
+                onclick={() => { if (confirm(`删除 ${server.name}?`)) deleteMcpServer(server.name); }}
+                style="color: var(--color-danger);"
+              >
+                <Icon name="close" size="sm" />
+              </button>
+            </div>
           </div>
           <div class="mcp-meta">
             {#if server.toolCount !== undefined}
@@ -335,5 +510,41 @@
     color: var(--color-text, #ececec);
     font-size: var(--text-sm, 13px);
     cursor: pointer;
+  }
+  .mcp-form {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .mcp-form .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .mcp-form label {
+    font-size: 11px;
+    color: var(--color-text-faint);
+  }
+  .mcp-form input, .mcp-form select, .mcp-form textarea {
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: var(--color-text);
+    font-size: 12px;
+    outline: none;
+    font-family: inherit;
+  }
+  .mcp-form input:focus, .mcp-form select:focus, .mcp-form textarea:focus {
+    border-color: var(--color-accent);
+  }
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 </style>
