@@ -178,7 +178,7 @@
   .add-ws { width: 100%; display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: none; border-radius: 4px; background: transparent; color: var(--color-text-faint); font-size: 12px; cursor: pointer; }
   .add-ws:hover { background: var(--color-hover); color: var(--color-text-muted); }
   .user { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 4px 4px; }
-  .avatar { width: 22px; height: 22px; border-radius: 50%; background: #333; color: #888); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .avatar { width: 22px; height: 22px; border-radius: 50%; background: #333; color: #888; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
   .user-name { font-size: 11px; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .badge-pro { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 999px; background: var(--color-success-soft, rgba(48,209,88,0.16)); color: var(--color-success, #30d158); }
 </style>
