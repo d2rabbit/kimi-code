@@ -114,6 +114,18 @@
           <div class="card-label"><span>合并所有 Skills</span><span class="card-hint">自动合并所有来源的技能</span></div>
           <button class="toggle" class:on={client.config()?.mergeAllAvailableSkills} onclick={() => toggleConfig('mergeAllAvailableSkills', !client.config()?.mergeAllAvailableSkills)} aria-label="切换合并 Skills"></button>
         </label>
+        <h3 style="margin-top: 24px;">账号</h3>
+        <div class="card">
+          <div class="card-label">
+            <span class="card-title">Kimi 账号</span>
+            <span class="card-hint">{client.authProvider()?.status === 'authenticated' ? '已登录: ' + (client.authProvider()?.name ?? 'Kimi') : '登录 Kimi 账号以使用第一方模型'}</span>
+          </div>
+          {#if client.authProvider()?.status === 'authenticated'}
+            <button class="text-btn" onclick={() => { void client.client.logout(); }} type="button">退出登录</button>
+          {:else}
+            <button class="primary-btn" onclick={() => { void client.client.startOAuthLogin(); }} type="button">登录 Kimi</button>
+          {/if}
+        </div>
       </div>
 
     {:else if active === 'models'}
