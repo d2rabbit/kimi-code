@@ -129,7 +129,7 @@
 {/if}
 
 <style>
-  .sidebar { width: var(--sidebar-width, 240px); flex: none; height: 100%; display: flex; flex-direction: column; background: rgba(18, 18, 22, 0.50); backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); border-right: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); overflow: hidden; }
+  .sidebar { width: var(--sidebar-width, 240px); flex: none; height: 100%; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%), rgba(18, 18, 22, 0.60); backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); border-right: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
 
   .search-box {
     display: flex; align-items: center; gap: 6px; margin: 10px 10px 4px;
@@ -156,7 +156,7 @@
   .s-row { position: relative; display: flex; align-items: center; border-radius: 5px; }
   .s-row:hover { background: var(--color-hover, rgba(255,255,255,0.06)); }
   .s-row.active { background: var(--color-selected, rgba(255,255,255,0.1)); }
-  .s-btn { flex: 1; display: flex; align-items: center; gap: 6px; text-align: left; padding: 5px 24px 5px 10px; border: none; border-radius: 5px; background: transparent; color: var(--color-text-muted, rgba(235,235,245,0.6)); font-size: 13px; cursor: pointer; overflow: hidden; }
+  .s-btn { flex: 1; display: flex; align-items: center; gap: 6px; text-align: left; padding: 5px 24px 5px 10px; border: none; border-radius: 5px; background: transparent; color: var(--color-text-muted, rgba(235,235,245,0.6)); font-size: 13px; cursor: pointer; overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
   .s-btn:hover { color: var(--color-text, rgba(255,255,255,0.92)); }
   .s-btn.active { color: var(--color-text, rgba(255,255,255,0.92)); font-weight: 500; }
   .s-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

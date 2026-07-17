@@ -520,7 +520,7 @@
     display: flex;
     align-items: flex-end;
     gap: 4px;
-    background: rgba(26, 26, 30, 0.50);
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%), rgba(26, 26, 30, 0.60);
     backdrop-filter: blur(20px) saturate(1.4);
     -webkit-backdrop-filter: blur(20px) saturate(1.4);
     border: 1px solid var(--color-line, #2e2e2e);
