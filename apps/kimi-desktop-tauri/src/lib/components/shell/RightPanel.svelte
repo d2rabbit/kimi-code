@@ -273,8 +273,8 @@
 
   /* Task Panel */
   .task-card {
-    border-radius: var(--radius-lg, 14px);
-    background: rgba(44,44,46,0.8); border: 1px solid var(--color-line);
+    border-radius: var(--radius-md, 10px);
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
     padding: 14px; margin-bottom: 8px;
   }
   .task-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }

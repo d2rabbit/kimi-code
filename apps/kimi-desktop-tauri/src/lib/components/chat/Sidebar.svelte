@@ -129,7 +129,7 @@
 {/if}
 
 <style>
-  .sidebar { width: var(--sidebar-width, 240px); flex: none; height: 100%; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%), rgba(13, 13, 15, 0.90); backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); border-right: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
+  .sidebar { width: var(--sidebar-width, 220px); flex: none; height: 100%; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%), rgba(13, 13, 15, 0.90); backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); border-right: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
 
   .search-box {
     display: flex; align-items: center; gap: 6px; margin: 10px 10px 4px;

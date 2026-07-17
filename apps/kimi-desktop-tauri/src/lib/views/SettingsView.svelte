@@ -451,10 +451,10 @@
 
   .card {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px; margin-bottom: 10px;
-    border-radius: var(--radius-lg, 12px);
-    background: var(--color-surface-raised, rgba(44,44,46,0.8));
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    padding: 12px 14px; margin-bottom: 8px;
+    border-radius: var(--radius-md, 10px);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
   .toggle-card { cursor: pointer; }
   .card-label { display: flex; flex-direction: column; gap: 2px; }
@@ -497,7 +497,7 @@
   .text-btn:hover { background: var(--color-accent-soft); }
   .primary-btn { border: none; border-radius: var(--radius-md, 10px); background: var(--color-accent); color: #0a0a0c; font-size: 12px; padding: 5px 14px; cursor: pointer; font-weight: 500; font-family: inherit; }
   .primary-btn:hover { background: var(--color-accent-hover); }
-  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--color-line-strong); border-radius: var(--radius-lg, 14px); background: transparent; color: var(--color-accent); font-size: 13px; cursor: pointer; transition: border-color 120ms; font-family: inherit; }
+  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--color-line-strong); border-radius: var(--radius-md, 10px); background: transparent; color: var(--color-accent); font-size: 13px; cursor: pointer; transition: border-color 120ms; font-family: inherit; }
   .dashed-btn:hover { border-color: var(--color-accent); background: var(--color-accent-soft); }
   .add-model-section { margin-top: 8px; }
   .add-model-form { display: flex; flex-direction: column; gap: 10px; }

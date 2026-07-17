@@ -444,7 +444,7 @@
   .composer {
     flex: none;
     padding: 6px 20px 10px;
-    max-width: var(--p-content-max, 760px);
+    max-width: 740px;
     width: 100%;
     margin: 0 auto;
     box-sizing: border-box;

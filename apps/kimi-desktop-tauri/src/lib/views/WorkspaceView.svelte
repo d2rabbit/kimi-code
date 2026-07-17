@@ -7,10 +7,10 @@
 
   let { onnavigate = () => {} }: { onnavigate?: () => void } = $props();
 
-  let sidebarWidth = $state(240);
+  let sidebarWidth = $state(220);
 
   function onSidebarResize(delta: number) {
-    sidebarWidth = Math.max(180, Math.min(360, sidebarWidth + delta));
+    sidebarWidth = Math.max(160, Math.min(300, sidebarWidth + delta));
   }
 </script>
 

@@ -108,7 +108,7 @@
 <style>
   .chat { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
 
-  .hdr { flex: none; height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); }
+  .hdr { flex: none; height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); }
   .hdr-title { font-size: 13px; font-weight: 500; color: var(--color-text, rgba(255,255,255,0.92)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dot-run { width: 6px; height: 6px; border-radius: 50%; background: var(--color-success, #30d158); animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -120,7 +120,7 @@
 
   .welcome { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 50px 20px; text-align: center; }
   .w-logo { font-size: 32px; color: var(--color-text-faint); }
-  .welcome h1 { font-size: 20px; font-weight: 500; color: var(--color-text); margin: 0; }
+  .welcome h1 { font-size: 18px; font-weight: 500; color: var(--color-text); margin: 0; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 420px; }
   .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-line); background: transparent; color: var(--color-text-muted); font-size: 12px; cursor: pointer; }
   .chip:hover { border-color: var(--color-line-strong); color: var(--color-text); background: var(--color-hover); }
