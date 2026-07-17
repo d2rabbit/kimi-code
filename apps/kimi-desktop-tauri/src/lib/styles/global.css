@@ -314,14 +314,14 @@ html[data-color-scheme="dark"] body {
     radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.08), transparent),
     radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.06), transparent),
     radial-gradient(ellipse 40% 30% at 50% 50%, rgba(45, 212, 191, 0.03), transparent),
-    #08080a;
+    rgba(8, 8, 12, 0.75);
 }
 html[data-color-scheme="light"] body {
   background:
     radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.10), transparent),
     radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.06), transparent),
     radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
-    #f0f0f4;
+    rgba(240, 240, 244, 0.75);
 }
 @media (prefers-color-scheme: dark) {
   html[data-color-scheme="system"] body {
@@ -330,7 +330,7 @@ html[data-color-scheme="light"] body {
       radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.08), transparent),
       radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.06), transparent),
       radial-gradient(ellipse 40% 30% at 50% 50%, rgba(45, 212, 191, 0.03), transparent),
-      #08080a;
+      rgba(8, 8, 12, 0.75);
   }
 }
 @media (prefers-color-scheme: light) {
@@ -339,7 +339,7 @@ html[data-color-scheme="light"] body {
       radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.10), transparent),
       radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.06), transparent),
       radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
-      #f0f0f4;
+      rgba(240, 240, 244, 0.75);
   }
 }
 
@@ -845,9 +845,10 @@ body,
 #app {
   height: 100%;
   margin: 0;
-  /* Explicit background on the root: a transparent <html> gets sampled as
-     "dark" by some extensions, which then repaint it. */
-  background: var(--color-bg);
+  /* Transparent root so Tauri's window transparency shows through.
+     The radial-gradient glows are painted on body (see below),
+     and panels use backdrop-filter to blur them. */
+  background: transparent;
 }
 
 /* Pin the app to the viewport so it always fills the screen even if a dark-mode
