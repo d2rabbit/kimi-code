@@ -73,25 +73,32 @@
       {:else}
         {#each client.turns() as turn (turn.id)}
           {#if turn.role === 'user'}
-            <div class="msg">
-              <span class="avatar u">你</span>
-              <div class="body">
+            <!-- 用户：右侧气泡（QQ 聊天式） -->
+            <div class="msg user">
+              <div class="bubble u-bub">
                 {#if turn.images?.length}<div class="imgs">{#each turn.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}</div>{/if}
                 {#if turn.text}<div class="u-text">{turn.text}</div>{/if}
               </div>
+              <span class="avatar u">你</span>
             </div>
           {:else if turn.role === 'compaction'}
             <div class="compact">对话已压缩</div>
           {:else}
-            <div class="msg">
+            <!-- Agent：左侧气泡 + 下方工具卡 -->
+            <div class="msg agent">
               <span class="avatar a">K</span>
-              <div class="body">
+              <div class="a-col">
+                <div class="bubble a-bub">
+                  {#each group(turn.blocks ?? []) as item}
+                    {#if item.kind === 'thinking'}
+                      <details class="think"><summary>思考过程</summary><div class="think-body">{item.thinking}</div></details>
+                    {:else if item.kind === 'text'}
+                      <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn === client.turns().at(-1)} /></div>
+                    {/if}
+                  {/each}
+                </div>
                 {#each group(turn.blocks ?? []) as item, i}
-                  {#if item.kind === 'thinking'}
-                    <details class="think"><summary>思考过程</summary><div class="think-body">{item.thinking}</div></details>
-                  {:else if item.kind === 'text'}
-                    <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn === client.turns().at(-1)} /></div>
-                  {:else if item.kind === 'tool'}
+                  {#if item.kind === 'tool'}
                     <ToolCard tool={item.tool} />
                   {:else if item.kind === 'tg'}
                     <button class="tg-toggle" onclick={() => expanded[i] = !(expanded[i] ?? true)}>{expanded[i] ?? true ? '▾' : '▸'} {item.tools.length} 个工具调用</button>
@@ -134,14 +141,34 @@
   .chip:hover { border-color: var(--ac-bd); color: var(--ac); background: var(--ac-soft); transform: translateY(-1px); }
 
   .msg { display: flex; gap: 10px; font-size: 13px; line-height: 1.65; }
-  .msg .body { flex: 1; min-width: 0; }
-  .avatar { width: 22px; height: 22px; border-radius: var(--r-sm); flex: none; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+  .msg.user { justify-content: flex-end; }
+  .avatar { width: 22px; height: 22px; border-radius: var(--r-sm); flex: none; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; margin-top: 2px; }
   .avatar.u { background: var(--amb-soft); color: var(--amb); }
   .avatar.a { background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; }
-  .u-text { color: var(--tx); }
+
+  /* ---- QQ 式气泡 ---- */
+  .bubble { max-width: 78%; padding: 9px 13px; font-size: 13px; line-height: 1.65; }
+  .u-bub {
+    background: var(--ac-soft);
+    border: 1px solid var(--ac-bd);
+    color: var(--tx);
+    border-radius: 14px 14px 4px 14px;
+    box-shadow: var(--toplight);
+  }
+  .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .a-bub {
+    align-self: flex-start;
+    max-width: 100%;
+    background: var(--l2);
+    border: 1px solid var(--bd);
+    border-radius: 14px 14px 14px 4px;
+    box-shadow: var(--toplight);
+  }
   .imgs { display: flex; gap: 4px; margin-bottom: 4px; }
   .imgs img { max-width: 100px; border-radius: 6px; }
+  .u-text { white-space: pre-wrap; word-break: break-word; }
   .ai-text { color: var(--tx); line-height: 1.65; }
+  .ai-text + .ai-text, .think + .ai-text { margin-top: 6px; }
   .think { font-size: 12px; color: var(--tx3); }
   .think summary { cursor: pointer; color: var(--tx3); }
   .think-body { padding: 6px 10px; font-family: var(--font-mono); white-space: pre-wrap; color: var(--tx3); }

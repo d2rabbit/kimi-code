@@ -43,11 +43,25 @@
     finally { gitLoading = false; }
   }
 
-  // Load on session change; poll lightly while a session is running.
+  // Load on session change; then keep GitTree live: poll every 5s while a
+  // session is active (the agent edits files continuously), and refresh once
+  // more whenever a turn completes (turn count settles).
   $effect(() => {
     void activeSessionId;
     gitData = null;
-    if (activeSessionId) void loadGitStatus();
+    if (!activeSessionId) return;
+    void loadGitStatus();
+    const timer = setInterval(() => { void loadGitStatus(); }, 5000);
+    return () => clearInterval(timer);
+  });
+
+  let lastTurnCount = 0;
+  $effect(() => {
+    const n = client.turns().length;
+    if (n !== lastTurnCount) {
+      lastTurnCount = n;
+      if (activeSessionId && n > 0) void loadGitStatus();
+    }
   });
 
   // --- GitTree: build a nested tree from the flat entries map ---

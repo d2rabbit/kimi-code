@@ -15,7 +15,12 @@
   let mentionIndex = $state(0);
 
   async function searchMention(query: string) {
-    const sid = client.activeSessionId();
+    let sid = client.activeSessionId();
+    if (!sid) {
+      const wsId = client.activeWorkspaceId();
+      const pool = wsId ? client.sessions().filter((x) => x.workspaceId === wsId) : client.sessions();
+      sid = pool[0]?.id ?? client.sessions()[0]?.id ?? '';
+    }
     if (!sid || !query) { mentionResults = []; return; }
     try {
       const api = getKimiWebApi();
@@ -206,9 +211,10 @@
     }
   });
 
-  // --- Slash menu ---
-  const slashQuery = $derived(text.startsWith('/') && !text.includes(' ') ? text.slice(1) : '');
-  const showSlash = $derived(slashQuery !== '' && !running);
+  // --- Slash menu：'/' 或 '$' 开头即触发（空查询展示全部技能） ---
+  const slashTrigger = $derived((text.startsWith('/') || text.startsWith('$')) && !text.includes(' '));
+  const slashQuery = $derived(slashTrigger ? text.slice(1) : '');
+  const showSlash = $derived(slashTrigger && !running);
 
   $effect(() => { void slashQuery; slashIndex = 0; });
   $effect(() => { void client.activeSessionId(); historyBrowsing = false; });
@@ -296,12 +302,22 @@
     textareaEl?.focus();
   }
 
-  // --- Model / thinking menus ---
-  let openMenu = $state<'model' | 'think' | null>(null);
-  function toggleMenu(m: 'model' | 'think') {
+  // --- Mode / model / thinking menus ---
+  let openMenu = $state<'mode' | 'model' | 'think' | null>(null);
+  function toggleMenu(m: 'mode' | 'model' | 'think') {
     openMenu = openMenu === m ? null : m;
   }
   function closeMenus() { openMenu = null; }
+
+  function setMode(m: 'manual' | 'auto' | 'yolo' | 'plan') {
+    if (m === 'plan') {
+      if (!client.planMode()) client.client.togglePlanMode();
+    } else {
+      if (client.planMode()) client.client.togglePlanMode();
+      client.client.setPermission(m);
+    }
+    closeMenus();
+  }
 
   const THINK_LEVELS: { id: string; label: string }[] = [
     { id: 'off', label: '关' },
@@ -414,14 +430,21 @@
 
     <!-- Control row -->
     <div class="ctrl">
-      <!-- Permission mode: segmented control -->
-      <span class="mode-seg" role="group" aria-label="权限模式">
-        {#each PERMS as p (p.id)}
-          <button type="button" class:on={client.permission() === p.id} onclick={() => client.client.setPermission(p.id)}>{p.label}</button>
-        {/each}
+      <!-- Mode dropdown: 手动 / 自动 / 完全访问 / 计划 -->
+      <span class="pill-wrap">
+        <button class="cpill mode-pill" type="button" onclick={(e) => { e.stopPropagation(); toggleMenu('mode'); }}>
+          <span class="mic">{client.planMode() ? '📋' : client.permission() === 'yolo' ? '⚡' : client.permission() === 'auto' ? '✏️' : '✋'}</span><b>{client.planMode() ? '计划模式' : PERMS.find((p) => p.id === client.permission())?.label}</b><span class="chev">▾</span>
+        </button>
+        {#if openMenu === 'mode'}
+          <div class="pop glass-menu animate-spring-in" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
+            <button class="pop-item glass-menu-item" class:on={!client.planMode() && client.permission() === 'manual'} onclick={() => setMode('manual')} type="button">✋ 手动<span class="src">逐条审批</span></button>
+            <button class="pop-item glass-menu-item" class:on={!client.planMode() && client.permission() === 'auto'} onclick={() => setMode('auto')} type="button">✏️ 自动<span class="src">自动编辑，高危审批</span></button>
+            <button class="pop-item glass-menu-item" class:on={!client.planMode() && client.permission() === 'yolo'} onclick={() => setMode('yolo')} type="button">⚡ 完全访问<span class="src">不审批</span></button>
+            <button class="pop-item glass-menu-item" class:on={client.planMode()} onclick={() => setMode('plan')} type="button">📋 计划模式<span class="src">只读分析出计划</span></button>
+          </div>
+        {/if}
       </span>
-      <!-- Mode toggles -->
-      <button class="mini-toggle" class:on={client.planMode()} onclick={() => client.client.togglePlanMode()} type="button">Plan</button>
+      <!-- Goal / Swarm 并列开关 -->
       <button class="mini-toggle" class:on={client.goalMode()} onclick={() => client.client.toggleGoalMode()} type="button">Goal</button>
       <button class="mini-toggle" class:on={client.swarmMode()} onclick={() => client.client.toggleSwarmMode()} type="button">Swarm</button>
 
@@ -561,13 +584,6 @@
 
   /* Control row */
   .ctrl { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--bd); }
-  .mode-seg { display: inline-flex; border: 1px solid var(--bd); border-radius: var(--r-md); overflow: hidden; background: var(--l1); }
-  .mode-seg button {
-    padding: 4px 11px; font-size: 11px; font-weight: 500; color: var(--tx3); border: none;
-    background: transparent; cursor: pointer; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
-  }
-  .mode-seg button:hover { color: var(--tx); }
-  .mode-seg button.on { background: var(--ac); color: #fff; font-weight: 600; }
   .mini-toggle {
     padding: 3px 8px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent;
     color: var(--tx3); font-size: 10.5px; font-weight: 500; cursor: pointer;
@@ -582,6 +598,8 @@
   .ring.warning { background: conic-gradient(var(--warn) calc(var(--pct, 0) * 1%), var(--bd) 0); }
 
   .pill-wrap { position: relative; }
+  .mode-pill { border: 1px solid var(--bd); background: var(--l1); }
+  .mode-pill .mic { font-size: 11px; }
   .cpill {
     display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px;
     border-radius: var(--r-sm); font-size: 11px; font-weight: 500; color: var(--tx2);

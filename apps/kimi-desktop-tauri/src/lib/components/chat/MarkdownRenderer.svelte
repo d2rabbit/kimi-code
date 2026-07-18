@@ -16,7 +16,8 @@
   } = $props();
 
   // Shiki highlighter singleton (loaded once).
-  let highlighter: Awaited<ReturnType<typeof createHighlighter>> | null = null;
+  import type { Highlighter } from 'shiki';
+  let highlighter: Highlighter | null = null;
   
 
   const COMMON_LANGS = [
@@ -57,7 +58,8 @@
         return renderDiff(code);
       }
       const cls = `language-${language}`;
-      return `<pre class="code-block ${cls}"><code class="${cls}">${escaped}</code></pre>`;
+      const head = `<div class="cb-head"><span class="cb-lang">${language}</span><button class="cb-copy" type="button" data-copy>⧉ 复制</button></div>`;
+      return `<div class="cb-wrap">${head}<pre class="code-block ${cls}"><code class="${cls}">${escaped}</code></pre></div>`;
     },
   };
 
@@ -89,7 +91,7 @@
     if (!text) return '';
     const raw = marked.parse(text, { async: false }) as string;
     return DOMPurify.sanitize(raw, {
-      ADD_ATTR: ['target', 'data-line'],
+      ADD_ATTR: ['target', 'data-line', 'data-copy'],
     });
   });
 
@@ -134,6 +136,19 @@
   // Use highlighted version when available, plain during streaming.
   const displayHtml = $derived(highlightedHtml || html);
 
+  // Copy button delegation (DOMPurify strips inline handlers).
+  function onBodyClick(e: MouseEvent) {
+    const btn = (e.target as HTMLElement).closest?.('[data-copy]') as HTMLElement | null;
+    if (!btn) return;
+    const wrap = btn.closest('.cb-wrap');
+    const code = wrap?.querySelector('code');
+    if (!code) return;
+    void navigator.clipboard.writeText(code.innerText).then(() => {
+      btn.textContent = '已复制 ✓';
+      setTimeout(() => { btn.textContent = '⧉ 复制'; }, 1200);
+    });
+  }
+
   // Detect dark mode for re-highlighting on theme change.
   $effect(() => {
     // Re-render when color-scheme changes.
@@ -148,7 +163,7 @@
   });
 </script>
 
-<div class="md-body">
+<div class="md-body" onclick={onBodyClick} role="presentation">
   {#if streaming && text}
     {@html displayHtml}<span class="md-cursor"></span>
   {:else}
@@ -224,13 +239,40 @@
     margin: 16px 0;
   }
 
-  /* Code blocks */
-  :global(.md-body .code-block) {
+  /* Code blocks (with header bar) */
+  :global(.md-body .cb-wrap) {
     margin: 0 0 12px;
-    padding: 10px 12px;
     border-radius: var(--r-md);
-    background: var(--l1);
     border: 1px solid var(--bd);
+    background: var(--l1);
+    overflow: hidden;
+  }
+  :global(.md-body .cb-head) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--bd);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--tx3);
+  }
+  :global(.md-body .cb-copy) {
+    border: none;
+    background: transparent;
+    color: var(--tx3);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    padding: 0;
+    transition: color var(--duration-fast) var(--ease);
+  }
+  :global(.md-body .cb-copy:hover) { color: var(--tx); }
+  :global(.md-body .code-block) {
+    margin: 0;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
     overflow-x: auto;
     font-family: var(--font-mono);
     font-size: 11.5px;
