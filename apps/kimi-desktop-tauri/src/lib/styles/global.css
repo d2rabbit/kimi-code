@@ -215,7 +215,7 @@ textarea::placeholder {
   --p-bp-md: 980px;
 
   /* -- grain texture (磨砂颗粒层，全主题共用) -------------------------------- */
-  --grain-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  --grain-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.14'/%3E%3C/svg%3E");
 
   color-scheme: light dark;
 }
@@ -475,20 +475,11 @@ html[data-color-scheme="light"] {
 /* ============================================================================
    BODY — 雾晕底（opaque 合成）+ 噪点颗粒层 + 焦点环
 ============================================================================ */
+/* 磨砂颗粒并入背景层（无独立合成层、无 blend-mode —— 滚动零额外开销）。
+   噪点 alpha 直接烘进 SVG（rect opacity 0.55 → 视觉≈overlay 4.5%）。 */
 body {
-  background: var(--haze), var(--bg);
-}
-
-/* 磨砂颗粒：一层全局 SVG feTurbulence 微粒，overlay 混合，不拦截任何交互。 */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  pointer-events: none;
-  background-image: var(--grain-img);
-  opacity: var(--grain-op, 0.045);
-  mix-blend-mode: overlay;
+  background: var(--grain-img), var(--haze), var(--bg);
+  background-blend-mode: soft-light, normal, normal;
 }
 
 /* 键盘焦点环（可访问性硬规则） */

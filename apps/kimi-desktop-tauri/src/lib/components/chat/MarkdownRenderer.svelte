@@ -6,7 +6,6 @@
 <script lang="ts">
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
-  import { createHighlighter } from 'shiki';
 
   let {
     text = '',
@@ -29,11 +28,13 @@
   // Init shiki lazily (only when not streaming — streaming uses plain text).
   async function ensureShiki() {
     if (highlighter) return highlighter;
+    // Dynamic import: shiki (~1.5MB) is code-split and fetched only when the
+    // first code block actually needs highlighting — never on app boot.
+    const { createHighlighter } = await import('shiki');
     highlighter = await createHighlighter({
       themes: ['github-dark', 'github-light'],
       langs: COMMON_LANGS,
     });
-    
     return highlighter;
   }
 
