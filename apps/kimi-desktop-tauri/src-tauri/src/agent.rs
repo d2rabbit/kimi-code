@@ -104,6 +104,14 @@ pub async fn start_embedded_agent(app: &AppHandle) -> Result<String, String> {
             "error",
         ])
         .env("KIMI_CODE_HOME", &home)
+        // The WebView runs on Tauri's custom protocol (tauri.localhost), which
+        // is cross-origin to the agent's 127.0.0.1 origin. The daemon's CORS
+        // middleware is whitelist-based (KIMI_CODE_CORS_ORIGINS), so whitelist
+        // both spellings for REST + WS to work from the WebView.
+        .env(
+            "KIMI_CODE_CORS_ORIGINS",
+            "http://tauri.localhost,tauri://localhost",
+        )
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::inherit())
