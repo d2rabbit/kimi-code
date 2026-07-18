@@ -1,20 +1,41 @@
-<!-- Sidebar.svelte — glass sidebar: search box + icon nav + workspace sessions + user area. -->
+<!-- Sidebar.svelte — frosted sidebar: new task + module nav + workspace-grouped sessions + user/settings footer. -->
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
   import Icon from '../ui/Icon.svelte';
 
-  let { onnavigate = () => {} }: { onnavigate?: () => void } = $props();
+  let {
+    onnavigate = () => {},
+    onmoduleview = (_view: string) => {},
+    activeModule = 'chat',
+  }: {
+    onnavigate?: () => void;
+    onmoduleview?: (view: string) => void;
+    activeModule?: string;
+  } = $props();
 
   let menuSession = $state<{ id: string; title: string; x: number; y: number } | null>(null);
   let renamingId = $state<string | null>(null);
   let renameValue = $state('');
+  /** Collapsed workspace ids. */
+  let collapsed = $state<Set<string>>(new Set());
 
   function select(e: Event, id: string) {
     if (renamingId === id) return;
     e.preventDefault();
     void client.client.selectSession(id);
+    onmoduleview('chat');
   }
-  function newChat() { client.client.clearActiveSession(); }
+  function newChat() {
+    client.client.clearActiveSession();
+    onmoduleview('chat');
+  }
+
+  function toggleWs(id: string) {
+    const next = new Set(collapsed);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    collapsed = next;
+  }
 
   function openMenu(e: MouseEvent, s: { id: string; title: string }) {
     e.preventDefault(); e.stopPropagation();
@@ -31,10 +52,11 @@
     const path = prompt('输入工作区路径:');
     if (path) await client.client.addWorkspaceByPath(path);
   }
-  function openSearch() {
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, ctrlKey: !navigator.platform.includes('Mac') }));
-  }
   function closeMenus() { menuSession = null; }
+
+  function wsSessions(wsId: string, root: string) {
+    return client.sessions().filter((s) => s.workspaceId === wsId || (!s.workspaceId && s.cwd === root));
+  }
 
   const authName = $derived(client.authProvider()?.name ?? '');
   const authed = $derived(client.authProvider()?.status === 'authenticated');
@@ -44,39 +66,41 @@
 <svelte:window onclick={closeMenus} />
 
 <aside class="sidebar">
-  <!-- Search box -->
-  <div class="search-box" onclick={openSearch} role="button" tabindex="0"
-    onkeydown={(e) => { if (e.key === 'Enter') openSearch(); }}>
-    <Icon name="search" size="sm" />
-    <span class="search-placeholder">搜索…</span>
-    <kbd class="kbd-hint">⌘K</kbd>
-  </div>
+  <!-- New task -->
+  <button class="newtask" onclick={newChat}>＋ 新建任务 <span>⌘N</span></button>
 
-  <!-- Icon nav -->
-  <nav class="icon-nav">
-    <button class="icon-btn" title="新建对话" onclick={newChat}><Icon name="chat-new" size="md" /></button>
-    <button class="icon-btn" title="搜索 (⌘K)" onclick={openSearch}><Icon name="search" size="md" /></button>
-    <div class="nav-gap"></div>
-    <button class="icon-btn" title="设置" onclick={onnavigate}><Icon name="settings" size="md" /></button>
+  <!-- Module nav -->
+  <nav class="mods">
+    <button class="mod" class:on={activeModule === 'plugins'} onclick={() => onmoduleview('plugins')}><span class="ic">⬡</span>插件</button>
+    <button class="mod" class:on={activeModule === 'subagents'} onclick={() => onmoduleview('subagents')}><span class="ic">◈</span>子智能体</button>
+    <button class="mod" class:on={activeModule === 'archive'} onclick={() => onmoduleview('archive')}><span class="ic">▤</span>归档历史</button>
   </nav>
 
-  <!-- Sessions -->
-  <div class="sessions">
+  <!-- Sessions header -->
+  <div class="sess-head">
+    <span class="sec-t">会话</span>
+    <span class="add" role="button" tabindex="0" title="新建任务" onclick={newChat} onkeydown={(e) => { if (e.key === 'Enter') newChat(); }}>＋</span>
+  </div>
+
+  <!-- Sessions grouped by workspace -->
+  <div class="sess-list">
     {#if client.workspaces().length > 0}
       {#each client.workspaces() as ws (ws.id)}
-        <div class="ws-group">
-          <div class="ws-header">
-            <span class="ws-name" title={ws.name}>{ws.name}</span>
-            <span class="ws-count">{client.sessions().filter(s => s.workspaceId === ws.id || (!s.workspaceId && s.cwd === ws.root)).length}</span>
-          </div>
-          {#each client.sessions().filter(s => s.workspaceId === ws.id || (!s.workspaceId && s.cwd === ws.root)) as s (s.id)}
-            <div class="s-row" class:active={s.id === client.activeSessionId()}>
+        {@const list = wsSessions(ws.id, ws.root)}
+        <div class="ws-g" class:closed={collapsed.has(ws.id)} role="button" tabindex="0" onclick={() => toggleWs(ws.id)} onkeydown={(e) => { if (e.key === 'Enter') toggleWs(ws.id); }}>
+          <span class="arrow">▾</span>
+          <span class="ws-name" title={ws.name}>{ws.name}</span>
+          <span class="cnt">{list.length}</span>
+        </div>
+        {#if !collapsed.has(ws.id)}
+          {#each list as s (s.id)}
+            <div class="s-row" class:active={s.id === client.activeSessionId() && activeModule === 'chat'}>
               {#if renamingId === s.id}
                 <input class="rename" type="text" bind:value={renameValue}
                   onkeydown={(e) => { if (e.key==='Enter') confirmRename(s.id); if (e.key==='Escape') renamingId=null; }}
                   onblur={() => confirmRename(s.id)} onclick={(e) => e.stopPropagation()} />
               {:else}
-                <button class="s-btn" class:active={s.id === client.activeSessionId()} onclick={(e) => select(e, s.id)} oncontextmenu={(e) => openMenu(e, s)}>
+                <button class="s-btn" class:active={s.id === client.activeSessionId() && activeModule === 'chat'} onclick={(e) => select(e, s.id)} oncontextmenu={(e) => openMenu(e, s)}>
                   {#if s.status === 'running' || s.status === 'awaitingApproval' || s.status === 'awaitingQuestion'}
                     <span class="s-status-dot" data-status={s.status}></span>
                   {/if}
@@ -84,38 +108,37 @@
                 </button>
               {/if}
               {#if renamingId !== s.id}
-                <button class="s-more" onclick={(e) => openMenu(e, s)}><span>⋯</span></button>
+                <button class="s-more" aria-label="更多" onclick={(e) => openMenu(e, s)}><span>⋯</span></button>
               {/if}
             </div>
           {/each}
-        </div>
+        {/if}
       {/each}
     {:else if client.sessions().length > 0}
       {#each client.sessions() as s (s.id)}
-        <div class="s-row" class:active={s.id === client.activeSessionId()}>
-          <button class="s-btn" class:active={s.id === client.activeSessionId()} onclick={(e) => select(e, s.id)} oncontextmenu={(e) => openMenu(e, s)}>
+        <div class="s-row" class:active={s.id === client.activeSessionId() && activeModule === 'chat'}>
+          <button class="s-btn" class:active={s.id === client.activeSessionId() && activeModule === 'chat'} onclick={(e) => select(e, s.id)} oncontextmenu={(e) => openMenu(e, s)}>
             <span class="s-title">{s.title || '新对话'}</span>
           </button>
-          <button class="s-more" onclick={(e) => openMenu(e, s)}><span>⋯</span></button>
+          <button class="s-more" aria-label="更多" onclick={(e) => openMenu(e, s)}><span>⋯</span></button>
         </div>
       {/each}
     {/if}
     {#if client.sessions().length === 0 && client.workspaces().length === 0}
-      <div class="empty"><p>暂无会话</p></div>
+      <div class="empty"><p>暂无会话，点击「新建任务」开始</p></div>
     {/if}
+    <button class="add-ws" onclick={addWorkspace}><Icon name="folder-plus" size="sm" /> 添加工作区</button>
   </div>
 
-  <!-- Footer -->
+  <!-- Footer: account + settings -->
   <footer class="footer">
     {#if pendingCount > 0}
       <div class="attention-badge">{pendingCount}</div>
     {/if}
-    <button class="add-ws" onclick={addWorkspace}><Icon name="folder-plus" size="sm" /> 添加工作区</button>
-    <div class="user">
-      <div class="avatar">{(authName || 'U')[0].toUpperCase()}</div>
-      <span class="user-name">{authName || '未登录'}</span>
-      {#if authed}<span class="badge-pro">Pro</span>{/if}
-    </div>
+    <div class="avatar">{(authName || 'U')[0].toUpperCase()}</div>
+    <span class="user-name">{authName || '未登录'}</span>
+    {#if authed}<span class="badge-pro">Pro</span>{/if}
+    <button class="gear" title="设置" onclick={onnavigate}><Icon name="settings" size="md" /></button>
   </footer>
 </aside>
 
@@ -129,56 +152,74 @@
 {/if}
 
 <style>
-  .sidebar { width: var(--sidebar-width, 220px); flex: none; height: 100%; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%), rgba(13, 13, 15, 0.90); backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6)); border-right: 1px solid rgba(255,255,255,0.06); overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
+  .sidebar { width: var(--sidebar-width, 216px); flex: none; height: 100%; display: flex; flex-direction: column; background: var(--l1); border-right: 1px solid var(--bd); overflow: hidden; }
 
-  .search-box {
-    display: flex; align-items: center; gap: 6px; margin: 10px 10px 4px;
-    padding: 6px 10px; border-radius: var(--radius-md, 8px);
-    background: rgba(0, 0, 0, 0.25); cursor: pointer;
-    color: var(--color-text-faint, rgba(235,235,245,0.3)); font-size: 12px;
-    transition: background 120ms;
+  /* ---- New task ---- */
+  .newtask {
+    margin: 12px 12px 8px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    height: 32px; border: none; border-radius: var(--r-md); font-size: 12.5px; font-weight: 600;
+    background: var(--ac); color: #fff; cursor: pointer;
+    box-shadow: 0 2px 10px rgba(79, 168, 255, 0.25);
+    transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
   }
-  .search-box:hover { background: rgba(0, 0, 0, 0.35); }
-  .search-placeholder { flex: 1; }
-  .kbd-hint { font-size: 10px; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,0.08); color: var(--color-text-faint); font-family: var(--font-mono, monospace); }
+  .newtask:hover { background: var(--ac-h); transform: translateY(-1px); }
+  .newtask span { opacity: 0.65; font-weight: 400; font-size: 11px; }
 
-  .icon-nav { display: flex; align-items: center; gap: 2px; padding: 4px 10px 6px; flex: none; }
-  .icon-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: none; border-radius: 6px; background: transparent; color: var(--color-text-faint, rgba(235,235,245,0.3)); cursor: pointer; transition: all 0.1s; }
-  .icon-btn:hover { background: rgba(255,255,255,0.04); color: var(--color-text-muted, rgba(235,235,245,0.6)); }
-  .nav-gap { flex: 1; }
+  /* ---- Module nav ---- */
+  .mods { display: flex; flex-direction: column; padding: 2px 8px 8px; border-bottom: 1px solid var(--bd); }
+  .mod {
+    display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 9px; border: none;
+    border-radius: var(--r-sm); font-size: 12px; color: var(--tx2); background: transparent;
+    cursor: pointer; text-align: left; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+  }
+  .mod:hover { background: var(--ac-soft); color: var(--tx); }
+  .mod.on { background: var(--ac-soft); color: var(--ac); font-weight: 600; }
+  .mod .ic { width: 15px; text-align: center; color: var(--tx3); font-size: 12px; }
+  .mod.on .ic { color: var(--ac); }
 
-  .sessions { flex: 1; overflow-y: auto; padding: 0 6px; }
-  .ws-group { margin-bottom: 0; }
-  .ws-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 2px; }
-  .ws-name { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-faint, rgba(235,235,245,0.3)); font-family: var(--font-mono, monospace); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ws-count { font-size: 10px; color: var(--color-text-faint); font-family: monospace; }
+  /* ---- Sessions header ---- */
+  .sess-head { display: flex; align-items: center; padding: 12px 14px 5px; }
+  .sec-t { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx3); font-weight: 600; }
+  .sess-head .add { margin-left: auto; color: var(--tx3); font-size: 13px; cursor: pointer; padding: 0 3px; border-radius: 4px; }
+  .sess-head .add:hover { color: var(--tx); background: var(--ac-soft); }
 
-  .s-row { position: relative; display: flex; align-items: center; border-radius: 4px; }
-  .s-row:hover { background: rgba(255,255,255,0.04); }
-  .s-row.active { background: rgba(255,255,255,0.08); }
-  .s-btn { flex: 1; display: flex; align-items: center; gap: 6px; text-align: left; padding: 4px 22px 4px 10px; border: none; border-radius: 4px; background: transparent; color: var(--color-text-muted, rgba(235,235,245,0.6)); font-size: 12px; cursor: pointer; overflow: hidden; box-shadow: inset -1px 0 0 rgba(255,255,255,0.03); }
-  .s-btn:hover { color: var(--color-text, rgba(255,255,255,0.92)); }
-  .s-btn.active { color: var(--color-text, rgba(255,255,255,0.92)); font-weight: 500; }
+  /* ---- Workspace groups + session rows ---- */
+  .sess-list { flex: 1; overflow-y: auto; padding-bottom: 8px; }
+  .ws-g { display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 12px; font-size: 11.5px; font-weight: 600; cursor: pointer; user-select: none; color: var(--tx); }
+  .ws-g .arrow { font-size: 9px; color: var(--tx3); width: 10px; transition: transform var(--duration-fast) var(--ease); }
+  .ws-g.closed .arrow { transform: rotate(-90deg); }
+  .ws-g .ws-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ws-g .cnt { margin-left: auto; font-size: 10px; color: var(--tx3); font-weight: 400; }
+
+  .s-row { position: relative; display: flex; align-items: center; border-radius: var(--r-sm); margin: 1px 6px; }
+  .s-row:hover { background: var(--ac-soft); }
+  .s-row.active { background: var(--ac-soft); }
+  .s-btn { flex: 1; display: flex; align-items: center; gap: 7px; text-align: left; height: 29px; padding: 0 22px 0 16px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; overflow: hidden; }
+  .s-btn:hover { color: var(--tx); }
+  .s-btn.active { color: var(--tx); font-weight: 500; }
   .s-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .s-status-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
-  .s-status-dot[data-status="running"] { background: var(--color-success, #30d158); animation: pulse 1.5s infinite; }
-  .s-status-dot[data-status="awaitingApproval"] { background: var(--color-warning, #ffd60a); }
-  .s-status-dot[data-status="awaitingQuestion"] { background: var(--color-accent, #0a84ff); }
+  .s-status-dot[data-status="running"] { background: var(--ok); animation: pulse 1.5s infinite; }
+  .s-status-dot[data-status="awaitingApproval"] { background: var(--warn); }
+  .s-status-dot[data-status="awaitingQuestion"] { background: var(--ac); }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  .s-more { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 4px; background: transparent; color: var(--color-text-faint); cursor: pointer; opacity: 0; transition: opacity 0.1s; }
+  .s-more { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 4px; background: transparent; color: var(--tx3); cursor: pointer; opacity: 0; transition: opacity var(--duration-fast); }
   .s-row:hover .s-more { opacity: 1; }
-  .s-more:hover { background: var(--color-hover); color: var(--color-text-muted); }
+  .s-more:hover { background: var(--color-hover); color: var(--tx2); }
   .s-more span { font-size: 12px; }
-  .rename { flex: 1; padding: 3px 6px; border: 1px solid var(--color-line-strong); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-size: 12px; outline: none; margin: 0 4px; }
+  .rename { flex: 1; padding: 3px 6px; border: 1px solid var(--bd2); border-radius: var(--r-sm); background: var(--l2); color: var(--tx); font-size: 12px; outline: none; margin: 0 4px; }
+  .rename:focus { border-color: var(--ac); }
 
-  .empty { padding: 30px; text-align: center; color: var(--color-text-faint); font-size: 12px; }
+  .empty { padding: 30px 16px; text-align: center; color: var(--tx3); font-size: 12px; }
+  .add-ws { display: flex; align-items: center; gap: 6px; margin: 4px 12px 0; padding: 5px 8px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--tx3); font-size: 12px; cursor: pointer; }
+  .add-ws:hover { background: var(--color-hover); color: var(--tx2); }
 
-  .footer { flex: none; padding: 6px 8px; border-top: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); position: relative; }
-  .attention-badge { position: absolute; top: -8px; right: 8px; background: var(--color-danger, #ff453a); color: #fff; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--radius-full, 999px); }
-  .add-ws { width: 100%; display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: none; border-radius: 4px; background: transparent; color: var(--color-text-faint); font-size: 12px; cursor: pointer; }
-  .add-ws:hover { background: var(--color-hover); color: var(--color-text-muted); }
-  .user { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 4px 4px; }
-  .avatar { width: 22px; height: 22px; border-radius: 50%; background: #333; color: #888; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
-  .user-name { font-size: 11px; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .badge-pro { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 999px; background: var(--color-success-soft, rgba(48,209,88,0.16)); color: var(--color-success, #30d158); }
+  /* ---- Footer ---- */
+  .footer { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--bd); position: relative; }
+  .attention-badge { position: absolute; top: -8px; right: 8px; background: var(--err); color: #fff; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--radius-full); }
+  .avatar { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+  .user-name { font-size: 12px; color: var(--tx); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge-pro { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--amb); color: var(--amb); background: transparent; }
+  .gear { margin-left: auto; width: 26px; height: 26px; border: none; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; background: transparent; color: var(--tx2); cursor: pointer; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
+  .gear:hover { background: var(--ac-soft); color: var(--tx); }
 </style>

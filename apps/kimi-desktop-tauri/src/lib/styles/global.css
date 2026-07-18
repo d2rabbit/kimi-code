@@ -1,6 +1,11 @@
-/* ---- Minimal reset (replaces Tailwind preflight) ----
-   Just enough normalization so UA defaults don't leak through; the app's own
-   token-driven styles layer on top. */
+/* ============================================================================
+   Kimi Code Desktop — FROSTED-MATTE DESIGN TOKENS v4
+   朦胧磨砂（不透明）：奶化色值 + 微粒噪点 + 柔雾晕 + 顶光受光边。
+   禁止：backdrop-filter、任何 alpha<1 的表面、径向渐变光晕（body 雾晕除外）。
+   规范：docs/superpowers/specs/2026-07-18-kimi-desktop-tauri-ui-redesign-v2.md
+============================================================================ */
+
+/* ---- Minimal reset (replaces Tailwind preflight) ---- */
 *,
 *::before,
 *::after {
@@ -44,9 +49,6 @@ a {
 }
 b,
 strong {
-  /* Pin <b>/<strong> to our bold token instead of the UA `bolder` keyword, so
-     bold emphasis always lands on the design-system weight (and lightens with
-     it) rather than jumping a fixed heavier step above the parent. */
   font-weight: var(--weight-medium);
 }
 small {
@@ -118,582 +120,25 @@ input::placeholder,
 textarea::placeholder {
   opacity: 1;
 }
-table {
-  border-collapse: collapse;
-  border-color: inherit;
-  text-indent: 0;
-}
-hr {
-  height: 0;
-  color: inherit;
-  border-top-width: 1px;
-}
-fieldset {
-  margin: 0;
-  padding: 0;
-}
-legend {
-  padding: 0;
-}
-dialog {
-  padding: 0;
-}
-summary {
-  display: list-item;
-}
-[hidden] {
-  display: none;
-}
 
-/* Opt in to animating between a length and an intrinsic sizing keyword
-   (e.g. `height: 0` → `height: auto`, `width` → `max-content`). Inherited, so
-   setting it once on :root enables it everywhere. Progressive enhancement:
-   unsupported browsers (non-Chromium today) simply keep snapping with no
-   transition. */
-@supports (interpolate-size: allow-keywords) {
-  :root {
-    interpolate-size: allow-keywords;
-  }
-}
-
-/* ===========================================================================
-   GLASS MATERIAL + DESIGN TOKENS v3 (macOS glassmorphism redesign)
-   Non-solid backgrounds with radial-gradient glows. Dual-mode (dark/light).
-   Enhanced transparency for real "see-through" glass effect.
-   =========================================================================== */
+/* ============================================================================
+   SCHEME-INDEPENDENT TOKENS — radius / spacing / z / motion / type / layout
+============================================================================ */
 :root {
-  /* Glass material parameters — lower alpha for more transparency */
-  --glass-blur: 30px;
-  --glass-saturate: 1.8;
-  --glass-bg-dark: rgba(26, 26, 30, 0.85);
-  --glass-bg-light: rgba(248, 248, 252, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.10);
-  --glass-border-light: rgba(0, 0, 0, 0.06);
-  --glass-highlight: rgba(255, 255, 255, 0.15);
-  --glass-divider: rgba(255, 255, 255, 0.07);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.20);
-  --glass-shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.45), 0 8px 24px rgba(0, 0, 0, 0.25);
+  /* -- short radius scale (canonical) ------------------------------------- */
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 10px;
+  --r-xl: 12px;
 
-  /* Glass layer hierarchy — different opacity per depth */
-  --glass-opacity-base: 0.45;
-  --glass-opacity-raised: 0.55;
-  --glass-opacity-sunken: 0.35;
-
-  /* Spring animation curves */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* ---- Dark mode (default) ---- */
-html[data-color-scheme="dark"] {
-  --color-bg: #0a0a0c;
-  --color-surface: rgba(22, 22, 26, 0.45);
-  --color-surface-raised: rgba(32, 32, 38, 0.55);
-  --color-surface-sunken: rgba(16, 16, 20, 0.35);
-  --color-text: #e6e6e6;
-  --color-text-muted: #999;
-  --color-text-faint: #666;
-  --color-line: rgba(255, 255, 255, 0.08);
-  --color-line-strong: rgba(255, 255, 255, 0.05);
-  --color-accent: #2dd4bf;
-  --color-accent-hover: #5eead4;
-  --color-accent-soft: rgba(45, 212, 191, 0.14);
-  --color-accent-bd: rgba(45, 212, 191, 0.28);
-  --color-success: #30d158;
-  --color-success-soft: rgba(48, 209, 88, 0.16);
-  --color-warning: #ffd60a;
-  --color-warning-soft: rgba(255, 214, 10, 0.16);
-  --color-danger: #ff453a;
-  --color-danger-soft: rgba(255, 69, 58, 0.16);
-  --color-purple: #bf5af2;
-  --color-purple-soft: rgba(191, 90, 242, 0.16);
-  --color-orange: #ff9f0a;
-  --color-orange-soft: rgba(255, 159, 10, 0.16);
-  --color-selected: rgba(255, 255, 255, 0.10);
-  --color-hover: rgba(255, 255, 255, 0.06);
-  color-scheme: dark;
-}
-
-/* ---- Light mode ---- */
-html[data-color-scheme="light"] {
-  --color-bg: #f5f5f7;
-  --color-surface: rgba(248, 248, 252, 0.55);
-  --color-surface-raised: rgba(255, 255, 255, 0.65);
-  --color-surface-sunken: rgba(240, 240, 244, 0.45);
-  --color-text: rgba(0, 0, 0, 0.88);
-  --color-text-muted: rgba(60, 60, 67, 0.60);
-  --color-text-faint: rgba(60, 60, 67, 0.30);
-  --color-line: rgba(60, 60, 67, 0.29);
-  --color-line-strong: rgba(60, 60, 67, 0.18);
-  --color-accent: #0d9488;
-  --color-accent-hover: #0f766e;
-  --color-accent-soft: rgba(0, 122, 255, 0.10);
-  --color-accent-bd: rgba(0, 122, 255, 0.25);
-  --color-success: #34c759;
-  --color-success-soft: rgba(52, 199, 89, 0.12);
-  --color-warning: #ff9f0a;
-  --color-warning-soft: rgba(255, 159, 10, 0.12);
-  --color-danger: #ff3b30;
-  --color-danger-soft: rgba(255, 59, 48, 0.10);
-  --color-purple: #af52de;
-  --color-purple-soft: rgba(175, 82, 222, 0.10);
-  --color-orange: #ff9500;
-  --color-orange-soft: rgba(255, 149, 0, 0.10);
-  --color-selected: rgba(0, 0, 0, 0.06);
-  --color-hover: rgba(0, 0, 0, 0.04);
-  color-scheme: light;
-}
-
-/* ---- System follow ---- */
-@media (prefers-color-scheme: dark) {
-  html[data-color-scheme="system"] {
-    --color-bg: #0a0a0c;
-    --color-surface: rgba(28, 28, 30, 0.72);
-    --color-surface-raised: rgba(44, 44, 46, 0.80);
-    --color-surface-sunken: rgba(20, 20, 22, 0.60);
-    --color-text: #e6e6e6;
-    --color-text-muted: #999;
-    --color-text-faint: #666;
-    --color-line: rgba(84, 84, 88, 0.65);
-    --color-line-strong: rgba(84, 84, 88, 0.40);
-    --color-accent: #2dd4bf;
-    --color-accent-hover: #5eead4;
-    --color-accent-soft: rgba(45, 212, 191, 0.14);
-    --color-accent-bd: rgba(45, 212, 191, 0.28);
-    --color-success: #30d158;
-    --color-success-soft: rgba(48, 209, 88, 0.16);
-    --color-warning: #ffd60a;
-    --color-warning-soft: rgba(255, 214, 10, 0.16);
-    --color-danger: #ff453a;
-    --color-danger-soft: rgba(255, 69, 58, 0.16);
-    --color-purple: #bf5af2;
-    --color-purple-soft: rgba(191, 90, 242, 0.16);
-    --color-orange: #ff9f0a;
-    --color-orange-soft: rgba(255, 159, 10, 0.16);
-    --color-selected: rgba(255, 255, 255, 0.10);
-    --color-hover: rgba(255, 255, 255, 0.06);
-    color-scheme: dark;
-  }
-}
-@media (prefers-color-scheme: light) {
-  html[data-color-scheme="system"] {
-    --color-bg: #f5f5f7;
-    --color-surface: rgba(252, 252, 254, 0.78);
-    --color-surface-raised: rgba(255, 255, 255, 0.90);
-    --color-surface-sunken: rgba(243, 243, 245, 0.70);
-    --color-text: rgba(0, 0, 0, 0.88);
-    --color-text-muted: rgba(60, 60, 67, 0.60);
-    --color-text-faint: rgba(60, 60, 67, 0.30);
-    --color-line: rgba(60, 60, 67, 0.29);
-    --color-line-strong: rgba(60, 60, 67, 0.18);
-    --color-accent: #007aff;
-    --color-accent-hover: #0066d6;
-    --color-accent-soft: rgba(0, 122, 255, 0.10);
-    --color-accent-bd: rgba(0, 122, 255, 0.25);
-    --color-success: #34c759;
-    --color-success-soft: rgba(52, 199, 89, 0.12);
-    --color-warning: #ff9f0a;
-    --color-warning-soft: rgba(255, 159, 10, 0.12);
-    --color-danger: #ff3b30;
-    --color-danger-soft: rgba(255, 59, 48, 0.10);
-    --color-purple: #af52de;
-    --color-purple-soft: rgba(175, 82, 222, 0.10);
-    --color-orange: #ff9500;
-    --color-orange-soft: rgba(255, 149, 0, 0.10);
-    --color-selected: rgba(0, 0, 0, 0.06);
-    --color-hover: rgba(0, 0, 0, 0.04);
-    color-scheme: light;
-  }
-}
-
-/* ---- Radial-gradient backgrounds (non-solid, gives glass depth) ---- */
-html[data-color-scheme="dark"] body {
-  background:
-    radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.05), transparent),
-    radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.03), transparent),
-    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.02), transparent),
-    #0a0a0c;
-}
-html[data-color-scheme="light"] body {
-  background:
-    radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.10), transparent),
-    radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.06), transparent),
-    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
-    #f5f5f7;
-}
-@media (prefers-color-scheme: dark) {
-  html[data-color-scheme="system"] body {
-    background:
-      radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.12), transparent),
-      radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.08), transparent),
-      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.06), transparent),
-      radial-gradient(ellipse 40% 30% at 50% 50%, rgba(45, 212, 191, 0.03), transparent),
-      #0a0a0c;
-  }
-}
-@media (prefers-color-scheme: light) {
-  html[data-color-scheme="system"] body {
-    background:
-      radial-gradient(ellipse 90% 60% at 15% 5%, rgba(45, 212, 191, 0.10), transparent),
-      radial-gradient(ellipse 70% 50% at 85% 95%, rgba(56, 189, 248, 0.06), transparent),
-      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(99, 102, 241, 0.04), transparent),
-      #f5f5f7;
-  }
-}
-
-/* Glass utility classes — frosted glass effect.
-   On macOS, backdrop-filter renders natively.
-   On Linux WebKit2GTK, backdrop-filter may not render, so we also use
-   a pseudo-element overlay with a subtle gradient + noise to simulate
-   the frosted look without relying on blur. */
-.glass-panel {
-  position: relative;
-  background:
-    linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%, rgba(0,0,0,0.02) 100%),
-    var(--glass-bg-dark);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid var(--glass-border);
-  box-shadow:
-    var(--glass-shadow),
-    inset 0 1px 0 rgba(255,255,255,0.06);
-}
-.glass-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-}
-.glass-panel > * { position: relative; z-index: 1; }
-
-html[data-color-scheme="light"] .glass-panel,
-html[data-color-scheme="system"] .glass-panel {
-  background:
-    linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(0,0,0,0.01) 100%),
-    var(--glass-bg-light);
-  border-color: var(--glass-border-light);
-}
-@media (prefers-color-scheme: light) {
-  html[data-color-scheme="system"] .glass-panel {
-    background:
-      linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(0,0,0,0.01) 100%),
-      var(--glass-bg-light);
-    border-color: var(--glass-border-light);
-  }
-}
-
-.glass-header {
-  position: relative;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%),
-    rgba(13, 13, 15, 0.80);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border-bottom: 1px solid var(--glass-divider);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-}
-html[data-color-scheme="light"] .glass-header {
-  background: rgba(245, 245, 247, 0.6);
-  border-bottom-color: rgba(0, 0, 0, 0.04);
-}
-@media (prefers-color-scheme: light) {
-  html[data-color-scheme="system"] .glass-header {
-    background: rgba(245, 245, 247, 0.6);
-    border-bottom-color: rgba(0, 0, 0, 0.04);
-  }
-}
-
-.glass-menu {
-  background: rgba(32, 32, 38, 0.65);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-md, 8px);
-  box-shadow: var(--glass-shadow);
-  padding: 4px;
-  min-width: 160px;
-}
-html[data-color-scheme="light"] .glass-menu {
-  background: rgba(255, 255, 255, 0.82);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-@media (prefers-color-scheme: light) {
-  html[data-color-scheme="system"] .glass-menu {
-    background: rgba(255, 255, 255, 0.82);
-    border-color: rgba(0, 0, 0, 0.08);
-  }
-}
-
-/* backdrop-filter fallback for Linux compositors that don't support it */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass-panel,
-  .glass-header,
-  .glass-menu {
-    background: var(--color-surface);
-  }
-}
-
-/* ---- Legacy token aliases (kept for backward compat with existing components) ---- */
-:root {
-  /* Soft neutral canvas the white cards/bubbles lift off, plus the soft
-     elevation shadows shared by the per-element card rules. */
-  --canvas: #f4f6fa;
-  --sh: 0 1px 3px rgba(28, 40, 66, 0.05), 0 6px 18px rgba(28, 40, 66, 0.06);
-  --shc: 0 1px 2px rgba(28, 40, 66, 0.05);
-  --panel: #fafbfc;
-  --panel2: #f3f5f8;
-  --bg: #ffffff;
-  /* Brand blue = Kimi KMBlue (#1783ff), matched to kimi.com's palette.
-     --blue2 is a darker press/hover shade; --soft/--bd/--bluebg/--blueln are
-     the light-blue fills + borders derived from the same hue. */
-  --blue: #1783ff;
-  --blue2: #0f6fe0;
-  --soft: #e8f3ff;
-  --bd: #cfe6ff;
-  --logo: #1783ff;
-  /* Soft-blue bubble fill + border (mobile user message bubble). */
-  --bluebg: #e8f3ff;
-  --blueln: #cfe6ff;
-  --ok: #0e7a38;
-  /* Keep in sync with --color-warning / --color-danger in the v2 token layer
-     below (light values; dark overrides live in the data-color-scheme blocks). */
-  --warn: #a9610a;
-  --star: #eab308;
-  --err: #c0392b;
-  /* Subtle hover wash for icon buttons (toast close, etc.). */
-  --hover: rgba(0, 0, 0, 0.05);
-  /* Legacy radius aliases (kept for one version cycle, design-system §02).
-     Byte-for-byte identical to the old 6 / 8 / 12 / 16 scale, now expressed
-     against the canonical --radius-* scale below so the two cannot drift.
-     New work should reference --radius-* directly. */
-  --r-xs: var(--radius-sm);
-  --r-sm: var(--radius-md);
-  --r-md: var(--radius-lg);
-  --r-lg: var(--radius-xl);
-  --base-ui-font-size: 14px;
-  --ui-font-size: var(--base-ui-font-size);
-  --ui-font-size-sm: calc(var(--ui-font-size) - 1px);
-  --ui-font-size-xs: calc(var(--ui-font-size) - 2px);
-  --ui-font-size-lg: calc(var(--ui-font-size) + 1px);
-  --ui-font-size-xl: calc(var(--ui-font-size) + 2px);
-  --content-font-size: calc(var(--base-ui-font-size) + 1px);
-  --mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  /* Body/UI font follows the design-system canonical token. Mirrors --font-ui
-     so the legacy alias can never drift from the current text face. */
-  --sans: var(--font-ui);
-  color-scheme: light dark;
-}
-
-/* -- icon primitive (design-system §02) -------------------------------------
-   Applied to every design-system icon: the <Icon> component output
-   (components/ui/Icon.vue) and the iconSvg() v-html strings (lib/icons.ts).
-   Both source their SVG from the Remix Icon registry in lib/icons.ts, bundled
-   by unplugin-icons at build time — so only registered icons ship. Colour
-   follows text via fill="currentColor". */
-.kw-icon {
-  display: inline-block;
-  flex: none;
-  vertical-align: -0.15em;
-}
-
-/* Render code literally: disable the ligatures coding fonts enable by default
-   (e.g. `!=` collapsing to `≠`, `=>` to `⇒`). */
-code,
-pre,
-kbd,
-samp,
-tt {
-  font-feature-settings: "liga" 0, "calt" 0, "ss01" 0;
-  font-variant-ligatures: none;
-}
-
-/* color-scheme drives UA-rendered parts (scrollbars, form controls, etc.).
-   An explicit choice must pin it to a single value — otherwise a dark-mode
-   user on a light OS gets light scrollbars floating on the dark UI. */
-html[data-color-scheme="light"] {
-  color-scheme: light;
-}
-html[data-color-scheme="system"] {
-  color-scheme: light dark;
-}
-
-/* Dark mode variables — applied when explicitly chosen or via system preference. */
-html[data-color-scheme="dark"] {
-  color-scheme: dark;
-  --dim: #9aa0a8;
-  --muted: #727983;
-  --faint: #525960;
-  --line: #2d333b;
-  --line2: #22272e;
-  --panel: #1c2128;
-  --panel2: #161b22;
-  --bg: #0d1117;
-  --blue: #58a6ff;
-  --blue2: #79b8ff;
-  --soft: #1f2937;
-  --bd: #1f6feb;
-  --logo: #58a6ff;
-  --bluebg: #1c2a3a;
-  --blueln: #1f4f7a;
-  --ok: #3fb950;
-  --warn: #d29922;
-  --star: #facc15;
-  --err: #f85149;
-  --hover: rgba(255, 255, 255, 0.07);
-  --canvas: #161b22;
-  --sh: 0 1px 3px rgba(0, 0, 0, 0.35), 0 6px 18px rgba(0, 0, 0, 0.4);
-  --shc: 0 1px 2px rgba(0, 0, 0, 0.35);
-}
-
-@media (prefers-color-scheme: dark) {
-  html[data-color-scheme="system"] {
-    --dim: #9aa0a8;
-    --muted: #727983;
-    --faint: #525960;
-    --line: #2d333b;
-    --line2: #22272e;
-    --panel: #1c2128;
-    --panel2: #161b22;
-    --bg: #0d1117;
-    --blue: #58a6ff;
-    --blue2: #79b8ff;
-    --soft: #1f2937;
-    --bd: #1f6feb;
-    --logo: #58a6ff;
-    --bluebg: #1c2a3a;
-    --blueln: #1f4f7a;
-    --ok: #3fb950;
-    --warn: #d29922;
-    --star: #facc15;
-    --err: #f85149;
-    --hover: rgba(255, 255, 255, 0.07);
-    --canvas: #161b22;
-    --sh: 0 1px 3px rgba(0, 0, 0, 0.35), 0 6px 18px rgba(0, 0, 0, 0.4);
-    --shc: 0 1px 2px rgba(0, 0, 0, 0.35);
-  }
-}
-
-/* Accent: black/white (Vercel-style) — remaps the blue tokens to grayscale.
-   Orthogonal to the color scheme (only recolours the accent). */
-html[data-accent="mono"] {
-  --accent-primary: #171717;
-  --color-accent: #171717;
-  --color-accent-hover: #383838;
-  --color-accent-soft: #f1f1f2;
-  --color-accent-bd: #d4d4d8;
-  --blue: #171717;
-  --blue2: #383838;
-  --soft: #f1f1f2;
-  --bd: #d4d4d8;
-  --bluebg: #f4f4f5;
-  --blueln: #e4e4e7;
-  --logo: #171717;
-}
-
-/* mono accent × dark: the light grayscale above would win over the dark
-   variables (same specificity, later in source) — remap to dark grays.
-   Text/icons sitting ON the accent colour use var(--bg), so the near-white
-   accent stays readable here. */
-html[data-color-scheme="dark"][data-accent="mono"] {
-  --accent-primary: #e8eaed;
-  --color-accent: #e8eaed;
-  --color-accent-hover: #c9cdd4;
-  --color-accent-soft: #21262d;
-  --color-accent-bd: #444c56;
-  --blue: #e8eaed;
-  --blue2: #c9cdd4;
-  --soft: #21262d;
-  --bd: #444c56;
-  --bluebg: #21262d;
-  --blueln: #30363d;
-  --logo: #e8eaed;
-}
-@media (prefers-color-scheme: dark) {
-  html[data-color-scheme="system"][data-accent="mono"] {
-    --accent-primary: #e8eaed;
-    --color-accent: #e8eaed;
-    --color-accent-hover: #c9cdd4;
-    --color-accent-soft: #21262d;
-    --color-accent-bd: #444c56;
-    --blue: #e8eaed;
-    --blue2: #c9cdd4;
-    --soft: #21262d;
-    --bd: #444c56;
-    --bluebg: #21262d;
-    --blueln: #30363d;
-    --logo: #e8eaed;
-  }
-}
-
-
-/* ===========================================================================
-   DESIGN TOKENS v2 (redesign.html §03)
-   Additive, scheme-aware token scales that sit alongside the legacy short
-   aliases (--bg / --ink / --blue / --r-* …) defined above. The legacy aliases
-   are kept byte-for-byte so existing components render identically (zero
-   regression); new and redesigned work references the semantic `--color-*`
-   layer plus the spacing / radius / elevation / motion / type scales below.
-
-   Light values live in `:root`; dark values are overridden in the two
-   `data-color-scheme` blocks that follow. Only 4 colour "seeds" are meant to
-   be customised — everything else is derived from / paired to them.
-   =========================================================================== */
-:root {
-  /* -- 4 colour seeds (the only knobs a theme customiser should need) ------ */
-  --accent-primary: #1783ff;
-  --accent-secondary: #6b7280;
-  --surface-light: #ffffff;
-  --surface-dark: #0d1117;
-
-  /* -- semantic colour layer (light) --------------------------------------- */
-  --color-bg: #ffffff;
-  --color-surface: #fafbfc;
-  --color-surface-raised: #ffffff;
-  --color-surface-sunken: #f3f5f8;
-  /* Foreground text colours. `--color-text` is the default solid body / UI
-     colour (headings and emphasis share it); muted / faint step down for
-     secondary and tertiary copy; on-accent is text drawn on the accent fill. */
-  --color-text: rgba(0, 0, 0, 0.9);
-  --color-text-muted: #6b7280;
-  --color-text-faint: #9aa3af;
-  --color-text-on-accent: #ffffff;
-  --color-line: #e7eaee;
-  --color-line-strong: #d4d9e0;
-  /* Neutral selected fill (sidebar rows, list pickers) — deliberately NOT
-     accent-tinted, so selection reads as "where I am", not as an action. */
-  --color-selected: #00000014;
-  /* Row hover wash — lighter than the selected fill (hover < selected); both
-     are translucent black so they sit naturally on any light surface. */
-  --color-hover: #0000000d;
-  /* Sidebar surface — one step off --color-bg (warm off-white / near-black)
-     so the session column reads as its own plane. */
-  --color-sidebar-bg: #fbfaf9;
-  --color-accent: var(--accent-primary);
-  --color-accent-hover: #0f6fe0;
-  --color-accent-soft: #e8f3ff;
-  --color-accent-bd: #cfe6ff;
-  --color-success: #0e7a38;
-  --color-success-soft: #e7f6ee;
-  --color-success-bd: #bfe3cc;
-  --color-warning: #a9610a;
-  --color-warning-soft: #fbf1e0;
-  --color-warning-bd: #f0d9b8;
-  --color-danger: #c0392b;
-  --color-danger-soft: #fbeaea;
-  --color-danger-bd: #f0cccc;
-  /* "Done" scale — purple used for GitHub merged PRs (matches GitHub Primer). */
-  --color-done: #8250df;
-  --color-done-soft: #f3e8ff;
-  --color-done-bd: #e0ccff;
-  --color-info: var(--accent-primary);
-  /* Dev-only brand tint: recolors the logo mark golden-yellow so a `pnpm dev:web`
-     tab is visually distinct from production. Referenced by Sidebar's
-     `.ch-logo.is-dev` override of `--logo`. Scheme-independent on purpose. */
-  --color-logo-dev: #f5b301;
+  /* -- legacy radius scale (same geometry, kept for existing components) --- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-full: 999px;
 
   /* -- spacing (4px grid) -------------------------------------------------- */
   --space-1: 4px;
@@ -703,17 +148,9 @@ html[data-color-scheme="dark"][data-accent="mono"] {
   --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
 
-  /* -- radius (slightly larger for softer, more organic feel) -------------- */
-  --radius-xs: 6px;
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --radius-2xl: 24px;
-  --radius-full: 999px;
-
-  /* -- elevation / z-index ------------------------------------------------- */
+  /* -- z-index -------------------------------------------------------------- */
   --z-base: 0;
   --z-sticky: 100;
   --z-dropdown: 200;
@@ -723,24 +160,16 @@ html[data-color-scheme="dark"][data-accent="mono"] {
   --z-toast: 600;
   --z-max: 9999;
 
-  /* -- shadows (light) ----------------------------------------------------- */
-  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.07), 0 2px 4px rgba(16, 24, 40, 0.05);
-  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12), 0 4px 10px rgba(16, 24, 40, 0.08);
-  --shadow-xl: 0 24px 64px rgba(16, 24, 40, 0.18), 0 8px 20px rgba(16, 24, 40, 0.1);
-
-  /* -- motion -------------------------------------------------------------- */
+  /* -- motion (120–180ms，无回弹) ------------------------------------------ */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --spring-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --duration-fast: 120ms;
   --duration-base: 160ms;
   --duration-slow: 260ms;
 
-  /* -- type families ------------------------------------------------------- */
-  /* UI/body use self-hosted Inter first. CJK and platform system UI families
-     stay late in the fallback chain so Latin glyphs resolve to Inter while
-     Chinese text can still fall through to native CJK fonts. */
+  /* -- type families -------------------------------------------------------- */
   --font-ui: "Inter Variable", "Inter", "Helvetica Neue", Arial,
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC",
     "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -750,7 +179,7 @@ html[data-color-scheme="dark"][data-accent="mono"] {
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace,
     "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  /* -- type scale (6 levels, design-system §03) --------------------------- */
+  /* -- type scale ----------------------------------------------------------- */
   --text-xs: 12px;
   --text-sm: 13px;
   --text-base: 14px;
@@ -764,154 +193,455 @@ html[data-color-scheme="dark"][data-accent="mono"] {
   --weight-medium: 500;
   --weight-semibold: 600;
 
-  /* -- focus ring (design-system §02) -------------------------------------- */
-  --p-focus-ring: 0 0 0 3px var(--color-accent-soft);
-  --p-focus-ring-strong: 0 0 0 3px var(--color-accent-soft), 0 0 0 1px var(--color-accent);
+  /* -- user-adjustable UI font size ----------------------------------------- */
+  --base-ui-font-size: 14px;
+  --ui-font-size: var(--base-ui-font-size);
+  --ui-font-size-sm: calc(var(--ui-font-size) - 1px);
+  --ui-font-size-xs: calc(var(--ui-font-size) - 2px);
+  --ui-font-size-lg: calc(var(--ui-font-size) + 1px);
+  --ui-font-size-xl: calc(var(--ui-font-size) + 2px);
+  --content-font-size: calc(var(--base-ui-font-size) + 1px);
 
-  /* -- selection (design-system §02) --------------------------------------- */
-  --p-selection: rgba(23, 131, 255, 0.18);
-
-  /* -- icon sizes (design-system §02) -------------------------------------- */
+  /* -- icon sizes ------------------------------------------------------------ */
   --p-ic-sm: 14px;
   --p-ic-md: 16px;
   --p-ic-lg: 20px;
 
-  /* -- layout & breakpoints (design-system §02) ---------------------------- */
+  /* -- layout & breakpoints -------------------------------------------------- */
   --p-sidebar-w: 264px;
   --p-content-max: 760px;
   --p-content-wide: 920px;
   --p-bp-sm: 640px;
   --p-bp-md: 980px;
+
+  /* -- grain texture (磨砂颗粒层，全主题共用) -------------------------------- */
+  --grain-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+
+  color-scheme: light dark;
 }
 
-/* Design tokens v2 — dark values (explicit choice).
-   Codex-style palette: near-black surfaces, high-contrast text, minimal accent. */
+/* ============================================================================
+   DARK — 深色磨砂（默认）
+============================================================================ */
 html[data-color-scheme="dark"] {
-  --accent-primary: #ffffff;
-  --color-bg: #1a1a1a;
-  --color-surface: #212121;
-  --color-surface-raised: #2a2a2a;
-  --color-surface-sunken: #161616;
-  --color-text: #ececec;
-  --color-text-muted: #999;
-  --color-text-faint: #666;
-  --color-line: #2e2e2e;
-  --color-line-strong: #3a3a3a;
-  --color-selected: #ffffff18;
-  --color-hover: #ffffff0d;
-  --color-sidebar-bg: #181818;
-  --color-accent: #ffffff;
-  --color-accent-hover: #ddd;
-  --color-accent-soft: rgba(255, 255, 255, 0.1);
-  --p-selection: rgba(255, 255, 255, 0.2);
-  --color-accent-bd: rgba(255, 255, 255, 0.2);
-  --color-success: #3fb950;
-  --color-success-soft: rgba(63, 185, 80, 0.14);
-  --color-success-bd: rgba(63, 185, 80, 0.28);
-  --color-warning: #d29922;
-  --color-warning-soft: rgba(210, 153, 34, 0.14);
-  --color-warning-bd: rgba(210, 153, 34, 0.28);
-  --color-danger: #f85149;
-  --color-danger-soft: rgba(248, 81, 73, 0.14);
-  --color-danger-bd: rgba(248, 81, 73, 0.28);
+  /* -- primitives ----------------------------------------------------------- */
+  --bg: #14161a;
+  --l1: #191c21;
+  --l2: #1e2228;
+  --l3: #262b33;
+  --bd: rgba(255, 255, 255, 0.06);
+  --bd2: rgba(255, 255, 255, 0.11);
+  --tx: #e8eaed;
+  --tx2: #9aa0a8;
+  --tx3: #62676e;
+  --ac: #4fa8ff;
+  --ac-h: #6fb2ff;
+  --ac-soft: rgba(79, 168, 255, 0.12);
+  --ac-bd: rgba(79, 168, 255, 0.30);
+  --ok: #30d158;
+  --ok-soft: rgba(48, 209, 88, 0.10);
+  --warn: #ffd60a;
+  --warn-soft: rgba(255, 214, 10, 0.10);
+  --err: #ff6b60;
+  --err-soft: rgba(255, 107, 96, 0.10);
+  --amb: #ffcb6b;
+  --amb-soft: rgba(255, 203, 107, 0.12);
+  --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  --sh: 0 12px 40px rgba(0, 0, 0, 0.30);
+  --sh-lg: 0 24px 80px rgba(0, 0, 0, 0.45);
+  --overlay: rgba(8, 9, 12, 0.55);
+  --haze: radial-gradient(120% 90% at 18% 0%, rgba(120, 160, 255, 0.05), transparent 60%),
+    radial-gradient(100% 80% at 88% 100%, rgba(91, 192, 190, 0.045), transparent 55%);
+  --grain-op: 0.045;
+  --syn-k: #ff7edb;
+  --syn-s: #5bc0be;
+  --syn-f: #4fa8ff;
+  --syn-n: #ffcb6b;
+
+  /* -- semantic layer（组件主用这套别名，与 primitives 同步翻转） -------------- */
+  --color-bg: var(--bg);
+  --color-surface: var(--l1);
+  --color-surface-raised: var(--l2);
+  --color-surface-sunken: var(--bg);
+  --color-sidebar-bg: var(--l1);
+  --color-text: var(--tx);
+  --color-text-muted: var(--tx2);
+  --color-text-faint: var(--tx3);
+  --color-text-on-accent: #ffffff;
+  --color-line: var(--bd);
+  --color-line-strong: var(--bd2);
+  --color-selected: var(--ac-soft);
+  --color-hover: rgba(255, 255, 255, 0.04);
+  --color-accent: var(--ac);
+  --color-accent-hover: var(--ac-h);
+  --color-accent-soft: var(--ac-soft);
+  --color-accent-bd: var(--ac-bd);
+  --accent-primary: var(--ac);
+  --color-success: var(--ok);
+  --color-success-soft: var(--ok-soft);
+  --color-success-bd: rgba(48, 209, 88, 0.28);
+  --color-warning: var(--warn);
+  --color-warning-soft: var(--warn-soft);
+  --color-warning-bd: rgba(255, 214, 10, 0.28);
+  --color-danger: var(--err);
+  --color-danger-soft: var(--err-soft);
+  --color-danger-bd: rgba(255, 107, 96, 0.28);
   --color-done: #a371f7;
   --color-done-soft: rgba(163, 113, 247, 0.14);
   --color-done-bd: rgba(163, 113, 247, 0.28);
-  --color-info: #79b8ff;
+  --color-info: var(--ac);
+  --color-logo-dev: #f5b301;
+  --glass-divider: var(--bd);
+
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
-  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.40), 0 4px 10px rgba(0, 0, 0, 0.30);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.50), 0 8px 20px rgba(0, 0, 0, 0.35);
+
+  --p-focus-ring: 0 0 0 3px var(--ac-soft);
+  --p-focus-ring-strong: 0 0 0 3px var(--ac-soft), 0 0 0 1px var(--ac);
+  --p-selection: rgba(79, 168, 255, 0.22);
+
+  color-scheme: dark;
 }
 
-/* Design tokens v2 — dark values (follow OS preference). Codex-style palette. */
+/* ============================================================================
+   LIGHT — 浅色磨砂（milky white）
+============================================================================ */
+html[data-color-scheme="light"] {
+  --bg: #f2f4f8;
+  --l1: #fafbfd;
+  --l2: #ffffff;
+  --l3: #ffffff;
+  --bd: rgba(16, 24, 40, 0.07);
+  --bd2: rgba(16, 24, 40, 0.13);
+  --tx: #16191d;
+  --tx2: #5b626c;
+  --tx3: #9ba2ac;
+  --ac: #2e7ce6;
+  --ac-h: #1c66c9;
+  --ac-soft: rgba(46, 124, 230, 0.09);
+  --ac-bd: rgba(46, 124, 230, 0.28);
+  --ok: #1fa84c;
+  --ok-soft: rgba(31, 168, 76, 0.09);
+  --warn: #b7791f;
+  --warn-soft: rgba(183, 121, 31, 0.09);
+  --err: #e5484d;
+  --err-soft: rgba(229, 72, 77, 0.08);
+  --amb: #9a4a00;
+  --amb-soft: rgba(154, 74, 0, 0.08);
+  --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --sh: 0 12px 32px rgba(16, 24, 40, 0.10);
+  --sh-lg: 0 24px 64px rgba(16, 24, 40, 0.16);
+  --overlay: rgba(240, 242, 246, 0.55);
+  --haze: radial-gradient(120% 90% at 18% 0%, rgba(255, 255, 255, 0.95), transparent 60%),
+    radial-gradient(100% 80% at 88% 100%, rgba(46, 124, 230, 0.05), transparent 55%);
+  --grain-op: 0.03;
+  --syn-k: #c2259c;
+  --syn-s: #0d9488;
+  --syn-f: #1c66c9;
+  --syn-n: #b7791f;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--l1);
+  --color-surface-raised: var(--l2);
+  --color-surface-sunken: var(--bg);
+  --color-sidebar-bg: var(--l1);
+  --color-text: var(--tx);
+  --color-text-muted: var(--tx2);
+  --color-text-faint: var(--tx3);
+  --color-text-on-accent: #ffffff;
+  --color-line: var(--bd);
+  --color-line-strong: var(--bd2);
+  --color-selected: var(--ac-soft);
+  --color-hover: rgba(16, 24, 40, 0.04);
+  --color-accent: var(--ac);
+  --color-accent-hover: var(--ac-h);
+  --color-accent-soft: var(--ac-soft);
+  --color-accent-bd: var(--ac-bd);
+  --accent-primary: var(--ac);
+  --color-success: var(--ok);
+  --color-success-soft: var(--ok-soft);
+  --color-success-bd: rgba(31, 168, 76, 0.26);
+  --color-warning: var(--warn);
+  --color-warning-soft: var(--warn-soft);
+  --color-warning-bd: rgba(183, 121, 31, 0.26);
+  --color-danger: var(--err);
+  --color-danger-soft: var(--err-soft);
+  --color-danger-bd: rgba(229, 72, 77, 0.24);
+  --color-done: #8250df;
+  --color-done-soft: #f3e8ff;
+  --color-done-bd: #e0ccff;
+  --color-info: var(--ac);
+  --color-logo-dev: #f5b301;
+  --glass-divider: var(--bd);
+
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.07), 0 2px 4px rgba(16, 24, 40, 0.05);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12), 0 4px 10px rgba(16, 24, 40, 0.08);
+  --shadow-xl: 0 24px 64px rgba(16, 24, 40, 0.18), 0 8px 20px rgba(16, 24, 40, 0.10);
+
+  --p-focus-ring: 0 0 0 3px var(--ac-soft);
+  --p-focus-ring-strong: 0 0 0 3px var(--ac-soft), 0 0 0 1px var(--ac);
+  --p-selection: rgba(46, 124, 230, 0.18);
+
+  color-scheme: light;
+}
+
+/* ---- system follow：与显式选择完全同值 ---- */
 @media (prefers-color-scheme: dark) {
   html[data-color-scheme="system"] {
-    --accent-primary: #ffffff;
-    --color-bg: #1a1a1a;
-    --color-surface: #212121;
-    --color-surface-raised: #2a2a2a;
-    --color-surface-sunken: #161616;
-    --color-text: #ececec;
-    --color-text-muted: #999;
-    --color-text-faint: #666;
-    --color-line: #2e2e2e;
-    --color-line-strong: #3a3a3a;
-    --color-selected: #ffffff18;
-    --color-hover: #ffffff0d;
-    --color-sidebar-bg: #181818;
-    --color-accent: #ffffff;
-    --color-accent-hover: #ddd;
-    --color-accent-soft: rgba(255, 255, 255, 0.1);
-  --p-selection: rgba(255, 255, 255, 0.2);
-    --color-accent-bd: rgba(255, 255, 255, 0.2);
-    --color-success: #3fb950;
-    --color-success-soft: rgba(63, 185, 80, 0.14);
-    --color-success-bd: rgba(63, 185, 80, 0.28);
-    --color-warning: #d29922;
-    --color-warning-soft: rgba(210, 153, 34, 0.14);
-    --color-warning-bd: rgba(210, 153, 34, 0.28);
-    --color-danger: #f85149;
-    --color-danger-soft: rgba(248, 81, 73, 0.14);
-    --color-danger-bd: rgba(248, 81, 73, 0.28);
-    --color-done: #a371f7;
-    --color-done-soft: rgba(163, 113, 247, 0.14);
-    --color-done-bd: rgba(163, 113, 247, 0.28);
-    --color-info: #79b8ff;
+    --bg: #14161a; --l1: #191c21; --l2: #1e2228; --l3: #262b33;
+    --bd: rgba(255, 255, 255, 0.06); --bd2: rgba(255, 255, 255, 0.11);
+    --tx: #e8eaed; --tx2: #9aa0a8; --tx3: #62676e;
+    --ac: #4fa8ff; --ac-h: #6fb2ff; --ac-soft: rgba(79, 168, 255, 0.12); --ac-bd: rgba(79, 168, 255, 0.30);
+    --ok: #30d158; --ok-soft: rgba(48, 209, 88, 0.10);
+    --warn: #ffd60a; --warn-soft: rgba(255, 214, 10, 0.10);
+    --err: #ff6b60; --err-soft: rgba(255, 107, 96, 0.10);
+    --amb: #ffcb6b; --amb-soft: rgba(255, 203, 107, 0.12);
+    --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    --sh: 0 12px 40px rgba(0, 0, 0, 0.30); --sh-lg: 0 24px 80px rgba(0, 0, 0, 0.45);
+    --overlay: rgba(8, 9, 12, 0.55);
+    --haze: radial-gradient(120% 90% at 18% 0%, rgba(120, 160, 255, 0.05), transparent 60%),
+      radial-gradient(100% 80% at 88% 100%, rgba(91, 192, 190, 0.045), transparent 55%);
+    --grain-op: 0.045;
+    --syn-k: #ff7edb; --syn-s: #5bc0be; --syn-f: #4fa8ff; --syn-n: #ffcb6b;
+    --color-bg: var(--bg); --color-surface: var(--l1); --color-surface-raised: var(--l2);
+    --color-surface-sunken: var(--bg); --color-sidebar-bg: var(--l1);
+    --color-text: var(--tx); --color-text-muted: var(--tx2); --color-text-faint: var(--tx3);
+    --color-text-on-accent: #ffffff; --color-line: var(--bd); --color-line-strong: var(--bd2);
+    --color-selected: var(--ac-soft); --color-hover: rgba(255, 255, 255, 0.04);
+    --color-accent: var(--ac); --color-accent-hover: var(--ac-h); --color-accent-soft: var(--ac-soft);
+    --color-accent-bd: var(--ac-bd); --accent-primary: var(--ac);
+    --color-success: var(--ok); --color-success-soft: var(--ok-soft); --color-success-bd: rgba(48, 209, 88, 0.28);
+    --color-warning: var(--warn); --color-warning-soft: var(--warn-soft); --color-warning-bd: rgba(255, 214, 10, 0.28);
+    --color-danger: var(--err); --color-danger-soft: var(--err-soft); --color-danger-bd: rgba(255, 107, 96, 0.28);
+    --color-done: #a371f7; --color-done-soft: rgba(163, 113, 247, 0.14); --color-done-bd: rgba(163, 113, 247, 0.28);
+    --color-info: var(--ac); --color-logo-dev: #f5b301; --glass-divider: var(--bd);
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
-    --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.42), 0 8px 20px rgba(0, 0, 0, 0.32);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.40), 0 4px 10px rgba(0, 0, 0, 0.30);
+    --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.50), 0 8px 20px rgba(0, 0, 0, 0.35);
+    --p-focus-ring: 0 0 0 3px var(--ac-soft);
+    --p-focus-ring-strong: 0 0 0 3px var(--ac-soft), 0 0 0 1px var(--ac);
+    --p-selection: rgba(79, 168, 255, 0.22);
+    color-scheme: dark;
+  }
+}
+@media (prefers-color-scheme: light) {
+  html[data-color-scheme="system"] {
+    --bg: #f2f4f8; --l1: #fafbfd; --l2: #ffffff; --l3: #ffffff;
+    --bd: rgba(16, 24, 40, 0.07); --bd2: rgba(16, 24, 40, 0.13);
+    --tx: #16191d; --tx2: #5b626c; --tx3: #9ba2ac;
+    --ac: #2e7ce6; --ac-h: #1c66c9; --ac-soft: rgba(46, 124, 230, 0.09); --ac-bd: rgba(46, 124, 230, 0.28);
+    --ok: #1fa84c; --ok-soft: rgba(31, 168, 76, 0.09);
+    --warn: #b7791f; --warn-soft: rgba(183, 121, 31, 0.09);
+    --err: #e5484d; --err-soft: rgba(229, 72, 77, 0.08);
+    --amb: #9a4a00; --amb-soft: rgba(154, 74, 0, 0.08);
+    --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    --sh: 0 12px 32px rgba(16, 24, 40, 0.10); --sh-lg: 0 24px 64px rgba(16, 24, 40, 0.16);
+    --overlay: rgba(240, 242, 246, 0.55);
+    --haze: radial-gradient(120% 90% at 18% 0%, rgba(255, 255, 255, 0.95), transparent 60%),
+      radial-gradient(100% 80% at 88% 100%, rgba(46, 124, 230, 0.05), transparent 55%);
+    --grain-op: 0.03;
+    --syn-k: #c2259c; --syn-s: #0d9488; --syn-f: #1c66c9; --syn-n: #b7791f;
+    --color-bg: var(--bg); --color-surface: var(--l1); --color-surface-raised: var(--l2);
+    --color-surface-sunken: var(--bg); --color-sidebar-bg: var(--l1);
+    --color-text: var(--tx); --color-text-muted: var(--tx2); --color-text-faint: var(--tx3);
+    --color-text-on-accent: #ffffff; --color-line: var(--bd); --color-line-strong: var(--bd2);
+    --color-selected: var(--ac-soft); --color-hover: rgba(16, 24, 40, 0.04);
+    --color-accent: var(--ac); --color-accent-hover: var(--ac-h); --color-accent-soft: var(--ac-soft);
+    --color-accent-bd: var(--ac-bd); --accent-primary: var(--ac);
+    --color-success: var(--ok); --color-success-soft: var(--ok-soft); --color-success-bd: rgba(31, 168, 76, 0.26);
+    --color-warning: var(--warn); --color-warning-soft: var(--warn-soft); --color-warning-bd: rgba(183, 121, 31, 0.26);
+    --color-danger: var(--err); --color-danger-soft: var(--err-soft); --color-danger-bd: rgba(229, 72, 77, 0.24);
+    --color-done: #8250df; --color-done-soft: #f3e8ff; --color-done-bd: #e0ccff;
+    --color-info: var(--ac); --color-logo-dev: #f5b301; --glass-divider: var(--bd);
+    --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.06);
+    --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.07), 0 2px 4px rgba(16, 24, 40, 0.05);
+    --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12), 0 4px 10px rgba(16, 24, 40, 0.08);
+    --shadow-xl: 0 24px 64px rgba(16, 24, 40, 0.18), 0 8px 20px rgba(16, 24, 40, 0.10);
+    --p-focus-ring: 0 0 0 3px var(--ac-soft);
+    --p-focus-ring-strong: 0 0 0 3px var(--ac-soft), 0 0 0 1px var(--ac);
+    --p-selection: rgba(46, 124, 230, 0.18);
+    color-scheme: light;
   }
 }
 
+/* ============================================================================
+   BODY — 雾晕底（opaque 合成）+ 噪点颗粒层 + 焦点环
+============================================================================ */
+body {
+  background: var(--haze), var(--bg);
+}
+
+/* 磨砂颗粒：一层全局 SVG feTurbulence 微粒，overlay 混合，不拦截任何交互。 */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  background-image: var(--grain-img);
+  opacity: var(--grain-op, 0.045);
+  mix-blend-mode: overlay;
+}
+
+/* 键盘焦点环（可访问性硬规则） */
+:focus-visible {
+  outline: 2px solid var(--ac, #4fa8ff);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--p-selection, rgba(79, 168, 255, 0.22));
+}
+
+/* ============================================================================
+   SURFACE UTILITIES — 磨砂实心表面（沿用旧类名，零组件改动）
+============================================================================ */
+/* 卡片/面板：L2 实心 + 发丝边 + 顶光受光边 */
+.glass-panel {
+  background: var(--l2);
+  border: 1px solid var(--bd);
+  border-radius: var(--r-lg);
+  box-shadow: var(--toplight), var(--shadow-md);
+}
+
+/* 顶栏条：L1 + 底部发丝线 */
+.glass-header {
+  background: var(--l1);
+  border-bottom: 1px solid var(--bd);
+}
+
+/* 浮层菜单：L3 + 大投影（无模糊） */
+.glass-menu {
+  background: var(--l3);
+  border: 1px solid var(--bd2);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-lg);
+  padding: 4px;
+  min-width: 160px;
+}
+.glass-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  font-size: var(--text-sm);
+  color: var(--tx2);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+.glass-menu-item:hover {
+  background: var(--ac-soft);
+  color: var(--tx);
+}
+.glass-menu-item.danger {
+  color: var(--err);
+}
+.glass-menu-divider {
+  height: 1px;
+  background: var(--bd);
+  margin: 4px 6px;
+}
+
+/* -- icon primitive --------------------------------------------------------- */
+.kw-icon {
+  display: inline-block;
+  flex: none;
+  vertical-align: -0.15em;
+}
+
+/* Render code literally: disable coding-font ligatures. */
+code,
+pre,
+kbd,
+samp,
+tt {
+  font-feature-settings: "liga" 0, "calt" 0, "ss01" 0;
+  font-variant-ligatures: none;
+}
+
+/* color-scheme 显式固定（避免暗色 UI 上出现系统浅色滚动条） */
+html[data-color-scheme="light"] {
+  color-scheme: light;
+}
+html[data-color-scheme="system"] {
+  color-scheme: light dark;
+}
+
+/* mono accent（灰度品牌色选项）：只重映射品牌动作色，其余 token 不动 */
+html[data-accent="mono"] {
+  --ac: #171717;
+  --ac-h: #383838;
+  --ac-soft: rgba(23, 23, 23, 0.08);
+  --ac-bd: rgba(23, 23, 23, 0.24);
+  --color-accent: var(--ac);
+  --color-accent-hover: var(--ac-h);
+  --color-accent-soft: var(--ac-soft);
+  --color-accent-bd: var(--ac-bd);
+  --accent-primary: var(--ac);
+}
+html[data-color-scheme="dark"][data-accent="mono"] {
+  --ac: #e8eaed;
+  --ac-h: #c9cdd4;
+  --ac-soft: rgba(232, 234, 237, 0.10);
+  --ac-bd: rgba(232, 234, 237, 0.26);
+  --color-accent: var(--ac);
+  --color-accent-hover: var(--ac-h);
+  --color-accent-soft: var(--ac-soft);
+  --color-accent-bd: var(--ac-bd);
+  --accent-primary: var(--ac);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-color-scheme="system"][data-accent="mono"] {
+    --ac: #e8eaed;
+    --ac-h: #c9cdd4;
+    --ac-soft: rgba(232, 234, 237, 0.10);
+    --ac-bd: rgba(232, 234, 237, 0.26);
+    --color-accent: var(--ac);
+    --color-accent-hover: var(--ac-h);
+    --color-accent-soft: var(--ac-soft);
+    --color-accent-bd: var(--ac-bd);
+    --accent-primary: var(--ac);
+  }
+}
+
+/* ============================================================================
+   APP SHELL BASE
+============================================================================ */
 html,
 body,
 #app {
   height: 100%;
   margin: 0;
-  /* Transparent root so Tauri's window transparency shows through.
-  /* Opaque root — window should be solid, not see-through.
-     Glass panels sit on top with their own semi-transparent fills. */
-  /* Opaque root — window should be solid, not see-through.
-     Glass panels sit on top with their own semi-transparent fills. */
-  background: #0a0a0c;
+  background: var(--bg);
 }
 
-/* Pin the app to the viewport so it always fills the screen even if a dark-mode
-   browser extension collapses <html>'s height — the opaque app then fully covers
-   any colour the extension paints on the root, and child height:100% resolves
-   against the viewport-sized app rather than the (possibly broken) document. */
+/* body 的雾晕画在 html 背景之上（见上方 body 规则）；#app 保持不透明。 */
 #app {
   position: fixed;
   inset: 0;
 }
 
-/* The app is a fixed full-viewport shell with its own internal scrollers; the
-   document itself must never scroll. Without this, any transient overflow
-   (e.g. the composer growing for a frame on a multi-line paste) pops a window
-   scrollbar in and out and jolts the whole layout. */
+/* App 是固定全屏外壳，文档自身永不滚动。 */
 html,
 body {
   overflow: hidden;
 }
 
-/* ---------------------------------------------------------------------------
-   Global scrollbars: thin + faint on every scroller (chat, tasks, file tree,
-   terminal, dialogs…). Firefox reads scrollbar-width/color; WebKit/Blink read
-   the ::-webkit-scrollbar pseudo-elements. The track stays transparent so the
-   bar floats, and the thumb is a neutral semi-transparent gray that reads as a
-   soft hairline on both light and dark surfaces and darkens slightly on hover.
-   A single mid-gray works on either background, so no per-theme tokens needed.
-   Components may still override locally (e.g. the sidebar's even-thinner rule).
-   --------------------------------------------------------------------------- */
-/* Firefox-only fallback: the standard scrollbar properties DISABLE the whole
-   ::-webkit-scrollbar customisation in Chromium 121+ (any non-auto value wins
-   over the pseudo-element styles), silently replacing the 6px/4px custom bars
-   with the ~11px native thin gutter. Scope them to engines that don't know
-   the webkit pseudo-element instead. */
+/* ---- Global scrollbars ---- */
 @supports not selector(::-webkit-scrollbar) {
   * {
     scrollbar-width: thin;
@@ -926,21 +656,20 @@ body {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bd2);
   border-radius: 999px;
   transition: background 0.2s;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--tx3);
 }
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
 
 body {
-  font-family: var(--sans);
-  color: var(--color-text);
-  background: var(--bg);
+  font-family: var(--font-ui);
+  color: var(--tx);
   font-size: var(--ui-font-size);
   font-weight: 400;
   line-height: 1.6;
@@ -950,20 +679,12 @@ body {
   text-rendering: auto;
   font-synthesis: none;
   text-size-adjust: 100%;
-  /* Never insert a hyphen glyph at line breaks (the page is `lang="en"`);
-     word-break/overflow-wrap still decide where lines wrap. */
   -webkit-hyphens: none;
   hyphens: none;
 }
 
 /* ---------------------------------------------------------------------------
-   Mobile dialogs → bottom sheets.
-   On narrow viewports the centered modal overlays used by ModelPicker,
-   StatusPanel, AddWorkspaceDialog, ProviderManager and
-   LoginDialog become bottom-anchored full-width sheets (rounded top, slides up).
-   The selectors are compound (`.backdrop .dialog`, specificity 0,2,0) so they
-   win over each component's scoped `.dialog` rule regardless of injection order.
-   Desktop (>640px) keeps the existing centered modal untouched.
+   Mobile dialogs → bottom sheets（>640px 桌面居中弹窗不受影响）
    --------------------------------------------------------------------------- */
 @media (max-width: 640px) {
   .backdrop {
@@ -978,9 +699,7 @@ body {
     border-left: none;
     border-right: none;
     border-bottom: none;
-    /* The hairline keeps the sheet edge visible in dark mode, where a black
-       drop shadow on a near-black page disappears. */
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--color-line);
     box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.18);
     animation: kimi-sheet-up 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -992,24 +711,8 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   Overlay stability: every floating surface (dialog backdrops, the onboarding
-   overlay, bottom sheets, the settings popover) is position:fixed and MUST
-   resolve against the viewport. If anything ever leaves a transform/filter/
-   perspective on <html> or <body> — e.g. a residual animation, or a dark-mode
-   browser extension that wraps the page when it treats the app as "dark" — that
-   element becomes the containing block for fixed descendants and every overlay
-   drifts. `!important` author declarations beat both animations and the page's
-   own styles, so forbid those properties on the root. Harmless: the root never
-   needs a transform of its own.
+   Overlay stability：所有浮层 position:fixed 必须相对视口解析。
    --------------------------------------------------------------------------- */
-/* Belt-and-suspenders for the same problem (works even if a transform can't be
-   reset because an extension set it inline-!important): every full-screen
-   overlay is position:fixed with `inset: 0`, which sizes against the fixed
-   containing block. If that block is a collapsed/transformed <html>, `inset: 0`
-   shrinks the overlay and its centered card drifts. Viewport-unit min-size is
-   measured against the VIEWPORT, not the containing block, so the overlay always
-   fills the screen and its card re-centers. No-op in a normal browser. Global
-   (not scoped) with !important so it wins over each dialog's scoped .backdrop. */
 .backdrop,
 .ob-backdrop {
   min-width: 100vw !important;
@@ -1017,52 +720,7 @@ body {
   min-height: 100dvh !important;
 }
 
-/* Content text (messages, titles, descriptions, buttons) uses a real UI sans.
-   Paths, code, tab labels, timestamps and badges keep --mono because they set it
-   per-element — so chrome stays crisp and code-like while content reads soft. */
-/* Interaction fluidity: scoped to common surfaces so we never animate
-   layout-affecting properties (no layout shift). */
-/* ---- Soft canvas: the conversation pane is a faint neutral so white tool
-   cards and the user bubble lift off it with a gentle shadow. Side panels stay
-   as-is; only the reading surface softens. ---- */
-/* Chat surface is white (the user prefers a white reading area over the soft
-   canvas). Bubbles/tool cards still read fine via their own borders + shadows. */
-/* Session rows → rounded, inset pills with a soft active state (cards, not a
-   full-bleed tint bar). Keeps the mono timestamp/badges. Scoped under
-   .sessions because .se is also a (different) class in MobileTopBar. */
-/* Tab bar → clean white strip with a single hairline.
-   Sidebar header (.ch) keeps the sidebar body color so the right border
-   extends seamlessly from top to bottom. */
-/* Chat prose → UI sans (what makes the conversation read like a chat app).
-   Markdown.vue renders message text inside .md/.markdown-renderer with --mono;
-   override to --sans here. Code blocks, inline code and file paths keep --mono
-   via their own per-element rules, so only the prose changes. Global (not
-   scoped) so it reliably wins the cascade. */
-/* Composer input also types in sans (matches the chat prose). */
-/* ---- Composer (global, NOT in Composer.vue) ----------------------------------
-   These MUST live here: scoped rules in Composer.vue did not win the cascade
-   against the base rules, so they are moved to the global sheet where they apply
-   reliably. The chat surface is white, so the composer card reads as a rounded
-   card via a soft shadow + hairline border. */
-/* ---- Chat bubbles (moved out of ChatPane.vue) ---- */
-/* ---- Tool cards (moved out of ToolCall.vue) ---- */
-/* ===========================================================================
-   DE-TERMINALIZATION
-   Some component-scoped styles still ship a sharp, terminal-flavored look
-   (0–4px corners, --mono on UI copy, 2px blue "terminal stripe" dialog tops,
-   hardcoded colors). The rules below restyle those remnants with the shared
-   tokens (--r-* radius scale, --sans for UI copy, --sh/--shc shadows). Code,
-   paths, commands, timestamps and badges deliberately keep --mono. Grouped by
-   surface.
-   =========================================================================== */
-
-/* ---- App shell ---- */
-/* ---- Sidebar: buttons, rename inputs, kebab menu, settings popover ---- */
-/* ---- Chat content: code blocks, inline code, thinking, tool chips ---- */
-/* ---- Approval & question cards (match the rounded .box tool cards) ---- */
-/* ---- Composer: permission pill, model menu, queue strip ---- */
-/* ---- Floating menus + status line ---- */
-/* ---- Entrance / micro keyframes (shared by component-scoped rules) ---- */
+/* ---- Shared entrance keyframes ---- */
 @keyframes kimi-card-in {
   from { opacity: 0; transform: translateY(8px) scale(0.995); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -1071,6 +729,20 @@ body {
   from { opacity: 0; transform: scale(0.4); }
   60% { opacity: 1; transform: scale(1.15); }
   to { opacity: 1; transform: scale(1); }
+}
+@keyframes spring-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-spring-in {
+  animation: spring-in 0.18s var(--ease);
+}
+.animate-fade-in {
+  animation: fade-in 0.16s var(--ease);
 }
 
 /* ---- Reduced-motion: disable ALL entrance/micro animations ---- */
@@ -1081,84 +753,8 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
-/* ---- Kimi Code logo (sidebar header): lively eyes — glance left/right + the
-   occasional blink. The two bars are mask cutouts, so animating them moves /
-   squishes the transparent holes (adapts to whatever's behind the logo). The
-   look (6s) and blink (5.4s) run on different periods so they drift in and out
-   of sync, which reads as more organic. ---- */
-.ch-eyes {
-  animation: kimi-eye-look 16s ease-in-out infinite;
-}
-.ch-eye {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: kimi-eye-blink 11s ease-in-out infinite;
-}
-@keyframes kimi-eye-look {
-  /* Rest centered most of the time; a quick glance right (~7.5s) then a glance
-     left (~13.5s), with long still holds between — calm, not busy. */
-  0%, 42% { transform: translateX(0); }
-  47%, 53% { transform: translateX(2px); }
-  58%, 80% { transform: translateX(0); }
-  84%, 90% { transform: translateX(-2px); }
-  95%, 100% { transform: translateX(0); }
-}
-@keyframes kimi-eye-blink {
-  /* one quick blink per cycle (~10.6s) */
-  0%, 94%, 100% { transform: scaleY(1); }
-  96.5%, 98% { transform: scaleY(0.12); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-eyes,
-  .ch-eye { animation: none; }
-}
 
-/* Click-to-blink: a single quick blink on click (overrides the idle 11s blink
-   while the .blink-now class is present, ~300ms). */
-.ch-logo.blink-now .ch-eye {
-  animation: kimi-eye-blink-once 0.24s ease-in-out;
-}
-@keyframes kimi-eye-blink-once {
-  0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(0.1); }
-}
-
-/* Markdown images at natural size. markstream enforces a min-width/min-height
-   floor (--ms-size-image-*, ~33px) that scales small inline images UP — README
-   shields.io badges (78×20) were rendered at 128×33. Higher specificity than
-   markstream's `.image-node__img[data-v]` (0,2,0) so the floor is removed. */
-.md .markdown-renderer img {
-  min-width: 0;
-  min-height: 0;
-}
-
-/* User-controlled UI font size. Components still set explicit sizes for compact
-   surfaces; these shared chat/input/tool selectors keep readable content and
-   code in lockstep with the setting. */
-.app {
-  font-size: var(--ui-font-size);
-}
-/* Chat/message content → 16px (like Feishu doc body). */
-.md,
-.md .markdown-renderer,
-.md .markdown-renderer p,
-.md .markdown-renderer li,
-.md .markdown-renderer blockquote,
-.md .markdown-renderer td,
-.md .markdown-renderer th,
-.u-bub,
-.u-bub .u-text,
-.a-msg .msg,
-.box .bb,
-.ph {
-  font-size: var(--content-font-size);
-}
-
-/* UI chrome + code surfaces → 14px (like Feishu/Ant Design shell). */
-.md .code-block-container pre,
-.md .markstream-pre,
-.md .code-block-container pre code,
-.md .diff-pre code,
+/* ---- 内容字号联动（用户可调 UI 字号） ---- */
 .box .bh,
 .queue-item,
 .queue-text,
@@ -1166,176 +762,6 @@ body {
 .model-pill,
 .perm-pill,
 .mode-pill,
-.compact-chip,
-.qcard,
-.qtext,
-.qopt,
-.qbtn,
-.srow,
-.srow-val {
+.compact-chip {
   font-size: var(--ui-font-size);
-}
-.md :not(pre) > code,
-.md .inline-code,
-.a-msg code,
-.qopt-desc,
-.srow-label {
-  font-size: var(--ui-font-size-sm);
-}
-.code-block-header,
-.code-block-header *,
-.diff-lang,
-.queue-label,
-.qopt-key,
-.qstep,
-.srow-sub {
-  font-size: var(--ui-font-size-xs);
-}
-
-@media (max-width: 640px) {
-  .u-bub .u-text,
-  .a-msg .msg,
-  .ph {
-    font-size: max(16px, var(--ui-font-size-xl));
-  }
-}
-
-/* ===========================================================================
-   macOS Glass Effect System
-   Frosted-glass panels, vibrancy headers, spring animations.
-   =========================================================================== */
-
-:root {
-  /* Glass material tokens */
-  --glass-blur: 24px;
-  --glass-saturate: 1.6;
-  --glass-bg-dark: rgba(28, 28, 30, 0.72);
-  --glass-bg-light: rgba(245, 245, 247, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-strong: rgba(255, 255, 255, 0.12);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.18);
-  --glass-shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.38), 0 8px 24px rgba(0, 0, 0, 0.22);
-  --glass-divider: rgba(255, 255, 255, 0.06);
-
-  /* macOS spring animation */
-  --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --spring-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
-  --spring-exit: cubic-bezier(0.4, 0.0, 1, 1);
-}
-
-/* Dark-mode glass background (default for the app's Codex-style dark theme) */
-.glass-panel {
-  background: var(--glass-bg-dark);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-}
-
-/* Light-mode glass */
-html[data-color-scheme="light"] .glass-panel,
-html[data-color-scheme="system"] .glass-panel {
-  background: var(--glass-bg-light);
-  border-color: rgba(0, 0, 0, 0.06);
-}
-@media (prefers-color-scheme: light) {
-  html[data-color-scheme="system"] .glass-panel {
-    background: var(--glass-bg-light);
-    border-color: rgba(0, 0, 0, 0.06);
-  }
-}
-
-/* Glass header bar — for sidebar header, chat header, composer bar */
-.glass-header {
-  background: rgba(22, 22, 26, 0.45);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border-bottom: 1px solid var(--glass-divider);
-}
-
-html[data-color-scheme="light"] .glass-header {
-  background: rgba(245, 245, 247, 0.6);
-  border-bottom-color: rgba(0, 0, 0, 0.04);
-}
-@media (prefers-color-scheme: light) {
-  html[data-color-scheme="system"] .glass-header {
-    background: rgba(245, 245, 247, 0.6);
-    border-bottom-color: rgba(0, 0, 0, 0.04);
-  }
-}
-
-/* Glass context menu (right-click / hover menu) */
-.glass-menu {
-  background: rgba(32, 32, 38, 0.65);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid var(--glass-border-strong);
-  border-radius: var(--radius-md, 8px);
-  box-shadow: var(--glass-shadow);
-  padding: 4px;
-  min-width: 160px;
-}
-.glass-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: var(--radius-sm, 6px);
-  font-size: var(--text-sm, 13px);
-  color: var(--color-text, #ececec);
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  width: 100%;
-  text-align: left;
-}
-.glass-menu-item:hover {
-  background: var(--color-hover, rgba(255, 255, 255, 0.08));
-}
-.glass-menu-item.danger {
-  color: var(--color-danger, #f85149);
-}
-.glass-menu-divider {
-  height: 1px;
-  background: var(--glass-divider);
-  margin: 4px 6px;
-}
-
-/* macOS spring entrance animation */
-@keyframes spring-in {
-  from {
-    opacity: 0;
-    transform: scale(0.92) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-.animate-spring-in {
-  animation: spring-in 0.32s var(--spring-bounce);
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.animate-fade-in {
-  animation: fade-in 0.2s var(--spring-smooth);
-}
-
-/* Glass divider — ultra-thin semi-transparent line */
-.glass-divider {
-  height: 1px;
-  background: var(--glass-divider);
-  border: none;
-}
-
-/* Fallback for browsers without backdrop-filter support */
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-panel,
-  .glass-header,
-  .glass-menu {
-    background: var(--color-surface, #212121);
-  }
 }

@@ -161,9 +161,7 @@
     align-items: flex-start;
     justify-content: center;
     padding-top: 15vh;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: var(--overlay);
   }
 
   .palette-modal {

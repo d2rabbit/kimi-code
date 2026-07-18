@@ -52,18 +52,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px) saturate(1.2);
-    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    background: var(--overlay);
     animation: fadeIn 0.15s ease;
   }
   @keyframes fadeIn {
     from { opacity: 0; }
   }
   .dialog {
-    background: rgba(28, 28, 30, 0.82);
-    backdrop-filter: blur(30px) saturate(1.6);
-    -webkit-backdrop-filter: blur(30px) saturate(1.6);
+    background: var(--l3);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-xl, 16px);
     width: min(640px, 90vw);

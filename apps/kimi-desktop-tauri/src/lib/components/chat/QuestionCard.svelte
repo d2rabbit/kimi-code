@@ -176,9 +176,7 @@
     border-left: 3px solid var(--color-accent, #2dd4bf);
     border-radius: var(--radius-lg, 14px);
     overflow: hidden;
-    background: rgba(45, 212, 191, 0.05);
-    backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
-    -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
+    background: var(--ac-soft);
     margin-bottom: 8px;
   }
   .question-card.minimized {

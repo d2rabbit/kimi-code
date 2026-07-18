@@ -219,9 +219,7 @@
   .right-panel {
     flex: none; width: 320px; height: 100%;
     display: flex; flex-direction: column; overflow: hidden;
-    background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%), rgba(15, 15, 18, 0.88);
-    backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
-    -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
+    background: var(--l1);
     border-left: 1px solid rgba(255,255,255,0.06);
   }
   :global(html[data-color-scheme="light"]) .right-panel {

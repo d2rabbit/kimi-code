@@ -64,9 +64,7 @@
     border-left: 3px solid var(--color-warning, #ffd60a);
     border-radius: var(--radius-lg, 14px);
     overflow: hidden;
-    background: rgba(255, 214, 10, 0.06);
-    backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
-    -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 1.6));
+    background: var(--warn-soft, rgba(255, 214, 10, 0.10));
     margin-bottom: 8px;
   }
   .approval-card.minimized {

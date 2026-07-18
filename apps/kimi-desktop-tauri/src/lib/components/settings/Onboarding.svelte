@@ -115,8 +115,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(8, 8, 10, 0.85);
-    backdrop-filter: blur(12px);
+    background: var(--overlay);
     padding: 24px;
   }
 
