@@ -2,6 +2,8 @@
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
   import Icon from '../ui/Icon.svelte';
+  import Empty from '../ui/Empty.svelte';
+  import { tooltip } from '../../actions/tooltip';
 
   let {
     onnavigate = () => {},
@@ -125,7 +127,7 @@
       {/each}
     {/if}
     {#if client.sessions().length === 0 && client.workspaces().length === 0}
-      <div class="empty"><p>暂无会话，点击「新建任务」开始</p></div>
+      <Empty icon="❯" title="暂无会话" desc="点击「新建任务」开始你的第一个任务" />
     {/if}
     <button class="add-ws" onclick={addWorkspace}><Icon name="folder-plus" size="sm" /> 添加工作区</button>
   </div>
@@ -138,7 +140,7 @@
     <div class="avatar">{(authName || 'U')[0].toUpperCase()}</div>
     <span class="user-name">{authName || '未登录'}</span>
     {#if authed}<span class="badge-pro">Pro</span>{/if}
-    <button class="gear" title="设置" onclick={onnavigate}><Icon name="settings" size="md" /></button>
+    <button class="gear" use:tooltip={'设置'} onclick={onnavigate}><Icon name="settings" size="md" /></button>
   </footer>
 </aside>
 
@@ -210,7 +212,6 @@
   .rename { flex: 1; padding: 3px 6px; border: 1px solid var(--bd2); border-radius: var(--r-sm); background: var(--l2); color: var(--tx); font-size: 12px; outline: none; margin: 0 4px; }
   .rename:focus { border-color: var(--ac); }
 
-  .empty { padding: 30px 16px; text-align: center; color: var(--tx3); font-size: 12px; }
   .add-ws { display: flex; align-items: center; gap: 6px; margin: 4px 12px 0; padding: 5px 8px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--tx3); font-size: 12px; cursor: pointer; }
   .add-ws:hover { background: var(--color-hover); color: var(--tx2); }
 

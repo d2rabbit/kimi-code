@@ -191,7 +191,7 @@
     font-size: 0.88em;
     background: var(--l3);
     border: 1px solid var(--bd);
-    color: var(--ac);
+    color: var(--ac-h);
     padding: 1px 5px;
     border-radius: 5px;
   }

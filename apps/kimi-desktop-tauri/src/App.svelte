@@ -9,6 +9,7 @@
   import CommandPalette from './lib/components/shell/CommandPalette.svelte';
   import Onboarding from './lib/components/settings/Onboarding.svelte';
   import SearchSessions from './lib/components/sidebar/SearchSessions.svelte';
+  import Toasts from './lib/components/ui/Toasts.svelte';
 
   type View = 'workspace' | 'settings';
   let currentView = $state<View>('workspace');
@@ -57,6 +58,7 @@
   {/if}
 
   <SearchSessions bind:open={showSearch} />
+  <Toasts />
   <CommandPalette bind:open={showPalette} onnavigate={() => navigate('settings')} />
 </div>
 

@@ -9,6 +9,7 @@
   import SubagentsSection from '../components/settings/SubagentsSection.svelte';
   import * as client from '../stores/client.svelte';
   import { daemon } from '../stores/daemon.svelte';
+  import { toast } from '../stores/toast.svelte';
 
   let { onnavigate = () => {} }: { onnavigate?: () => void } = $props();
 
@@ -32,12 +33,11 @@
   }
 
   let saving = false; void saving;
-  let msg = $state<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   async function toggleConfig(key: 'telemetry' | 'mergeAllAvailableSkills', value: boolean) {
     saving = true;
     try { await client.client.updateConfig({ [key]: value } as Record<string, never>); }
-    catch (e) { msg = { type: 'err', text: String(e) }; setTimeout(() => msg = null, 3000); }
+    catch (e) { toast.err(String(e)); }
     finally { saving = false; }
   }
 
@@ -106,7 +106,6 @@
 
     <!-- Content -->
     <main class="sp-content">
-      {#if msg}<div class="toast" class:err={msg.type === 'err'}>{msg.text}</div>{/if}
       <div class="sp-col">
 
       {#if active === 'general'}
@@ -143,7 +142,7 @@
         </div>
         <div class="scard">
           <span class="lab"><span class="t">版本</span><span class="d">Kimi Code Desktop · daemon {client.serverVersion() || '未知'}</span></span>
-          <button class="btn sm" onclick={() => { msg = { type: 'ok', text: '已是最新版本' }; setTimeout(() => msg = null, 2000); }} type="button">检查更新</button>
+          <button class="btn sm" onclick={() => { toast.ok('已是最新版本'); }} type="button">检查更新</button>
         </div>
 
       {:else if active === 'preview'}
@@ -190,7 +189,7 @@
               <span class="d">{#if client.authProvider()?.status === 'authenticated'}订阅生效中 · 第一方模型可用{:else}登录后可使用 Kimi K2 等第一方模型，无需 API Key{/if}</span>
             </div>
             {#if client.authProvider()?.status === 'authenticated'}
-              <button class="btn sm" onclick={() => { msg = { type: 'ok', text: '账号管理（浏览器打开）' }; setTimeout(() => msg = null, 2000); }} type="button">管理</button>
+              <button class="btn sm" onclick={() => { toast.info('账号管理（浏览器打开）'); }} type="button">管理</button>
               <button class="btn ghost-acc sm" onclick={() => { void client.client.logout(); }} type="button">解绑</button>
             {:else}
               <button class="btn pri sm" onclick={() => { void client.client.startOAuthLogin(); }} type="button">登录 Kimi</button>
@@ -592,7 +591,4 @@
   .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
   .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--ac-bd); border-radius: 14px; background: transparent; color: var(--ac); font-size: 13px; cursor: pointer; font-family: inherit; opacity: 0.8; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), opacity var(--duration-fast) var(--ease); }
   .dashed-btn:hover { border-color: var(--ac); background: var(--ac-soft); opacity: 1; }
-
-  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 9px 16px; border-radius: 99px; background: var(--l3); border: 1px solid var(--bd2); color: var(--ok); font-size: 12px; z-index: 500; box-shadow: var(--sh-lg); }
-  .toast.err { color: var(--err); }
 </style>

@@ -2,6 +2,7 @@
 <script lang="ts">
   import * as client from '../stores/client.svelte';
   import Icon from '../components/ui/Icon.svelte';
+  import Empty from '../components/ui/Empty.svelte';
   let query = $state('');
 
   $effect(() => { void client.client.loadArchivedSessions(); });
@@ -44,10 +45,7 @@
     {#if client.client.archivedLoading}
       <p class="note">加载中…</p>
     {:else if grouped.length === 0}
-      <div class="empty">
-        <span class="empty-ic">▤</span>
-        <p>{query ? '无匹配的归档会话' : '没有已归档的会话'}</p>
-      </div>
+      <Empty icon="▤" title={query ? '无匹配的归档会话' : '没有已归档的会话'} desc={query ? '' : '归档的会话会按工作区分组显示在这里'} />
     {:else}
       {#each grouped as [name, list] (name)}
         <div class="arch-g">{name}</div>
@@ -80,8 +78,6 @@
   .search input { flex: 1; background: none; border: none; outline: none; color: var(--tx); font: inherit; font-size: 12px; }
   .note { font-size: 11px; color: var(--tx3); }
 
-  .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 64px 0; color: var(--tx2); font-size: 13px; }
-  .empty-ic { font-size: 26px; color: var(--tx3); opacity: 0.7; }
 
   .arch-g { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tx3); font-weight: 600; margin-top: 4px; }
   .card { border: 1px solid var(--bd); border-radius: 12px; background: var(--l2); box-shadow: var(--toplight); }

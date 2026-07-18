@@ -318,7 +318,7 @@ html[data-color-scheme="light"] {
   --bd2: rgba(16, 24, 40, 0.13);
   --tx: #16191d;
   --tx2: #5b626c;
-  --tx3: #9ba2ac;
+  --tx3: #8a919c;
   --ac: #2e7ce6;
   --ac-h: #1c66c9;
   --ac-soft: rgba(46, 124, 230, 0.09);
@@ -435,7 +435,7 @@ html[data-color-scheme="light"] {
   html[data-color-scheme="system"] {
     --bg: #f2f4f8; --l1: #fafbfd; --l2: #ffffff; --l3: #ffffff;
     --bd: rgba(16, 24, 40, 0.07); --bd2: rgba(16, 24, 40, 0.13);
-    --tx: #16191d; --tx2: #5b626c; --tx3: #9ba2ac;
+    --tx: #16191d; --tx2: #5b626c; --tx3: #8a919c;
     --ac: #2e7ce6; --ac-h: #1c66c9; --ac-soft: rgba(46, 124, 230, 0.09); --ac-bd: rgba(46, 124, 230, 0.28);
     --ok: #1fa84c; --ok-soft: rgba(31, 168, 76, 0.09);
     --warn: #b7791f; --warn-soft: rgba(183, 121, 31, 0.09);
@@ -496,6 +496,27 @@ body::after {
   outline: 2px solid var(--ac, #4fa8ff);
   outline-offset: 1px;
   border-radius: 4px;
+}
+
+/* ---- 统一 tooltip（actions/tooltip.ts 渲染于 body） ---- */
+.ux-tooltip {
+  position: fixed;
+  z-index: var(--z-toast, 600);
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+  background: var(--l3);
+  border: 1px solid var(--bd2);
+  color: var(--tx);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--sh);
+  animation: ux-tip-in 0.125s var(--ease);
+}
+@keyframes ux-tip-in {
+  from { opacity: 0; transform: translateY(2px); }
 }
 
 /* ---- 按压反馈：任何可点元素 :active 微缩，界面"在听" ---- */
