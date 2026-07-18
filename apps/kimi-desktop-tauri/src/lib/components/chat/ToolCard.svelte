@@ -113,92 +113,98 @@
 
 <style>
   .tool-card {
-    margin: 4px 0;
-    border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    margin: 6px 0;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--bd);
+    background: var(--l2);
+    box-shadow: var(--toplight);
     overflow: hidden;
-    transition: border-color var(--duration-fast, 120ms);
+    transition: border-color var(--duration-fast) var(--ease);
   }
   .tool-card:hover {
-    border-color: var(--color-line-strong, rgba(84,84,88,0.4));
+    border-color: var(--bd2);
   }
 
   .tool-header {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
-    padding: 6px 10px;
+    padding: 9px 12px;
     border: none;
-    background: var(--color-surface-raised, transparent);
-    color: var(--color-text-muted, rgba(235,235,245,0.6));
-    font-size: var(--text-xs, 12px);
+    background: transparent;
+    color: var(--tx2);
+    font-size: var(--text-xs);
     cursor: pointer;
     text-align: left;
-    transition: background var(--duration-fast, 120ms);
+    transition: background var(--duration-fast) var(--ease);
   }
   .tool-header:hover {
-    background: var(--color-hover, rgba(255,255,255,0.04));
+    background: var(--color-hover);
   }
 
   .tool-name {
-    font-weight: var(--weight-medium, 500);
-    color: var(--color-text, rgba(255,255,255,0.92));
+    font-weight: var(--weight-semibold);
+    color: var(--tx);
     flex: none;
   }
   .tool-arg {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: var(--font-mono, monospace);
-    opacity: 0.7;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    opacity: 0.8;
     min-width: 0;
   }
   .tool-arg-link {
     cursor: pointer;
-    color: var(--color-accent, #2dd4bf);
+    color: var(--ac);
     text-decoration: underline;
     text-underline-offset: 2px;
     opacity: 1;
   }
   .tool-arg-link:hover {
-    opacity: 0.8;
+    color: var(--ac-h);
   }
   .tool-timing {
+    margin-left: auto;
     flex: none;
-    color: var(--color-text-faint, rgba(235,235,245,0.3));
-    font-size: 11px;
+    color: var(--tx3);
+    font-size: 10.5px;
+    font-family: var(--font-mono);
   }
 
   .diff-chip {
     flex: none;
     font-size: 10px;
-    padding: 0 4px;
-    border-radius: var(--radius-xs, 3px);
-    font-weight: var(--weight-medium, 500);
+    padding: 1px 5px;
+    border-radius: var(--r-sm);
+    font-weight: var(--weight-medium);
+    font-family: var(--font-mono);
   }
-  .diff-chip.add { background: var(--color-success-soft, rgba(78,201,176,0.15)); color: var(--color-success, #30d158); }
-  .diff-chip.del { background: var(--color-danger-soft, rgba(255,107,107,0.15)); color: var(--color-danger, #ff453a); }
+  .diff-chip.add { background: var(--ok-soft); color: var(--ok); }
+  .diff-chip.del { background: var(--err-soft); color: var(--err); }
 
   .tool-output {
-    border-top: 1px solid var(--color-line, rgba(84,84,88,0.65));
-    padding: 8px 10px;
+    border-top: 1px solid var(--bd);
+    padding: 9px 12px;
     max-height: 300px;
     overflow-y: auto;
-    background: var(--color-surface-sunken, rgba(0,0,0,0.15));
-    font-family: var(--font-mono, monospace);
-    font-size: 12px;
-    line-height: 1.5;
+    background: var(--l1);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.65;
   }
   .output-line {
     white-space: pre-wrap;
     word-break: break-all;
-    color: var(--color-text-muted, rgba(235,235,245,0.6));
+    color: var(--tx2);
   }
-  .output-line.add { color: var(--color-success, #30d158); }
-  .output-line.del { color: var(--color-danger, #ff453a); }
+  .output-line.add { color: var(--ok); background: var(--ok-soft); }
+  .output-line.del { color: var(--err); background: var(--err-soft); }
   .output-truncated {
-    color: var(--color-text-faint, rgba(235,235,245,0.3));
+    color: var(--tx3);
     font-style: italic;
     padding-top: 4px;
   }

@@ -172,25 +172,27 @@
 
 <style>
   .question-card {
-    border: 1px solid var(--color-accent, #2dd4bf);
-    border-left: 3px solid var(--color-accent, #2dd4bf);
-    border-radius: var(--radius-lg, 14px);
+    border: 1px solid var(--ac-bd);
+    border-radius: var(--r-lg);
     overflow: hidden;
-    background: var(--ac-soft);
+    background: var(--l2);
+    box-shadow: var(--toplight);
     margin-bottom: 8px;
   }
   .question-card.minimized {
-    border-color: var(--color-line, rgba(84,84,88,0.65));
-    border-left-color: var(--color-line, rgba(84,84,88,0.65));
-    background: var(--color-surface-raised, rgba(44,44,46,0.8));
+    border-color: var(--bd);
+    background: var(--l2);
   }
 
   .q-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 14px;
+    padding: 9px 12px;
+    background: var(--ac-soft);
+    color: var(--ac);
   }
+  .question-card.minimized .q-header { background: transparent; color: var(--tx2); }
   .q-steps {
     display: flex;
     gap: 5px;
@@ -200,31 +202,31 @@
     height: 8px;
     border-radius: 50%;
     border: none;
-    background: var(--color-line-strong, rgba(84,84,88,0.4));
+    background: var(--bd2);
     cursor: pointer;
-    transition: background 120ms, transform 120ms;
+    transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
   }
   .q-step-dot:hover { transform: scale(1.25); }
-  .q-step-dot.active { background: var(--color-accent, #2dd4bf); }
-  .q-step-dot.done { background: var(--color-success, #30d158); }
+  .q-step-dot.active { background: var(--ac); }
+  .q-step-dot.done { background: var(--ok); }
   .q-title {
-    font-size: var(--text-sm, 13px);
-    font-weight: var(--weight-medium, 500);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
     flex: 1;
   }
 
   .q-body {
-    padding: 0 14px 8px;
+    padding: 10px 12px 8px;
   }
   .q-question {
-    font-size: 13px;
+    font-size: 12.5px;
     margin-bottom: 8px;
-    line-height: 1.5;
-    color: var(--color-text, rgba(255,255,255,0.92));
+    line-height: 1.55;
+    color: var(--tx);
   }
   .q-desc {
-    font-size: 12px;
-    color: var(--color-text-muted, rgba(235,235,245,0.6));
+    font-size: 11.5px;
+    color: var(--tx2);
     margin-bottom: 8px;
   }
 
@@ -236,32 +238,33 @@
   .q-option {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: var(--radius-md, 10px);
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    gap: 9px;
+    padding: 9px 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--bd);
     background: transparent;
-    color: var(--color-text, rgba(255,255,255,0.92));
-    font-size: 13px;
+    color: var(--tx2);
+    font-size: 12px;
     cursor: pointer;
     text-align: left;
-    transition: border-color 120ms, background 120ms;
+    transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
   }
   .q-option:hover {
-    border-color: var(--color-accent, #2dd4bf);
-    background: var(--color-hover, rgba(255,255,255,0.04));
+    border-color: var(--bd2);
+    color: var(--tx);
   }
   .q-option.selected {
-    border-color: var(--color-accent, #2dd4bf);
-    background: var(--color-accent-soft, rgba(45,212,191,0.1));
+    border-color: var(--ac);
+    background: var(--ac-soft);
+    color: var(--tx);
   }
   .q-bullet {
     flex: none;
-    color: var(--color-text-muted, rgba(235,235,245,0.6));
-    font-size: 14px;
+    color: var(--tx3);
+    font-size: 13px;
   }
   .q-option.selected .q-bullet {
-    color: var(--color-accent, #2dd4bf);
+    color: var(--ac);
   }
   .q-option-text {
     flex: 1;
@@ -269,16 +272,16 @@
   .q-recommend {
     font-size: 10px;
     padding: 1px 8px;
-    border-radius: var(--radius-full, 999px);
-    background: var(--color-success-soft, rgba(48,209,88,0.14));
-    color: var(--color-success, #30d158);
+    border-radius: var(--radius-full);
+    background: var(--ok-soft);
+    color: var(--ok);
   }
 
   .q-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 14px 12px;
+    padding: 8px 12px 12px;
   }
   .q-footer-right {
     display: flex;

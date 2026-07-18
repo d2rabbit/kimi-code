@@ -48,7 +48,7 @@
 <div class="chat">
   <header class="hdr">
     <span class="hdr-title">{client.activeSession()?.title || '新对话'}</span>
-    {#if running}<span class="dot-run"></span>{/if}
+    {#if running}<span class="chip-run"><span class="dot-run"></span>运行中</span>{/if}
     <div class="hdr-actions">
       {#if running}<button class="stop-btn" onclick={abort}>停止</button>{/if}
       {#if client.activeSession()}<IconButton name="close" label="归档" size="sm" onclick={() => client.client.archiveSession(client.activeSessionId())} />{/if}
@@ -59,8 +59,8 @@
     <div class="msgs-inner">
       {#if client.turns().length === 0 && !client.sessionLoading()}
         <div class="welcome">
-          <div class="w-logo">◧</div>
-          <h1>How can I help?</h1>
+          <div class="w-logo"><span class="w-mark">K</span></div>
+          <h1>有什么可以帮你？</h1>
           <div class="chips">
             <button class="chip" onclick={() => text = '解释这个项目的目录结构'}>解释项目结构</button>
             <button class="chip" onclick={() => text = '帮我写一个单元测试'}>写单元测试</button>
@@ -73,26 +73,32 @@
       {:else}
         {#each client.turns() as turn (turn.id)}
           {#if turn.role === 'user'}
-            <div class="msg user">
-              {#if turn.images?.length}<div class="imgs">{#each turn.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}</div>{/if}
-              {#if turn.text}<div class="bubble user-bubble">{turn.text}</div>{/if}
+            <div class="msg">
+              <span class="avatar u">你</span>
+              <div class="body">
+                {#if turn.images?.length}<div class="imgs">{#each turn.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}</div>{/if}
+                {#if turn.text}<div class="u-text">{turn.text}</div>{/if}
+              </div>
             </div>
           {:else if turn.role === 'compaction'}
             <div class="compact">对话已压缩</div>
           {:else}
-            <div class="msg ai">
-              {#each group(turn.blocks ?? []) as item, i}
-                {#if item.kind === 'thinking'}
-                  <details class="think"><summary>思考过程</summary><div class="think-body">{item.thinking}</div></details>
-                {:else if item.kind === 'text'}
-                  <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn === client.turns().at(-1)} /></div>
-                {:else if item.kind === 'tool'}
-                  <ToolCard tool={item.tool} />
-                {:else if item.kind === 'tg'}
-                  <button class="tg-toggle" onclick={() => expanded[i] = !(expanded[i] ?? true)}>{expanded[i] ?? true ? '▾' : '▸'} {item.tools.length} 个工具调用</button>
-                  {#if expanded[i] ?? true}{#each item.tools as t}<ToolCard tool={t} />{/each}{/if}
-                {/if}
-              {/each}
+            <div class="msg">
+              <span class="avatar a">K</span>
+              <div class="body">
+                {#each group(turn.blocks ?? []) as item, i}
+                  {#if item.kind === 'thinking'}
+                    <details class="think"><summary>思考过程</summary><div class="think-body">{item.thinking}</div></details>
+                  {:else if item.kind === 'text'}
+                    <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn === client.turns().at(-1)} /></div>
+                  {:else if item.kind === 'tool'}
+                    <ToolCard tool={item.tool} />
+                  {:else if item.kind === 'tg'}
+                    <button class="tg-toggle" onclick={() => expanded[i] = !(expanded[i] ?? true)}>{expanded[i] ?? true ? '▾' : '▸'} {item.tools.length} 个工具调用</button>
+                    {#if expanded[i] ?? true}{#each item.tools as t}<ToolCard tool={t} />{/each}{/if}
+                  {/if}
+                {/each}
+              </div>
             </div>
           {/if}
         {/each}
@@ -108,38 +114,42 @@
 <style>
   .chat { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
 
-  .hdr { flex: none; height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); }
-  .hdr-title { font-size: 13px; font-weight: 500; color: var(--color-text, rgba(255,255,255,0.92)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .dot-run { width: 6px; height: 6px; border-radius: 50%; background: var(--color-success, #30d158); animation: pulse 1.5s infinite; }
+  .hdr { flex: none; height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid var(--bd); }
+  .hdr-title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip-run { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 8px; font-size: 10.5px; font-weight: 600; background: var(--ok-soft); color: var(--ok); }
+  .dot-run { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .hdr-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
-  .stop-btn { padding: 3px 10px; border-radius: 5px; border: 1px solid var(--color-danger-bd, rgba(255,69,58,0.3)); background: transparent; color: var(--color-danger, #ff453a); font-size: 11px; cursor: pointer; }
+  .stop-btn { padding: 3px 10px; border-radius: var(--r-sm); border: 1px solid var(--color-danger-bd); background: transparent; color: var(--err); font-size: 11px; cursor: pointer; }
+  .stop-btn:hover { background: var(--err-soft); }
 
   .msgs { flex: 1; overflow-y: auto; }
-  .msgs-inner { max-width: 740px; margin: 0 auto; padding: 12px 16px 6px; display: flex; flex-direction: column; gap: 8px; }
+  .msgs-inner { max-width: 760px; margin: 0 auto; padding: 20px 22px 8px; display: flex; flex-direction: column; gap: 18px; }
 
-  .welcome { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 50px 20px; text-align: center; }
-  .w-logo { font-size: 32px; color: var(--color-text-faint); }
-  .welcome h1 { font-size: 18px; font-weight: 500; color: var(--color-text); margin: 0; }
+  .welcome { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 56px 20px; text-align: center; }
+  .w-logo .w-mark { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; font-size: 19px; font-weight: 800; box-shadow: 0 0 24px rgba(79, 168, 255, 0.35); }
+  .welcome h1 { font-size: 18px; font-weight: 600; color: var(--tx); margin: 0; letter-spacing: -0.01em; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 420px; }
-  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-line); background: transparent; color: var(--color-text-muted); font-size: 12px; cursor: pointer; }
-  .chip:hover { border-color: var(--color-line-strong); color: var(--color-text); background: var(--color-hover); }
+  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bd2); background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; transition: all var(--duration-fast) var(--ease); }
+  .chip:hover { border-color: var(--ac); color: var(--ac); background: var(--ac-soft); }
 
-  .msg { display: flex; flex-direction: column; gap: 4px; }
-  .msg.user { align-items: flex-end; }
-  .bubble { max-width: 80%; padding: 7px 12px; border-radius: 14px 14px 4px 14px; }
-  .user-bubble { background: var(--color-surface-raised, rgba(44,44,46,0.8)); color: var(--color-text); }
-  .imgs { display: flex; gap: 4px; }
+  .msg { display: flex; gap: 10px; font-size: 13px; line-height: 1.65; }
+  .msg .body { flex: 1; min-width: 0; }
+  .avatar { width: 22px; height: 22px; border-radius: var(--r-sm); flex: none; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+  .avatar.u { background: var(--amb-soft); color: var(--amb); }
+  .avatar.a { background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; }
+  .u-text { color: var(--tx); }
+  .imgs { display: flex; gap: 4px; margin-bottom: 4px; }
   .imgs img { max-width: 100px; border-radius: 6px; }
-  .msg.ai { width: 100%; }
-  .ai-text { color: var(--color-text); line-height: 1.6; opacity: 0.9; }
-  .think { font-size: 12px; color: var(--color-text-faint); }
-  .think summary { cursor: pointer; color: var(--color-text-faint); }
-  .think-body { padding: 6px 10px; font-family: var(--font-mono, monospace); white-space: pre-wrap; color: var(--color-text-faint); }
-  .tg-toggle { font-size: 11px; color: var(--color-text-faint); cursor: pointer; background: none; border: none; padding: 2px 0; }
-  .compact { text-align: center; font-size: 11px; color: var(--color-text-faint); padding: 6px; border-top: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); border-bottom: 1px solid var(--glass-divider, rgba(255,255,255,0.06)); }
+  .ai-text { color: var(--tx); line-height: 1.65; }
+  .think { font-size: 12px; color: var(--tx3); }
+  .think summary { cursor: pointer; color: var(--tx3); }
+  .think-body { padding: 6px 10px; font-family: var(--font-mono); white-space: pre-wrap; color: var(--tx3); }
+  .tg-toggle { font-size: 11px; color: var(--tx3); cursor: pointer; background: none; border: none; padding: 2px 0; }
+  .tg-toggle:hover { color: var(--tx2); }
+  .compact { text-align: center; font-size: 11px; color: var(--tx3); padding: 6px; border-top: 1px solid var(--bd); border-bottom: 1px solid var(--bd); }
 
   .loading { display: flex; justify-content: center; padding: 30px; }
-  .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.06); border-top-color: rgba(255,255,255,0.3); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--bd); border-top-color: var(--ac); border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>

@@ -187,14 +187,16 @@
     margin: 3px 0;
   }
   :global(.md-body code) {
-    font-family: var(--font-mono, monospace);
-    font-size: 0.9em;
-    background: var(--color-surface-raised, rgba(128,128,128,0.15));
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--l3);
+    border: 1px solid var(--bd);
+    color: var(--ac);
     padding: 1px 5px;
-    border-radius: var(--radius-xs, 4px);
+    border-radius: 5px;
   }
   :global(.md-body a) {
-    color: var(--color-accent, #2dd4bf);
+    color: var(--ac);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
@@ -224,14 +226,14 @@
   /* Code blocks */
   :global(.md-body .code-block) {
     margin: 0 0 12px;
-    padding: 12px 14px;
-    border-radius: var(--radius-md, 8px);
-    background: var(--color-surface-raised, rgba(28,28,30,0.72));
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    padding: 10px 12px;
+    border-radius: var(--r-md);
+    background: var(--l1);
+    border: 1px solid var(--bd);
     overflow-x: auto;
-    font-family: var(--font-mono, monospace);
-    font-size: 13px;
-    line-height: 1.5;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.65;
   }
   :global(.md-body .code-block code) {
     background: none;
@@ -241,12 +243,12 @@
   /* Shiki output overrides our bg — let it through */
   :global(.md-body pre.shiki) {
     margin: 0 0 12px;
-    padding: 12px 14px;
-    border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    padding: 10px 12px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--bd);
     overflow-x: auto;
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 11.5px;
+    line-height: 1.65;
   }
 
   /* Diff blocks */
@@ -254,28 +256,29 @@
     white-space: pre;
   }
   :global(.md-body .diff-add) {
-    color: var(--color-success, #30d158);
-    background: var(--color-success-soft, rgba(78,201,176,0.08));
+    color: var(--ok);
+    background: var(--ok-soft);
     display: block;
   }
   :global(.md-body .diff-del) {
-    color: var(--color-danger, #ff453a);
-    background: var(--color-danger-soft, rgba(255,107,107,0.08));
+    color: var(--err);
+    background: var(--err-soft);
     display: block;
   }
   :global(.md-body .diff-meta) {
-    color: var(--color-accent, #2dd4bf);
+    color: var(--tx3);
     display: block;
   }
 
   /* Streaming cursor */
   .md-cursor {
     display: inline-block;
-    width: 2px;
-    height: 1.1em;
-    background: var(--color-accent, #2dd4bf);
+    width: 6px;
+    height: 13px;
+    border-radius: 1px;
+    background: var(--ac);
     animation: blink 1s steps(2) infinite;
-    vertical-align: text-bottom;
+    vertical-align: -2px;
     margin-left: 1px;
   }
   @keyframes blink {
