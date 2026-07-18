@@ -438,7 +438,7 @@
     font-size: var(--text-xs, 12px);
     cursor: pointer;
     flex-shrink: 0;
-    transition: all var(--duration-fast, 120ms);
+    transition: background var(--duration-fast, 120ms) var(--ease), color var(--duration-fast, 120ms) var(--ease);
   }
   .restart-btn:hover:not(:disabled) {
     color: var(--color-text, #ececec);

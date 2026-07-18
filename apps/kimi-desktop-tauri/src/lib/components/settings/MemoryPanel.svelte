@@ -341,7 +341,7 @@
     font-size: var(--text-sm, 13px);
     cursor: pointer;
     align-self: flex-start;
-    transition: all var(--duration-fast, 120ms);
+    transition: background var(--duration-fast, 120ms) var(--ease), color var(--duration-fast, 120ms) var(--ease);
   }
   .compact-action-btn:hover:not(:disabled) {
     border-color: var(--color-line-strong, #3a3a3a);

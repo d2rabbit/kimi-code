@@ -571,7 +571,7 @@
   .mini-toggle {
     padding: 3px 8px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent;
     color: var(--tx3); font-size: 10.5px; font-weight: 500; cursor: pointer;
-    transition: all var(--duration-fast) var(--ease);
+    transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
   }
   .mini-toggle:hover { color: var(--tx); background: var(--ac-soft); }
   .mini-toggle.on { background: var(--ac-soft); color: var(--ac); border-color: var(--ac-bd); }

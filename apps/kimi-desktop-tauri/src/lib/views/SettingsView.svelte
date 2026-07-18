@@ -496,10 +496,10 @@
 
   /* ---- Left nav ---- */
   .sp-nav { width: 220px; flex: none; height: 100%; display: flex; flex-direction: column; background: var(--l1); border-right: 1px solid var(--bd); padding: 12px 8px; overflow-y: auto; }
-  .sp-back { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: none; border-radius: var(--r-md); background: transparent; font-size: 12.5px; color: var(--tx2); cursor: pointer; transition: all var(--duration-fast) var(--ease); }
+  .sp-back { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: none; border-radius: var(--r-md); background: transparent; font-size: 12.5px; color: var(--tx2); cursor: pointer; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
   .sp-back:hover { background: var(--ac-soft); color: var(--tx); }
   .sp-divider { height: 1px; background: var(--bd); margin: 8px 4px; }
-  .sp-tab { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: none; border-radius: var(--r-md); background: transparent; font-size: 13px; color: var(--tx2); cursor: pointer; text-align: left; transition: all var(--duration-fast) var(--ease); }
+  .sp-tab { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: none; border-radius: var(--r-md); background: transparent; font-size: 13px; color: var(--tx2); cursor: pointer; text-align: left; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
   .sp-tab:hover { background: var(--color-hover); color: var(--tx); }
   .sp-tab.on { background: var(--ac-soft); color: var(--ac); border-left: 2px solid var(--ac); padding-left: 8px; font-weight: 600; }
   .sp-foot { display: flex; align-items: center; gap: 8px; padding: 4px; }
@@ -523,7 +523,7 @@
   .mono-val { font-family: var(--font-mono); font-size: 11px; color: var(--tx2); }
 
   .seg { display: inline-flex; border: 1px solid var(--bd2); border-radius: var(--r-md); overflow: hidden; }
-  .seg-btn { padding: 5px 12px; border: none; background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; transition: all var(--duration-fast) var(--ease); }
+  .seg-btn { padding: 5px 12px; border: none; background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
   .seg-btn.on { background: var(--ac-soft); color: var(--ac); font-weight: 600; }
 
   .slider-wrap { display: flex; align-items: center; gap: 10px; }
@@ -531,11 +531,11 @@
   .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); cursor: pointer; }
 
   .toggle { width: 36px; height: 20px; border-radius: 999px; border: none; background: var(--bd2); cursor: pointer; position: relative; transition: background 0.2s; flex: none; }
-  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--tx2); transition: all 0.2s; }
+  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--tx2); transition: left 0.2s var(--ease), background 0.2s var(--ease); }
   .toggle.on { background: var(--ac); }
   .toggle.on::after { left: 18px; background: #fff; }
 
-  .btn { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px; border-radius: var(--r-md); font-size: 12px; font-weight: 600; border: 1px solid var(--bd2); color: var(--tx2); background: transparent; cursor: pointer; transition: all var(--duration-fast) var(--ease); white-space: nowrap; }
+  .btn { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px; border-radius: var(--r-md); font-size: 12px; font-weight: 600; border: 1px solid var(--bd2); color: var(--tx2); background: transparent; cursor: pointer; white-space: nowrap; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease); }
   .btn:hover:not(:disabled) { color: var(--tx); border-color: var(--tx3); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn.pri { background: var(--ac); border-color: transparent; color: #fff; }
@@ -615,14 +615,13 @@
   .key-desc { font-size: 13px; color: var(--tx2); }
 
   /* ---- Forms ---- */
-  .add-model-section { margin-top: 0; }
   .add-model-form { flex-direction: column; align-items: stretch; gap: 10px; display: flex; }
   .form-row-vertical { display: flex; flex-direction: column; gap: 3px; }
   .form-lbl { font-size: 11px; color: var(--tx3); }
   .form-input { padding: 6px 10px; border-radius: var(--r-md); background: var(--l1); border: 1px solid var(--bd); color: var(--tx); font-size: 12px; outline: none; font-family: inherit; }
   .form-input:focus { border-color: var(--ac); }
   .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
-  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--ac-bd); border-radius: 14px; background: transparent; color: var(--ac); font-size: 13px; cursor: pointer; transition: all var(--duration-fast) var(--ease); font-family: inherit; opacity: 0.8; }
+  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--ac-bd); border-radius: 14px; background: transparent; color: var(--ac); font-size: 13px; cursor: pointer; font-family: inherit; opacity: 0.8; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), opacity var(--duration-fast) var(--ease); }
   .dashed-btn:hover { border-color: var(--ac); background: var(--ac-soft); opacity: 1; }
 
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 9px 16px; border-radius: 99px; background: var(--l3); border: 1px solid var(--bd2); color: var(--ok); font-size: 12px; z-index: 500; box-shadow: var(--sh-lg); }

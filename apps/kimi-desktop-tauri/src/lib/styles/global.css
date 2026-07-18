@@ -498,6 +498,51 @@ body::after {
   border-radius: 4px;
 }
 
+/* ---- 按压反馈：任何可点元素 :active 微缩，界面"在听" ---- */
+button,
+[role="button"] {
+  transition: transform var(--duration-fast) var(--ease);
+}
+button:active,
+[role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* ---- 浮层生长原点：从触发点长出，而非中心无中生有 ---- */
+/* composer 向上弹出的菜单（模型/思考档位/斜杠/@） */
+.pop,
+.composer-card .glass-menu,
+.mention-menu {
+  transform-origin: bottom right;
+}
+/* 光标处右键菜单 */
+.glass-menu[style*="position: fixed"] {
+  transform-origin: top left;
+}
+
+/* ---- 首屏 stagger：列表/卡片级联出现（纯装饰，不阻塞交互） ---- */
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sess-list .s-row,
+.sp-col > .scard,
+.sp-col > .item-row,
+.sp-col > .key-row,
+.page-body > .card,
+.page-body > .item-row {
+  animation: stagger-in 0.22s var(--ease) backwards;
+}
+.sess-list .s-row:nth-child(n+2), .sp-col > *:nth-child(n+2), .page-body > *:nth-child(n+2) { animation-delay: 30ms; }
+.sess-list .s-row:nth-child(n+3), .sp-col > *:nth-child(n+3), .page-body > *:nth-child(n+3) { animation-delay: 60ms; }
+.sess-list .s-row:nth-child(n+4), .sp-col > *:nth-child(n+4), .page-body > *:nth-child(n+4) { animation-delay: 90ms; }
+.sess-list .s-row:nth-child(n+5), .sp-col > *:nth-child(n+5), .page-body > *:nth-child(n+5) { animation-delay: 120ms; }
+.sess-list .s-row:nth-child(n+6), .sp-col > *:nth-child(n+6), .page-body > *:nth-child(n+6) { animation-delay: 150ms; }
+.sess-list .s-row:nth-child(n+7), .sp-col > *:nth-child(n+7), .page-body > *:nth-child(n+7) { animation-delay: 180ms; }
+.sess-list .s-row:nth-child(n+8), .sp-col > *:nth-child(n+8), .page-body > *:nth-child(n+8) { animation-delay: 210ms; }
+.sess-list .s-row:nth-child(n+9), .sp-col > *:nth-child(n+9), .page-body > *:nth-child(n+9) { animation-delay: 240ms; }
+.sess-list .s-row:nth-child(n+10), .sp-col > *:nth-child(n+10), .page-body > *:nth-child(n+10) { animation-delay: 270ms; }
+
 ::selection {
   background: var(--p-selection, rgba(79, 168, 255, 0.22));
 }

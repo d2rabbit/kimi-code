@@ -144,7 +144,7 @@
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    transition: all var(--duration-fast) var(--ease);
+    transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
   }
   .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .action-btn kbd {

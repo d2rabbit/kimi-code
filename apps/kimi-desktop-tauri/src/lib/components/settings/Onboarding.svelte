@@ -170,7 +170,7 @@
   .ob-feat .fd { font-size: 11px; color: var(--tx3); margin-top: 2px; }
 
   .ob-dots { display: flex; gap: 6px; justify-content: center; padding: 4px 0; }
-  .ob-dots i { width: 6px; height: 6px; border-radius: 99px; background: var(--bd2); transition: all 0.2s; }
+  .ob-dots i { width: 6px; height: 6px; border-radius: 99px; background: var(--bd2); transition: width 0.2s var(--ease), background 0.2s var(--ease); }
   .ob-dots i.on { width: 18px; background: var(--ac); }
   .ob-actions { display: flex; gap: 10px; justify-content: center; padding-top: 4px; }
   .ob-skip { text-align: center; padding: 0 0 20px; font-size: 11px; color: var(--tx3); cursor: pointer; }
@@ -181,7 +181,7 @@
   .login-ok { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border: 1px solid var(--ok); border-radius: var(--r-lg); background: var(--ok-soft); color: var(--ok); font-size: 12.5px; font-weight: 600; }
 
   .theme-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .theme-card { border: 1px solid var(--bd); border-radius: var(--r-lg); padding: 10px; cursor: pointer; transition: all 0.15s; background: var(--l1); }
+  .theme-card { border: 1px solid var(--bd); border-radius: var(--r-lg); padding: 10px; cursor: pointer; transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease); background: var(--l1); }
   .theme-card:hover { border-color: var(--bd2); }
   .theme-card.on { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac); }
   .theme-card .pv { height: 46px; border-radius: var(--r-md); margin-bottom: 8px; border: 1px solid var(--bd); }
@@ -194,7 +194,7 @@
   .locale-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 2px 0; }
   .ob-label { font-size: 12px; font-weight: 500; color: var(--tx2); }
   .ob-segmented { display: flex; gap: 2px; background: var(--l1); border: 1px solid var(--bd); border-radius: var(--r-md); padding: 2px; }
-  .ob-seg-btn { padding: 4px 12px; border: none; background: transparent; color: var(--tx2); font-size: 12px; border-radius: var(--r-sm); cursor: pointer; transition: all 0.12s; }
+  .ob-seg-btn { padding: 4px 12px; border: none; background: transparent; color: var(--tx2); font-size: 12px; border-radius: var(--r-sm); cursor: pointer; transition: background 0.12s var(--ease), color 0.12s var(--ease); }
   .ob-seg-btn.on { background: var(--ac); color: #fff; font-weight: 600; }
 
   @keyframes fade-in { from { opacity: 0; } }

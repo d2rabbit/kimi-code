@@ -130,7 +130,7 @@
   .w-logo .w-mark { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; font-size: 19px; font-weight: 800; box-shadow: 0 0 24px rgba(79, 168, 255, 0.35); }
   .welcome h1 { font-size: 18px; font-weight: 600; color: var(--tx); margin: 0; letter-spacing: -0.01em; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 420px; }
-  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bd2); background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; transition: all var(--duration-fast) var(--ease); }
+  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bd2); background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
   .chip:hover { border-color: var(--ac); color: var(--ac); background: var(--ac-soft); }
 
   .msg { display: flex; gap: 10px; font-size: 13px; line-height: 1.65; }

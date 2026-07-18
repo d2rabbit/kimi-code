@@ -213,7 +213,7 @@
     background: transparent;
     color: #777;
     cursor: pointer;
-    transition: all 0.12s;
+    transition: background 0.12s var(--ease), color 0.12s var(--ease);
   }
   .nav-btn:hover { background: rgba(255,255,255,0.06); color: #ccc; }
   .nav-spacer { flex: 1; }
@@ -291,7 +291,7 @@
     width: 100%; display: flex; align-items: center; gap: 6px;
     padding: 6px 10px; border-radius: 6px; border: none;
     background: transparent; color: #666; font-size: 12px;
-    cursor: pointer; transition: all 0.1s;
+    cursor: pointer; transition: background 0.1s var(--ease), color 0.1s var(--ease);
   }
   .add-ws-btn:hover { background: rgba(255,255,255,0.04); color: #aaa; }
 
