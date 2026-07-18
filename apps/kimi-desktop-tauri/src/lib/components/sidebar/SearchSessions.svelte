@@ -156,8 +156,8 @@
     align-items: flex-start;
     justify-content: center;
     padding-top: 15vh;
-    background: rgba(0, 0, 0, 0.3);
-    animation: fade-in 0.15s ease;
+    background: var(--overlay);
+    animation: fade-in 0.15s var(--ease);
   }
 
   .search-dialog {
@@ -165,8 +165,11 @@
     max-height: 60vh;
     display: flex;
     flex-direction: column;
-    border-radius: var(--radius-xl, 16px);
+    border-radius: var(--r-xl);
     overflow: hidden;
+    background: var(--l3);
+    border: 1px solid var(--bd2);
+    box-shadow: var(--sh-lg);
   }
 
   .search-input-row {
@@ -174,7 +177,7 @@
     align-items: center;
     gap: 10px;
     padding: 14px 18px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--bd);
     color: var(--color-text-faint, #666);
   }
   .search-input {
