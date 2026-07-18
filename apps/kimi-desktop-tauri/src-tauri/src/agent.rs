@@ -60,7 +60,6 @@ fn seed_agent_home_if_needed(home: &Path) -> Result<(), String> {
     for item in [
         "config.toml",
         "mcp.json",
-        "session_index.jsonl",
         "sessions",
         "plugins",
         "skills",
@@ -72,6 +71,82 @@ fn seed_agent_home_if_needed(home: &Path) -> Result<(), String> {
         if src.exists() && !dst.exists() {
             copy_recursively(&src, &dst)?;
         }
+    }
+    seed_session_index(&shared, home)?;
+    Ok(())
+}
+
+/// Merge the shared session_index.jsonl into the desktop home, REWRITING each
+/// entry's sessionDir from the shared home to the desktop home.
+///
+/// Why a rewrite instead of a plain copy or letting reindex() rebuild:
+/// - index entries record ABSOLUTE sessionDir paths; the daemon drops any
+///   entry outside <home>/sessions, so a plain copy surfaces zero sessions;
+/// - the daemon's boot-time reindex() cannot recover old sessions whose
+///   state.json predates the workDir field (recoverWorkDir returns undefined),
+///   so without the index these sessions are invisible.
+/// Entries are appended only when missing (by sessionId) and only if the
+/// rewritten sessionDir actually exists on disk.
+fn seed_session_index(shared: &Path, home: &Path) -> Result<(), String> {
+    let src = shared.join("session_index.jsonl");
+    if !src.exists() {
+        return Ok(());
+    }
+    let dst = home.join("session_index.jsonl");
+    let shared_sessions = shared.join("sessions");
+    let home_sessions = home.join("sessions");
+
+    let existing_raw = std::fs::read_to_string(&dst).unwrap_or_default();
+    let mut existing_ids = std::collections::HashSet::new();
+    for line in existing_raw.lines() {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
+            if let Some(id) = v.get("sessionId").and_then(|x| x.as_str()) {
+                existing_ids.insert(id.to_string());
+            }
+        }
+    }
+
+    let raw = std::fs::read_to_string(&src)
+        .map_err(|e| format!("read shared session index: {e}"))?;
+    let mut out = String::new();
+    for line in raw.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let Ok(mut v) = serde_json::from_str::<serde_json::Value>(trimmed) else {
+            continue;
+        };
+        let Some(id) = v.get("sessionId").and_then(|x| x.as_str()).map(|x| x.to_string()) else {
+            continue;
+        };
+        if existing_ids.contains(&id) {
+            continue;
+        }
+        let Some(dir) = v.get("sessionDir").and_then(|x| x.as_str()).map(|x| x.to_string()) else {
+            continue;
+        };
+        let Some(suffix) = dir.strip_prefix(shared_sessions.to_string_lossy().as_ref()) else {
+            continue;
+        };
+        let rewritten = format!("{}{}", home_sessions.to_string_lossy(), suffix);
+        if !std::path::Path::new(&rewritten).is_dir() {
+            continue;
+        }
+        v["sessionDir"] = serde_json::Value::String(rewritten);
+        existing_ids.insert(id);
+        out.push_str(&v.to_string());
+        out.push('\n');
+    }
+    if !out.is_empty() {
+        use std::io::Write as _;
+        let mut f = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&dst)
+            .map_err(|e| format!("open desktop session index: {e}"))?;
+        f.write_all(out.as_bytes())
+            .map_err(|e| format!("write desktop session index: {e}"))?;
     }
     Ok(())
 }

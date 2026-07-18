@@ -312,6 +312,7 @@ async function load(): Promise<void> {
         a.listModels(),
       ]);
 
+
     if (metaR.status === 'fulfilled') {
       ui.serverVersion = metaR.value.serverVersion ?? '';
       ui.dangerousBypassAuth = metaR.value.dangerousBypassAuth ?? false;
