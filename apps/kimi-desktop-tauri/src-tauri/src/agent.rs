@@ -43,20 +43,34 @@ fn pick_port() -> Result<u16, String> {
         .map_err(|e| format!("failed to reserve ephemeral port: {e}"))
 }
 
-/// First-boot seed: copy user-level config from the shared CLI home so the
-/// embedded agent starts with the user's existing providers, plugins, skills
-/// and agents instead of a blank slate. Runs only when the desktop home does
-/// not exist yet; never touches sessions (those stay private per home).
+/// Seed/backfill: copy user-level data from the shared CLI home so the
+/// embedded agent sees the user's real providers, models, sessions, plugins
+/// and MCP config — instead of a blank slate. Idempotent per item: an item
+/// is only copied when missing on the desktop side (never overwrites data the
+/// desktop user has since created).
 fn seed_agent_home_if_needed(home: &Path) -> Result<(), String> {
-    if home.exists() {
-        return Ok(());
-    }
     std::fs::create_dir_all(home).map_err(|e| format!("create agent home: {e}"))?;
     let shared = crate::daemon::kimi_home();
-    for item in ["config.json", "plugins", "skills", "agents"] {
+    if shared == home {
+        return Ok(());
+    }
+    // Never seed the server lock/token/device identity: those belong to the
+    // owning process/install. Sessions/config/plugins are user data and are
+    // carried over via this one-time-per-item copy.
+    for item in [
+        "config.toml",
+        "mcp.json",
+        "session_index.jsonl",
+        "sessions",
+        "plugins",
+        "skills",
+        "agents",
+        "user-history",
+    ] {
         let src = shared.join(item);
-        if src.exists() {
-            copy_recursively(&src, &home.join(item))?;
+        let dst = home.join(item);
+        if src.exists() && !dst.exists() {
+            copy_recursively(&src, &dst)?;
         }
     }
     Ok(())

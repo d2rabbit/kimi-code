@@ -6,7 +6,10 @@
   import Icon from '../components/ui/Icon.svelte';
   import type { IconName } from '../lib/icon-types';
   import PluginsSection from '../components/settings/PluginsSection.svelte';
+  import LoginDialog from '../components/settings/LoginDialog.svelte';
   import SubagentsSection from '../components/settings/SubagentsSection.svelte';
+
+  let showLogin = $state(false);
   import * as client from '../stores/client.svelte';
   import { daemon } from '../stores/daemon.svelte';
   import { toast } from '../stores/toast.svelte';
@@ -60,6 +63,31 @@
   let newProviderType = $state('openai');
   let newProviderKey = $state('');
   let newProviderUrl = $state('');
+
+  // 供应商预设：类型 → 默认端点与说明（引导式添加，免去手填 baseUrl）
+  const PROVIDER_PRESETS: Record<string, { label: string; baseUrl?: string; hint: string }> = {
+    openai: { label: 'OpenAI', baseUrl: 'https://api.openai.com/v1', hint: 'GPT 系列' },
+    anthropic: { label: 'Anthropic', hint: 'Claude 系列（原生协议）' },
+    kimi: { label: 'Kimi（Moonshot）', baseUrl: 'https://api.moonshot.cn/v1', hint: 'Kimi K 系列' },
+    'google-genai': { label: 'Google GenAI', hint: 'Gemini 系列' },
+    openai_responses: { label: 'OpenAI Responses', baseUrl: 'https://api.openai.com/v1', hint: 'OpenAI Responses 兼容服务' },
+  };
+  function onProviderTypeChange(t: string) {
+    if (!newProviderId || Object.keys(PROVIDER_PRESETS).includes(newProviderId)) newProviderId = t;
+  }
+
+  async function submitProvider() {
+    if (!newProviderId.trim()) return;
+    await client.client.saveProvider(newProviderId.trim(), {
+      type: newProviderType,
+      apiKey: newProviderKey.trim() || undefined,
+      baseUrl: newProviderUrl.trim() || undefined,
+    });
+    // 保存后自动拉取该供应商的模型清单，免手动刷新
+    try { await client.client.refreshProviderModels(newProviderId.trim()); } catch { /* 供应商可能暂不可达 */ }
+    showAddProvider = false;
+    newProviderId = ''; newProviderKey = ''; newProviderUrl = '';
+  }
 
   let showEditProvider = $state(false);
   let editingProvider = $state('');
@@ -192,7 +220,7 @@
               <button class="btn sm" onclick={() => { toast.info('账号管理（浏览器打开）'); }} type="button">管理</button>
               <button class="btn ghost-acc sm" onclick={() => { void client.client.logout(); }} type="button">解绑</button>
             {:else}
-              <button class="btn pri sm" onclick={() => { void client.client.startOAuthLogin(); }} type="button">登录 Kimi</button>
+              <button class="btn pri sm" onclick={() => showLogin = true} type="button">登录 Kimi</button>
             {/if}
           </div>
         </div>
@@ -252,29 +280,19 @@
         {#if showAddProvider}
           <div class="scard add-model-form">
             <div class="form-row-vertical"><span class="form-lbl">供应商 ID</span><input class="form-input" bind:value={newProviderId} placeholder="my-openai" /></div>
-            <div class="form-row-vertical"><span class="form-lbl">类型</span>
-              <select class="form-input" bind:value={newProviderType}>
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="kimi">Kimi</option>
-                <option value="google-genai">Google GenAI</option>
-                <option value="openai_responses">OpenAI Responses</option>
+            <div class="form-row-vertical"><span class="form-lbl">服务类型</span>
+              <select class="form-input" bind:value={newProviderType} onchange={() => onProviderTypeChange(newProviderType)}>
+                {#each Object.entries(PROVIDER_PRESETS) as [val, preset] (val)}
+                  <option value={val}>{preset.label}{preset.hint ? ` · ${preset.hint}` : ''}</option>
+                {/each}
               </select>
             </div>
+            <div class="form-row-vertical"><span class="form-lbl">供应商 ID（用于引用，默认与类型同名）</span><input class="form-input" bind:value={newProviderId} placeholder={newProviderType} /></div>
             <div class="form-row-vertical"><span class="form-lbl">API Key</span><input class="form-input" type="password" bind:value={newProviderKey} placeholder="sk-..." /></div>
-            <div class="form-row-vertical"><span class="form-lbl">Base URL (可选)</span><input class="form-input" bind:value={newProviderUrl} placeholder="https://api.openai.com/v1" /></div>
+            <div class="form-row-vertical"><span class="form-lbl">Base URL（可选，留空用默认端点）</span><input class="form-input" bind:value={newProviderUrl} placeholder={PROVIDER_PRESETS[newProviderType]?.baseUrl ?? 'https://…'} /></div>
             <div class="form-actions">
               <button class="btn sm" onclick={() => showAddProvider = false} type="button">取消</button>
-              <button class="btn pri sm" onclick={async () => {
-                if (!newProviderId.trim()) return;
-                await client.client.saveProvider(newProviderId.trim(), {
-                  type: newProviderType,
-                  apiKey: newProviderKey.trim() || undefined,
-                  baseUrl: newProviderUrl.trim() || undefined,
-                });
-                showAddProvider = false;
-                newProviderId = ''; newProviderKey = ''; newProviderUrl = '';
-              }} type="button">添加</button>
+              <button class="btn pri sm" onclick={submitProvider} type="button">保存并拉取模型</button>
             </div>
           </div>
         {:else}
@@ -303,17 +321,25 @@
         <h3>自定义模型</h3>
         {#if showAddModel}
           <div class="scard add-model-form">
-            <div class="form-row-vertical"><span class="form-lbl">别名</span><input class="form-input" bind:value={newModelAlias} placeholder="my-model" /></div>
-            <div class="form-row-vertical"><span class="form-lbl">供应商 ID</span><input class="form-input" bind:value={newModelProvider} placeholder="openai" /></div>
-            <div class="form-row-vertical"><span class="form-lbl">模型名</span><input class="form-input" bind:value={newModelName} placeholder="gpt-4o" /></div>
+            <div class="form-row-vertical"><span class="form-lbl">供应商</span>
+              <select class="form-input" bind:value={newModelProvider}>
+                {#each client.providers() as p (p.id)}
+                  <option value={p.id}>{p.id}</option>
+                {/each}
+              </select>
+            </div>
+            <div class="form-row-vertical"><span class="form-lbl">模型名（与该供应商上的名称一致）</span><input class="form-input" bind:value={newModelName} placeholder="gpt-4o" oninput={() => { if (!newModelAlias || newModelAlias === newModelDisplay) newModelAlias = newModelName; }} /></div>
+            <div class="form-row-vertical"><span class="form-lbl">别名（聊天中显示/选择用，默认同模型名）</span><input class="form-input" bind:value={newModelAlias} placeholder={newModelName || 'my-model'} /></div>
             <div class="form-row-vertical"><span class="form-lbl">Context 大小</span><input class="form-input" type="number" bind:value={newModelContext} placeholder="128000" /></div>
-            <div class="form-row-vertical"><span class="form-lbl">显示名 (可选)</span><input class="form-input" bind:value={newModelDisplay} placeholder="GPT-4o" /></div>
+            <div class="form-row-vertical"><span class="form-lbl">显示名（可选）</span><input class="form-input" bind:value={newModelDisplay} placeholder={newModelName || 'GPT-4o'} /></div>
             <div class="form-actions">
               <button class="btn sm" onclick={() => showAddModel = false} type="button">取消</button>
               <button class="btn pri sm" onclick={async () => {
-                if (!newModelAlias.trim() || !newModelProvider.trim() || !newModelName.trim()) return;
-                await client.client.saveModelAlias(newModelAlias.trim(), {
-                  provider: newModelProvider.trim(),
+                const alias = (newModelAlias || newModelName).trim();
+                const provider = newModelProvider.trim() || client.providers()[0]?.id || '';
+                if (!alias || !provider || !newModelName.trim()) return;
+                await client.client.saveModelAlias(alias, {
+                  provider,
                   model: newModelName.trim(),
                   maxContextSize: parseInt(newModelContext) || 128000,
                   displayName: newModelDisplay.trim() || undefined,
@@ -452,6 +478,9 @@
       </div>
     </main>
   </div>
+  {#if showLogin}
+    <LoginDialog onclose={() => showLogin = false} />
+  {/if}
 </div>
 
 <style>

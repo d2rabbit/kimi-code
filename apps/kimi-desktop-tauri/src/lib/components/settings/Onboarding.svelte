@@ -3,6 +3,7 @@
      Re-openable from settings. All preferences changeable later. -->
 <script lang="ts">
   import Button from '../ui/Button.svelte';
+  import LoginDialog from './LoginDialog.svelte';
   import * as client from '../../stores/client.svelte';
   import { setLocale, availableLocales, type LocaleCode } from '../../i18n';
 
@@ -17,7 +18,7 @@
   let step = $state(1);
   let selectedLocale = $state<LocaleCode>('zh');
   let selectedScheme = $state<'light' | 'dark' | 'system'>('dark');
-  let loginTried = $state(false);
+  let showLogin = $state(false);
 
   $effect(() => {
     try {
@@ -36,10 +37,7 @@
     client.client.setColorScheme(scheme);
   }
 
-  async function startLogin() {
-    loginTried = true;
-    try { await client.client.startOAuthLogin(); } catch { /* daemon reports the error */ }
-  }
+  function startLogin() { showLogin = true; }
 
   function finish() {
     client.client.setOnboarded(true);
@@ -86,7 +84,7 @@
             <div class="login-ok">✓ 已登录 · {client.authProvider()?.name ?? ''}</div>
           {:else}
             <span class="login-desc">使用浏览器完成 OAuth 设备码授权</span>
-            <Button variant="primary" onclick={startLogin}>{loginTried ? '重新发起登录' : '使用设备码登录'}</Button>
+            <Button variant="primary" onclick={startLogin}>使用设备码登录</Button>
           {/if}
         </div>
         <div class="ob-dots"><i></i><i class="on"></i><i></i></div>
@@ -129,6 +127,9 @@
       </div>
     {/if}
   </div>
+  {#if showLogin}
+    <LoginDialog onclose={() => showLogin = false} />
+  {/if}
 </div>
 
 <style>

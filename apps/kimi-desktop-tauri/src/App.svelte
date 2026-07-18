@@ -10,6 +10,7 @@
   import Onboarding from './lib/components/settings/Onboarding.svelte';
   import SearchSessions from './lib/components/sidebar/SearchSessions.svelte';
   import Toasts from './lib/components/ui/Toasts.svelte';
+  import { notify } from './lib/notify';
 
   type View = 'workspace' | 'settings';
   let currentView = $state<View>('workspace');
@@ -28,6 +29,28 @@
   onDestroy(() => daemon.destroy());
 
   $effect(() => { void client.unreadCount(); client.client.updateBadge(); });
+
+  // ---- 桌面集成：审批/问题/任务完成 → 系统通知 ----
+  let prevPending = 0;
+  let prevActivity = '';
+  $effect(() => {
+    const pending = client.pendingApprovals().length + client.questions().length;
+    if (pending > prevPending) {
+      const title = client.pendingApprovals().length > 0 ? '需要审批' : 'Kimi 想确认';
+      const body = client.pendingApprovals().length > 0
+        ? `${client.pendingApprovals()[0]?.toolName ?? '工具'} 请求执行权限`
+        : (client.questions()[0]?.questions?.[0]?.header ?? '有一个问题等待你回答');
+      void notify(title, body);
+    }
+    prevPending = pending;
+  });
+  $effect(() => {
+    const act = client.activity();
+    if (prevActivity === 'running' && act !== 'running') {
+      void notify('任务完成', client.activeSession()?.title ?? '当前会话已结束运行');
+    }
+    prevActivity = act;
+  });
 
   function navigate(view: View) { currentView = view; }
 </script>

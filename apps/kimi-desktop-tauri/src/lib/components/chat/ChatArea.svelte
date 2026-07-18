@@ -84,11 +84,11 @@
           {:else if turn.role === 'compaction'}
             <div class="compact">对话已压缩</div>
           {:else}
-            <!-- Agent：左侧气泡 + 下方工具卡 -->
+            <!-- Agent：左侧纯文本（无气泡壳）+ 下方工具卡 -->
             <div class="msg agent">
               <span class="avatar a">K</span>
               <div class="a-col">
-                <div class="bubble a-bub">
+                <div class="a-text">
                   {#each group(turn.blocks ?? []) as item}
                     {#if item.kind === 'thinking'}
                       <details class="think"><summary>思考过程</summary><div class="think-body">{item.thinking}</div></details>
@@ -156,14 +156,7 @@
     box-shadow: var(--toplight);
   }
   .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-  .a-bub {
-    align-self: flex-start;
-    max-width: 100%;
-    background: var(--l2);
-    border: 1px solid var(--bd);
-    border-radius: 14px 14px 14px 4px;
-    box-shadow: var(--toplight);
-  }
+  .a-text { max-width: 100%; padding: 2px 0; }
   .imgs { display: flex; gap: 4px; margin-bottom: 4px; }
   .imgs img { max-width: 100px; border-radius: 6px; }
   .u-text { white-space: pre-wrap; word-break: break-word; }
