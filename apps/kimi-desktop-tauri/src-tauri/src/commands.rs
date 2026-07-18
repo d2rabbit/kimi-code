@@ -131,6 +131,20 @@ pub struct PluginInfo {
     pub developer: String,
     /// Whether this plugin provides MCP servers.
     pub has_mcp: bool,
+    /// Number of bundled skills (`<root>/skills/*` directories).
+    pub skill_count: u32,
+    /// Number of bundled commands (`<root>/commands/*` entries).
+    pub command_count: u32,
+}
+
+/// Count entries inside `<root>/<subdir>` (dirs and files both count; missing
+/// dir → 0). Used for the plugin bundle chips (N 技能 / N 命令).
+fn count_subdir_entries(root: &str, subdir: &str) -> u32 {
+    let dir = std::path::PathBuf::from(root).join(subdir);
+    match stdfs::read_dir(&dir) {
+        Ok(entries) => entries.flatten().count() as u32,
+        Err(_) => 0,
+    }
 }
 
 /// Read and parse the installed plugins registry + manifests.
@@ -212,6 +226,9 @@ pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
             }
         }
 
+        let skill_count = count_subdir_entries(&root, "skills");
+        let command_count = count_subdir_entries(&root, "commands");
+
         result.push(PluginInfo {
             id,
             root,
@@ -224,6 +241,8 @@ pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
             description,
             developer,
             has_mcp,
+            skill_count,
+            command_count,
         });
     }
 

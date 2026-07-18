@@ -11,6 +11,8 @@
     developer: string;
     enabled: boolean;
     hasMcp: boolean;
+    skillCount: number;
+    commandCount: number;
   }
 
   let plugins = $state<PluginInfo[]>([]);
@@ -79,7 +81,9 @@
             </span>
             <span class="pd">{p.description || p.id}</span>
             <span class="bundles">
-              {#if p.hasMcp}<span class="bchip mc">含 MCP</span>{/if}
+              {#if p.skillCount > 0}<span class="bchip sk">{p.skillCount} 技能</span>{/if}
+              {#if p.hasMcp}<span class="bchip mc">MCP</span>{/if}
+              {#if p.commandCount > 0}<span class="bchip">{p.commandCount} 命令</span>{/if}
               {#if p.developer}<span class="bchip">{p.developer}</span>{/if}
             </span>
           </span>
@@ -112,6 +116,7 @@
   .pd { display: block; font-size: 11px; color: var(--tx2); margin-top: 3px; }
   .bundles { display: flex; gap: 5px; margin-top: 8px; }
   .bchip { font-size: 10px; padding: 2px 7px; border-radius: 5px; background: var(--l3); color: var(--tx2); border: 1px solid var(--bd); }
+  .bchip.sk { color: var(--ac); border-color: var(--ac-bd); }
   .bchip.mc { color: var(--amb); }
   .btn { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px; border-radius: var(--r-md); font-size: 12px; font-weight: 600; border: 1px solid var(--bd2); color: var(--tx2); cursor: pointer; }
   .btn.pri { background: var(--ac); border-color: transparent; color: #fff; }
