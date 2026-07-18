@@ -71,8 +71,16 @@ function resolveMessage(locale: string, key: string): string {
  */
 export const i18n = {
   global: {
-    t(key: string): string {
-      return resolveMessage(activeLocale, key);
+    /**
+     * Resolve a key and interpolate `{name}` placeholders with params
+     * (e.g. t('tools.chip.todos', { count: 3 }) → '3 项').
+     */
+    t(key: string, params?: Record<string, unknown>): string {
+      const template = resolveMessage(activeLocale, key);
+      if (!params) return template;
+      return template.replace(/\{(\w+)\}/g, (m, name) =>
+        name in params ? String(params[name]) : m,
+      );
     },
     locale: {
       get value(): string {
