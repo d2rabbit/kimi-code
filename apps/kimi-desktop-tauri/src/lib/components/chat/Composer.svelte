@@ -523,7 +523,7 @@
     background: var(--l2);
     border: 1px solid var(--bd2);
     border-radius: var(--r-xl);
-    box-shadow: var(--toplight), 0 8px 24px rgba(0, 0, 0, 0.10);
+    box-shadow: var(--toplight), 0 6px 20px rgba(0, 0, 0, 0.08);
     transition: border-color var(--duration-fast) var(--ease);
   }
   .composer-card:focus-within { border-color: var(--ac-bd); }

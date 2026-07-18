@@ -185,7 +185,7 @@
   .sec-t {
     display: flex; align-items: center; gap: 6px;
     padding: 12px 14px 6px;
-    font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
     color: var(--tx3); font-weight: 600;
   }
   .sec-t .r { margin-left: auto; letter-spacing: 0; font-weight: 400; }

@@ -69,13 +69,13 @@
 </div>
 
 <style>
-  .page { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100%; }
-  .page-head { display: flex; align-items: center; gap: 12px; padding: 16px 22px 14px; border-bottom: 1px solid var(--bd); }
-  .page-head h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
-  .page-head .sub { font-size: 11px; color: var(--tx3); }
+  .page { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100%; overflow: hidden; }
+  .page-head { display: flex; align-items: baseline; gap: 12px; padding: 32px 40px 0; border-bottom: none; max-width: 680px; margin: 0 auto; width: 100%; }
+  .page-head h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: var(--tx); }
+  .page-head .sub { font-size: 12px; color: var(--tx3); }
   .page-head .right { margin-left: auto; }
   .cnt-note { font-size: 11px; color: var(--tx3); font-family: var(--font-mono); }
-  .page-body { flex: 1; overflow-y: auto; padding: 16px 22px; display: flex; flex-direction: column; gap: 12px; }
+  .page-body { flex: 1; overflow-y: auto; padding: 20px 40px 60px; display: flex; flex-direction: column; gap: 12px; max-width: 680px; margin: 0 auto; width: 100%; }
   .search { display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 10px; border-radius: var(--r-md); border: 1px solid var(--bd); background: var(--l1); font-size: 12px; color: var(--tx3); width: 260px; }
   .search input { flex: 1; background: none; border: none; outline: none; color: var(--tx); font: inherit; font-size: 12px; }
   .note { font-size: 11px; color: var(--tx3); }
@@ -84,7 +84,7 @@
   .empty-ic { font-size: 26px; color: var(--tx3); opacity: 0.7; }
 
   .arch-g { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tx3); font-weight: 600; margin-top: 4px; }
-  .card { border: 1px solid var(--bd); border-radius: var(--r-lg); background: var(--l2); box-shadow: var(--toplight); }
+  .card { border: 1px solid var(--bd); border-radius: 12px; background: var(--l2); box-shadow: var(--toplight); }
   .rows { padding: 4px 8px; }
   .arch { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-md); font-size: 12.5px; color: var(--tx2); transition: background var(--duration-fast) var(--ease); }
   .arch:hover { background: var(--ac-soft); }

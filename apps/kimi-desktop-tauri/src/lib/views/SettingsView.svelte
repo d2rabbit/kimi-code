@@ -5,7 +5,8 @@
 <script lang="ts">
   import Icon from '../components/ui/Icon.svelte';
   import type { IconName } from '../lib/icon-types';
-  import PluginPanel from '../components/settings/PluginPanel.svelte';
+  import PluginsSection from '../components/settings/PluginsSection.svelte';
+  import SubagentsSection from '../components/settings/SubagentsSection.svelte';
   import * as client from '../stores/client.svelte';
   import { daemon } from '../stores/daemon.svelte';
 
@@ -68,9 +69,6 @@
   let previewMode = $state(typeof localStorage !== 'undefined' ? (localStorage.getItem('kode.preview-mode') ?? 'source') : 'source');
   let diffAutoExpand = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('kode.diff-expand') === 'true' : false);
   let hlTheme = $state(typeof localStorage !== 'undefined' ? (localStorage.getItem('kode.hl-theme') ?? 'one-dark') : 'one-dark');
-
-  // Plugin list filter (visual only, real data inside PluginPanel)
-  let pluginTab = $state<'installed' | 'discover'>('installed');
 
   // Usage hero: context ring geometry
   const usage = $derived(client.activeSessionUsage());
@@ -332,34 +330,10 @@
         {/if}
 
       {:else if active === 'subagents'}
-        <h2>子智能体</h2>
-        <p class="sub-desc">查看和管理子智能体 profile</p>
-        <div class="list-meta"><span>已安装 0 项</span><span class="dim-i">来自已启用插件，当前只读</span></div>
-        <div class="item-row">
-          <span class="isq purple"><Icon name="git-branch" size="sm" /></span>
-          <span class="ir">
-            <span class="it">coder</span>
-            <span class="id mono">通用代码编写 agent · 定义文件位于 agent 私有 home 的 agents/ 目录</span>
-          </span>
-          <span class="pchip">插件</span>
-        </div>
-        <p class="empty-text">管理界面即将推出；当前页展示结构与设计稿一致，数据接入后自动填充。</p>
+        <SubagentsSection />
 
       {:else if active === 'plugins'}
-        <h2>插件管理 <span class="beta-badge">Beta</span></h2>
-        <p class="sub-desc">技能 / MCP / 命令统一由插件承载；启用或停用已安装的插件</p>
-        <div class="list-controls">
-          <div class="seg">
-            <button class="seg-btn" class:on={pluginTab === 'installed'} onclick={() => pluginTab = 'installed'} type="button">已安装</button>
-            <button class="seg-btn" class:on={pluginTab === 'discover'} onclick={() => pluginTab = 'discover'} type="button">发现</button>
-          </div>
-          <div class="searchbox"><Icon name="search" size="sm" /><span>搜索插件…</span></div>
-        </div>
-        {#if pluginTab === 'installed'}
-          <PluginPanel />
-        {:else}
-          <p class="empty-text">插件市场即将上线。</p>
-        {/if}
+        <PluginsSection />
 
       {:else if active === 'commands'}
         <h2>命令</h2>
@@ -547,8 +521,6 @@
   .okchip { font-size: 10px; color: var(--ok); background: var(--ok-soft); border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
   .warnchip { font-size: 10px; color: var(--warn); background: var(--warn-soft); border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
   .defchip { font-size: 10px; color: var(--ac); background: var(--ac-soft); border-radius: 99px; padding: 2px 8px; font-weight: 600; }
-  .pchip { font-size: 10px; color: var(--color-done); background: var(--color-done-soft); border-radius: 99px; padding: 2px 8px; font-weight: 600; }
-  .beta-badge { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: var(--ac-soft); color: var(--ac); vertical-align: middle; font-weight: 600; }
   .keycap { font-family: var(--font-mono); font-size: 11px; padding: 3px 10px; border-radius: var(--r-md); background: var(--ac-soft); color: var(--ac); border: 1px solid var(--ac-bd); }
   .empty-text { color: var(--tx3); font-size: 13px; }
 
@@ -578,13 +550,10 @@
   /* ---- Item rows (icon square + title + desc + controls) ---- */
   .item-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: var(--l2); border: 1px solid var(--bd); box-shadow: var(--toplight); margin-bottom: 8px; }
   .isq { width: 28px; height: 28px; border-radius: 8px; background: var(--ac-soft); color: var(--ac); display: flex; align-items: center; justify-content: center; flex: none; }
-  .isq.purple { background: var(--color-done-soft); color: var(--color-done); }
   .ir { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .it { font-size: 13px; font-weight: 500; color: var(--tx); display: flex; align-items: center; gap: 6px; }
   .id { font-size: 11px; color: var(--tx3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .id.mono { font-family: var(--font-mono); }
-  .list-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 11px; color: var(--tx2); }
-  .list-meta .dim-i { color: var(--tx3); font-style: italic; }
   .list-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
   .searchbox { flex: 1; display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--r-lg); background: var(--l1); border: 1px solid var(--bd); color: var(--tx3); font-size: 12px; }
 

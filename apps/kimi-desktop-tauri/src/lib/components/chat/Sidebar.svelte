@@ -159,7 +159,7 @@
     margin: 12px 12px 8px; display: flex; align-items: center; justify-content: center; gap: 6px;
     height: 32px; border: none; border-radius: var(--r-md); font-size: 12.5px; font-weight: 600;
     background: var(--ac); color: #fff; cursor: pointer;
-    box-shadow: 0 2px 10px rgba(79, 168, 255, 0.25);
+    box-shadow: 0 1px 6px rgba(79, 168, 255, 0.22);
     transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
   }
   .newtask:hover { background: var(--ac-h); transform: translateY(-1px); }
@@ -185,7 +185,7 @@
 
   /* ---- Workspace groups + session rows ---- */
   .sess-list { flex: 1; overflow-y: auto; padding-bottom: 8px; }
-  .ws-g { display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 12px; font-size: 11.5px; font-weight: 600; cursor: pointer; user-select: none; color: var(--tx); }
+  .ws-g { display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 12px; font-size: 11.5px; font-weight: 600; letter-spacing: -0.01em; cursor: pointer; user-select: none; color: var(--tx); }
   .ws-g .arrow { font-size: 9px; color: var(--tx3); width: 10px; transition: transform var(--duration-fast) var(--ease); }
   .ws-g.closed .arrow { transform: rotate(-90deg); }
   .ws-g .ws-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -126,12 +126,12 @@
   .msgs { flex: 1; overflow-y: auto; }
   .msgs-inner { max-width: 760px; margin: 0 auto; padding: 20px 22px 8px; display: flex; flex-direction: column; gap: 18px; }
 
-  .welcome { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 56px 20px; text-align: center; }
+  .welcome { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 72px 20px; text-align: center; }
   .w-logo .w-mark { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; font-size: 19px; font-weight: 800; box-shadow: 0 0 24px rgba(79, 168, 255, 0.35); }
-  .welcome h1 { font-size: 18px; font-weight: 600; color: var(--tx); margin: 0; letter-spacing: -0.01em; }
+  .welcome h1 { font-size: 22px; font-weight: 700; color: var(--tx); margin: 0; letter-spacing: -0.02em; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 420px; }
-  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bd2); background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
-  .chip:hover { border-color: var(--ac); color: var(--ac); background: var(--ac-soft); }
+  .chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--bd); background: var(--l2); box-shadow: var(--toplight); color: var(--tx2); font-size: 12px; cursor: pointer; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease); }
+  .chip:hover { border-color: var(--ac-bd); color: var(--ac); background: var(--ac-soft); transform: translateY(-1px); }
 
   .msg { display: flex; gap: 10px; font-size: 13px; line-height: 1.65; }
   .msg .body { flex: 1; min-width: 0; }
