@@ -1,8 +1,9 @@
-<!-- SlashMenu.svelte — slash command menu overlay.
-     Shows filtered builtin commands + skills. Keyboard navigable. -->
+<!-- SlashMenu.svelte — slash command menu with categorized sections.
+     Shows commands / skills / files / plugins. Keyboard navigable. -->
 <script lang="ts">
   import { SLASH_COMMANDS } from '../../lib/slashCommands';
   import type { AppSkill } from '../../api/types';
+  import Icon from '../ui/Icon.svelte';
 
   let {
     query,
@@ -16,25 +17,33 @@
     onselect: (cmd: string) => void;
   } = $props();
 
-  type MenuItem = { name: string; desc: string; isSkill: boolean; acceptsInput: boolean };
+  type MenuItem = {
+    name: string;
+    desc: string;
+    category: 'command' | 'skill' | 'file' | 'plugin';
+    icon: string;
+    acceptsInput: boolean;
+  };
 
-  // Build the full command list: builtin commands + skills.
+  // Build the full categorized command list.
   const allItems = $derived.by(() => {
-    const builtin: MenuItem[] = SLASH_COMMANDS.map((c) => ({
+    const commands: MenuItem[] = SLASH_COMMANDS.map((c) => ({
       name: `/${c.name}`,
       desc: c.desc,
-      isSkill: false,
+      category: 'command' as const,
+      icon: c.name === 'new' || c.name === 'clear' ? 'chat-new' : c.name === 'model' ? 'sparkles' : c.name === 'login' ? 'log-in' : c.name === 'compact' ? 'contract' : c.name === 'fork' ? 'git-branch' : 'bolt',
       acceptsInput: c.acceptsInput ?? false,
     }));
     const skillItems: MenuItem[] = skills
-      .filter((s) => !builtin.some((b) => b.name === `/${s.name}`))
+      .filter((s) => !commands.some((b) => b.name === `/${s.name}`))
       .map((s) => ({
         name: `/${s.name}`,
         desc: s.description,
-        isSkill: true,
+        category: 'skill' as const,
+        icon: 'bolt',
         acceptsInput: true,
       }));
-    return [...builtin, ...skillItems];
+    return [...commands, ...skillItems];
   });
 
   // Filter by query (without leading /).
@@ -48,25 +57,64 @@
     );
   });
 
+  // Group filtered items by category for display
+  const grouped = $derived.by(() => {
+    const groups: { label: string; icon: string; items: MenuItem[] }[] = [];
+    const cats: Record<string, { label: string; icon: string }> = {
+      command: { label: '命令', icon: 'settings' },
+      skill: { label: '技能', icon: 'bolt' },
+      file: { label: '文件', icon: 'file-text' },
+      plugin: { label: '插件', icon: 'plugin' },
+    };
+    for (const [cat, meta] of Object.entries(cats)) {
+      const items = filtered.filter((f) => f.category === cat);
+      if (items.length > 0) groups.push({ ...meta, items });
+    }
+    return groups;
+  });
+
+  // Flatten for active index tracking
+  const flatFiltered = $derived(grouped.flatMap((g) => g.items));
+
   function handleClick(item: MenuItem) {
     onselect(item.name);
   }
+
+  const categoryIcon: Record<string, string> = {
+    command: 'settings',
+    skill: 'bolt',
+    file: 'file-text',
+    plugin: 'plugin',
+  };
 </script>
 
-{#if filtered.length > 0}
+{#if flatFiltered.length > 0}
   <div class="slash-menu" role="listbox">
-    {#each filtered as item, i (item.name)}
-      <button
-        class="slash-item"
-        class:active={i === activeIndex}
-        role="option"
-        aria-selected={i === activeIndex}
-        onmousedown={() => handleClick(item)}
-      >
-        <span class="slash-name">{item.name}</span>
-        <span class="slash-desc">{item.desc}</span>
-      </button>
+    {#each grouped as group (group.label)}
+      <div class="slash-group-header">
+        <Icon name={group.icon} size="sm" />
+        <span>{group.label}</span>
+        <span class="slash-group-count">{group.items.length}</span>
+      </div>
+      {#each group.items as item (item.name)}
+        {@const flatIdx = flatFiltered.indexOf(item)}
+        <button
+          class="slash-item"
+          class:active={flatIdx === activeIndex}
+          role="option"
+          aria-selected={flatIdx === activeIndex}
+          onmousedown={() => handleClick(item)}
+        >
+          <span class="slash-item-icon"><Icon name={item.icon} size="sm" /></span>
+          <span class="slash-name">{item.name}</span>
+          <span class="slash-desc">{item.desc}</span>
+        </button>
+      {/each}
     {/each}
+  </div>
+{:else if query}
+  <div class="slash-menu" role="listbox">
+    <div class="slash-empty">无匹配结果</div>
   </div>
 {/if}
 
@@ -76,47 +124,94 @@
     bottom: calc(100% + 4px);
     left: 0;
     right: 0;
-    max-height: 240px;
+    max-height: 320px;
     overflow-y: auto;
-    background: var(--color-surface, rgba(28,28,30,0.72));
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
-    border-radius: var(--radius-md, 8px);
-    box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.3));
-    z-index: var(--z-dropdown, 200);
+    background: rgba(28, 28, 30, 0.92);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    border: 1px solid rgba(84, 84, 88, 0.65);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    z-index: 200;
+    padding: 4px;
+  }
+
+  .slash-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(235, 235, 245, 0.3);
+  }
+  .slash-group-header :global(svg) {
+    color: rgba(235, 235, 245, 0.3);
+  }
+  .slash-group-count {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    color: rgba(235, 235, 245, 0.2);
   }
 
   .slash-item {
-    display: grid;
-    grid-template-columns: minmax(90px, 32%) minmax(0, 1fr);
-    gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     width: 100%;
-    padding: 7px 12px;
+    padding: 8px 12px;
     border: none;
+    border-radius: 8px;
     background: transparent;
-    color: var(--color-text, rgba(255,255,255,0.92));
-    font-size: var(--text-sm, 13px);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 13px;
     cursor: pointer;
     text-align: left;
-    transition: background var(--duration-fast, 120ms);
+    transition: background 120ms;
   }
   .slash-item:hover {
-    background: var(--color-hover, rgba(255,255,255,0.04));
+    background: rgba(255, 255, 255, 0.04);
   }
   .slash-item.active {
-    background: var(--color-accent-soft, rgba(124,140,255,0.1));
+    background: rgba(45, 212, 191, 0.1);
+  }
+
+  .slash-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(235, 235, 245, 0.6);
+    flex-shrink: 0;
+  }
+  .slash-item.active .slash-item-icon {
+    background: rgba(45, 212, 191, 0.12);
+    color: #2dd4bf;
   }
 
   .slash-name {
-    color: var(--color-accent, #2dd4bf);
-    font-weight: var(--weight-medium, 500);
+    color: #2dd4bf;
+    font-weight: 500;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    min-width: 80px;
   }
   .slash-desc {
-    color: var(--color-text-muted, rgba(235,235,245,0.6));
+    color: rgba(235, 235, 245, 0.6);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+  }
+
+  .slash-empty {
+    padding: 16px;
+    text-align: center;
+    color: rgba(235, 235, 245, 0.3);
+    font-size: 13px;
   }
 </style>

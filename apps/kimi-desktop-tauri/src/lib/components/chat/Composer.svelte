@@ -444,7 +444,7 @@
   .composer {
     flex: none;
     padding: 6px 20px 10px;
-    max-width: 740px;
+    max-width: 820px;
     width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
@@ -525,7 +525,7 @@
     -webkit-backdrop-filter: blur(20px) saturate(1.4);
     border: 1px solid var(--color-line, #2e2e2e);
     border-radius: var(--radius-lg, 12px);
-    padding: 6px 6px 6px 6px;
+    padding: 8px 8px 8px 8px;
     transition: border-color var(--duration-fast, 120ms), box-shadow var(--duration-fast, 120ms);
   }
   .composer-inner:focus-within {
@@ -537,14 +537,15 @@
     flex: 1;
     border: none;
     background: transparent;
-    color: var(--color-text, rgba(255,255,255,0.92));
+    color: rgba(255,255,255,0.92);
     font-family: var(--font-ui, inherit);
-    font-size: var(--ui-font-size, var(--text-base, 14px));
-    line-height: var(--leading-normal, 1.5);
+    font-size: 15px;
+    line-height: 1.6;
     resize: none;
     outline: none;
-    max-height: 200px;
-    padding: 6px 4px;
+    max-height: 300px;
+    min-height: 44px;
+    padding: 10px 8px;
   }
   .composer-input::placeholder { color: var(--color-text-faint, rgba(235,235,245,0.3)); }
   .composer-input.busy { opacity: 0.6; }
