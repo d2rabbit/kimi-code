@@ -3,6 +3,7 @@
 <script lang="ts">
   import { SLASH_COMMANDS } from '../../lib/slashCommands';
   import type { AppSkill } from '../../api/types';
+  import type { IconName } from '../../lib/icon-types';
   import Icon from '../ui/Icon.svelte';
 
   let {
@@ -21,7 +22,7 @@
     name: string;
     desc: string;
     category: 'command' | 'skill' | 'file' | 'plugin';
-    icon: string;
+    icon: IconName;
     acceptsInput: boolean;
   };
 
@@ -59,8 +60,8 @@
 
   // Group filtered items by category for display
   const grouped = $derived.by(() => {
-    const groups: { label: string; icon: string; items: MenuItem[] }[] = [];
-    const cats: Record<string, { label: string; icon: string }> = {
+    const groups: { label: string; icon: IconName; items: MenuItem[] }[] = [];
+    const cats: Record<string, { label: string; icon: IconName }> = {
       command: { label: '命令', icon: 'settings' },
       skill: { label: '技能', icon: 'bolt' },
       file: { label: '文件', icon: 'file-text' },
@@ -79,13 +80,6 @@
   function handleClick(item: MenuItem) {
     onselect(item.name);
   }
-
-  const categoryIcon: Record<string, string> = {
-    command: 'settings',
-    skill: 'bolt',
-    file: 'file-text',
-    plugin: 'plugin',
-  };
 </script>
 
 {#if flatFiltered.length > 0}
@@ -126,9 +120,7 @@
     right: 0;
     max-height: 320px;
     overflow-y: auto;
-    background: rgba(28, 28, 30, 0.92);
-    backdrop-filter: blur(24px) saturate(1.6);
-    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    background: var(--l3);
     border: 1px solid rgba(84, 84, 88, 0.65);
     border-radius: 12px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);

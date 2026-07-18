@@ -9,6 +9,7 @@
 // - Global shortcut: Cmd/Ctrl+Shift+K toggles window visibility
 // - Window state persistence: save/restore position, size, maximized state
 
+mod agent;
 mod commands;
 mod daemon;
 mod sea_path;
@@ -16,7 +17,7 @@ mod sea_path;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Emitter, Manager, WindowEvent,
+    Manager, WindowEvent,
 };
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
@@ -34,6 +35,9 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            // App-owned embedded agent state (spawned lazily by ensure_server).
+            app.manage(agent::AgentState(tokio::sync::Mutex::new(None)));
+
             #[cfg(target_os = "macos")]
             {
                 if let Some(window) = app.get_webview_window("main") {
@@ -140,8 +144,17 @@ pub fn run() {
             commands::write_user_skill,
             commands::delete_user_skill,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            // The embedded agent is a private child process: it dies with the app.
+            if matches!(
+                event,
+                tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit
+            ) {
+                agent::stop_embedded_agent(app_handle);
+            }
+        });
 }
 
 // ---------------------------------------------------------------------------

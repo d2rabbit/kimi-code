@@ -10,38 +10,37 @@ use std::path::PathBuf;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::daemon::{ensure_daemon, kimi_home, server_log_path, EnsureResult};
-use crate::sea_path::resolve_sea_path;
+use crate::agent::{agent_home, start_embedded_agent};
+use crate::daemon::kimi_home;
 
-/// On-disk filename of the daemon's persistent bearer token (under KIMI_CODE_HOME).
+/// On-disk filename of the daemon's persistent bearer token (under the agent home).
 const SERVER_TOKEN_FILE: &str = "server.token";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EnsureServerResult {
-    /// Daemon origin, e.g. "http://127.0.0.1:58627".
+    /// Embedded agent origin, e.g. "http://127.0.0.1:58731" (ephemeral port).
     pub origin: String,
 }
 
-/// Start (or reuse) the shared Kimi daemon and return its origin.
+/// Start (or return the running) app-owned embedded agent and return its origin.
 ///
-/// Called once on app startup. Emits a `daemon:status` event with either
-/// `{ ok: true, origin }` or `{ ok: false, error }` so the frontend can
-/// render loading / error screens.
+/// Called once on app startup. The agent is a private child process with its
+/// own KIMI_CODE_HOME (~/.kimi-code/desktop) and an ephemeral port — never a
+//  shared/foreign daemon. Emits `daemon:ready` with the origin.
 #[tauri::command]
 pub async fn ensure_server(app: AppHandle) -> Result<EnsureServerResult, String> {
-    let sea_path = resolve_sea_path(&app)?;
-    let EnsureResult { origin } = ensure_daemon(&sea_path).await?;
+    let origin = start_embedded_agent(&app).await?;
     let _ = app.emit("daemon:ready", &origin);
     Ok(EnsureServerResult { origin })
 }
 
-/// Read the daemon's bearer token so the frontend can authenticate without
-/// showing the manual token dialog on a fresh launch.
+/// Read the embedded agent's bearer token so the frontend can authenticate
+/// without showing the manual token dialog on a fresh launch.
 /// Returns null when the token cannot be read (frontend falls back to the dialog).
 #[tauri::command]
 pub fn read_server_token() -> Option<String> {
-    let token_path = kimi_home().join(SERVER_TOKEN_FILE);
+    let token_path = agent_home().join(SERVER_TOKEN_FILE);
     match fs::read_to_string(&token_path) {
         Ok(raw) => {
             let trimmed = raw.trim();
@@ -51,10 +50,14 @@ pub fn read_server_token() -> Option<String> {
     }
 }
 
-/// Return the daemon log file path (for the "Open server log" menu item).
+/// Return the embedded agent's log file path (for the "Open server log" menu item).
 #[tauri::command]
 pub fn get_server_log_path() -> String {
-    server_log_path().to_string_lossy().into_owned()
+    agent_home()
+        .join("server")
+        .join("server.log")
+        .to_string_lossy()
+        .into_owned()
 }
 
 /// Open a URL or file path in the system's default application.
@@ -131,9 +134,10 @@ pub struct PluginInfo {
 }
 
 /// Read and parse the installed plugins registry + manifests.
+/// Reads the embedded agent's home so the GUI matches what the agent sees.
 #[tauri::command]
 pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
-    let plugins_dir = kimi_home().join("plugins");
+    let plugins_dir = agent_home().join("plugins");
     let installed_path = plugins_dir.join("installed.json");
 
     let installed_content = stdfs::read_to_string(&installed_path)
@@ -257,9 +261,10 @@ pub fn set_badge_count(app: AppHandle, count: u32) -> Result<(), String> {
 
 use std::fs as stdfs;
 
-/// The user-level skills directory: <KIMI_CODE_HOME>/skills/
+/// The embedded agent's skills directory: <agent-home>/skills/
+/// (Kept in sync with what the embedded agent serves.)
 fn user_skills_dir() -> PathBuf {
-    kimi_home().join("skills")
+    agent_home().join("skills")
 }
 
 /// List user-level skills by scanning <home>/skills/ for SKILL.md files.

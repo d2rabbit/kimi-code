@@ -1,9 +1,10 @@
 // daemon.svelte.ts — daemon connection state store.
 //
 // Uses Svelte 5 runes ($state). On startup:
-// - In Tauri mode: read the server token via IPC, then directly fetch
-//   healthz to check if the daemon is alive (bypassing ensure_server IPC
-//   which can hang). Falls back to ensure_server only if daemon is down.
+// - In Tauri mode: the app owns its embedded agent (Rust spawns it as a
+//   private child process with an isolated home and an ephemeral port).
+//   Origin + token come from Rust over IPC — we NEVER probe the well-known
+//   shared-daemon port or attach to a foreign daemon.
 // - In browser mode: use same-origin Vite proxy.
 
 import { invoke } from '@tauri-apps/api/core';
@@ -12,13 +13,8 @@ import { setCredential } from '../api/daemon/serverAuth';
 
 export type DaemonStatus = 'connecting' | 'connected' | 'error';
 
-/** The well-known daemon port (matches kimi-code default). */
-const DAEMON_PORT = 58627;
-const DAEMON_ORIGIN = `http://127.0.0.1:${DAEMON_PORT}`;
-/** How long to wait for a healthz response before declaring the daemon down. */
+/** How long to wait for a healthz response before declaring the agent down. */
 const HEALTH_CHECK_TIMEOUT_MS = 3_000;
-/** How long to wait for ensure_server IPC before giving up. */
-const ENSURE_SERVER_TIMEOUT_MS = 15_000;
 
 interface DaemonState {
   status: DaemonStatus;
@@ -37,7 +33,7 @@ class DaemonStore {
 
   private unlisteners: UnlistenFn[] = [];
 
-  /** Check if the daemon at the given origin is healthy. */
+  /** Check if the agent at the given origin is healthy. */
   private async checkHealth(origin: string): Promise<boolean> {
     try {
       const controller = new AbortController();
@@ -81,9 +77,6 @@ class DaemonStore {
           setCredential(token);
           this.state.token = token;
         }
-        // Verify daemon is alive via proxy.
-        void await this.checkHealth('/api/v1/healthz'.replace('/api/v1', '') + 'api/v1/healthz');
-        // Simpler: just fetch /api/v1/healthz (same-origin)
         const res = await fetch('/api/v1/healthz');
         if (!res.ok) throw new Error(`healthz returned ${res.status}`);
         this.state.status = 'connected';
@@ -95,31 +88,10 @@ class DaemonStore {
       return;
     }
 
-    // --- Tauri mode ---
-    // Step 1: Read the server token via IPC (fast, reliable).
-    let token: string | null = null;
-    try {
-      token = await invoke<string | null>('read_server_token');
-    } catch {
-      // Non-fatal — token may not exist yet.
-    }
-    if (token) {
-      this.state.token = token;
-      setCredential(token);
-    }
-
-    // Step 2: Directly check if the daemon is already running (bypasses
-    // ensure_server IPC which can hang). This is the fast path — if the
-    // daemon is healthy, we skip the slow startup entirely.
-    const isHealthy = await this.checkHealth(DAEMON_ORIGIN);
-    if (isHealthy) {
-      this.state.status = 'connected';
-      this.state.origin = DAEMON_ORIGIN;
-      return;
-    }
-
-    // Step 3: Daemon is not running — use ensure_server IPC to start it,
-    // with a timeout so we don't hang forever.
+    // --- Tauri mode: app-owned embedded agent ---
+    // Rust spawns the embedded SEA (private home + ephemeral port) and reports
+    // the origin; the token lives under the agent's private home. No fallback
+    // to any independently started daemon — by design there is none.
     try {
       // Register error listener once.
       if (this.unlisteners.length === 0) {
@@ -137,27 +109,22 @@ class DaemonStore {
         }
       }
 
-      const ensurePromise = invoke<{ origin: string }>('ensure_server');
-      const result = await Promise.race([
-        ensurePromise,
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error('ensure_server timed out — daemon may already be running on a different port')),
-            ENSURE_SERVER_TIMEOUT_MS,
-          ),
-        ),
+      const [{ origin }, token] = await Promise.all([
+        invoke<{ origin: string }>('ensure_server'),
+        invoke<string | null>('read_server_token').catch(() => null),
       ]);
-      this.state.status = 'connected';
-      this.state.origin = result.origin;
-    } catch (e) {
-      // Last resort: try direct healthz one more time (daemon might have
-      // started during the ensure_server timeout).
-      const retryHealthy = await this.checkHealth(DAEMON_ORIGIN);
-      if (retryHealthy) {
-        this.state.status = 'connected';
-        this.state.origin = DAEMON_ORIGIN;
-        return;
+      if (token) {
+        this.state.token = token;
+        setCredential(token);
       }
+      // Final confirmation from the WebView side (Rust already health-checked,
+      // but this proves reachability from our origin context, incl. CSP).
+      if (!(await this.checkHealth(origin))) {
+        throw new Error(`embedded agent at ${origin} is not reachable from the app`);
+      }
+      this.state.status = 'connected';
+      this.state.origin = origin;
+    } catch (e) {
       this.state.status = 'error';
       this.state.error = e instanceof Error ? e.message : String(e);
     }
