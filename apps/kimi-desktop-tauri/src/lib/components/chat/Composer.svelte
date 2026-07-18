@@ -1,5 +1,6 @@
 <!-- Composer.svelte — prompt input with auto-resizing textarea, slash menu,
-     input history (↑/↓ recall), image attachment upload, and submit. -->
+     @ file mentions (chips), image attachments, permission mode segmented
+     control, token counter, model/thinking pickers, and a compact FAB. -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
@@ -12,7 +13,6 @@
   let mentionQuery = $state('');
   let mentionResults = $state<FileResult[]>([]);
   let mentionIndex = $state(0);
-  
 
   async function searchMention(query: string) {
     const sid = client.activeSessionId();
@@ -46,13 +46,23 @@
   let fileInputEl: HTMLInputElement | null = $state(null);
   let slashIndex = $state(0);
 
-  // --- Pending attachments (not yet uploaded or just uploaded, waiting for send) ---
+  // --- @-mentioned file chips (derived from text tokens; ✕ removes the token) ---
+  const mentionChips = $derived.by(() => {
+    const matches = text.match(/@([^\s@]+)/g) ?? [];
+    return matches.map((m) => m.slice(1));
+  });
+
+  function removeMentionChip(path: string) {
+    text = text.replace(new RegExp(`@${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s?`), '');
+  }
+
+  // --- Pending attachments (image/video, uploaded before send) ---
   interface PendingAttachment {
-    id: string; // local temp id
+    id: string;
     file: File;
     previewUrl: string;
     uploading: boolean;
-    fileId?: string; // set after upload
+    fileId?: string;
     kind?: 'image' | 'video';
     error?: string;
   }
@@ -71,7 +81,6 @@
       });
     }
     attachments = [...attachments];
-    // Upload each new attachment.
     for (const att of attachments) {
       if (att.uploading && !att.fileId) {
         void uploadAttachment(att);
@@ -106,7 +115,7 @@
   function handleFileChange(e: Event) {
     const input = e.target as HTMLInputElement;
     if (input.files) addFiles(input.files);
-    input.value = ''; // reset so same file can be re-selected
+    input.value = '';
   }
 
   function handlePaste(e: ClipboardEvent) {
@@ -208,7 +217,6 @@
 
   function handleInput() {
     historyBrowsing = false;
-    // Detect @ mention
     const cursorPos = textareaEl?.selectionStart ?? 0;
     const beforeCursor = text.slice(0, cursorPos);
     const atMatch = beforeCursor.match(/@([^\s@]*)$/);
@@ -221,6 +229,16 @@
     }
   }
 
+  function insertMention(path: string) {
+    const cursorPos = textareaEl?.selectionStart ?? 0;
+    const beforeAt = text.slice(0, cursorPos).lastIndexOf('@');
+    if (beforeAt >= 0) {
+      text = text.slice(0, beforeAt) + `@${path} ` + text.slice(cursorPos);
+    }
+    mentionQuery = ''; mentionResults = [];
+    textareaEl?.focus();
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     // Steer: ⌘S / Ctrl+S injects into running turn
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -228,7 +246,6 @@
       const t = text.trim();
       if (t && running) {
         void client.client.steerPrompt([]).then(() => {
-          // Also send as a new prompt that gets steered
           void client.client.sendPrompt(t);
           text = '';
         });
@@ -247,14 +264,7 @@
       if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
         const selected = mentionResults[mentionIndex];
-        if (selected) {
-          const cursorPos = textareaEl?.selectionStart ?? 0;
-          const beforeAt = text.slice(0, cursorPos).lastIndexOf('@');
-          if (beforeAt >= 0) {
-            text = text.slice(0, beforeAt) + `@${selected.path} ` + text.slice(cursorPos);
-            mentionQuery = ''; mentionResults = [];
-          }
-        }
+        if (selected) insertMention(selected.path);
         return;
       }
     }
@@ -264,26 +274,56 @@
     }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      const canSend = !running && (text.trim() || allUploaded);
-      if (canSend) {
-        const sentAttachments = attachments
-          .filter((a) => a.fileId)
-          .map((a) => ({ fileId: a.fileId!, kind: a.kind! }));
-        // Clear attachments.
-        for (const att of attachments) URL.revokeObjectURL(att.previewUrl);
-        attachments = [];
-        if (text.trim()) recordHistory(text.trim());
-        historyBrowsing = false;
-        onsubmit(sentAttachments.length > 0 ? sentAttachments : undefined);
-      }
+      doSend();
     }
+  }
+
+  function doSend() {
+    const canSend = !running && (text.trim() || allUploaded);
+    if (!canSend) return;
+    const sentAttachments = attachments
+      .filter((a) => a.fileId)
+      .map((a) => ({ fileId: a.fileId!, kind: a.kind! }));
+    for (const att of attachments) URL.revokeObjectURL(att.previewUrl);
+    attachments = [];
+    if (text.trim()) recordHistory(text.trim());
+    historyBrowsing = false;
+    onsubmit(sentAttachments.length > 0 ? sentAttachments : undefined);
   }
 
   function handleSlashSelect(cmd: string) {
     text = cmd + ' ';
     textareaEl?.focus();
   }
+
+  // --- Model / thinking menus ---
+  let openMenu = $state<'model' | 'think' | null>(null);
+  function toggleMenu(m: 'model' | 'think') {
+    openMenu = openMenu === m ? null : m;
+  }
+  function closeMenus() { openMenu = null; }
+
+  const THINK_LEVELS: { id: string; label: string }[] = [
+    { id: 'off', label: '关' },
+    { id: 'on', label: '开' },
+    { id: 'low', label: '低' },
+    { id: 'high', label: '高' },
+    { id: 'max', label: '最高' },
+  ];
+  const thinkLabel = $derived(THINK_LEVELS.find((l) => l.id === client.thinking())?.label ?? client.thinking());
+  const activeModelName = $derived(
+    client.models().find((m) => m.id === (client.activeSessionModel() || client.defaultModel()))?.displayName
+      ?? client.activeSessionModel() ?? client.defaultModel() ?? '默认',
+  );
+
+  const PERMS: { id: 'manual' | 'auto' | 'yolo'; label: string }[] = [
+    { id: 'manual', label: '手动' },
+    { id: 'auto', label: '自动' },
+    { id: 'yolo', label: '⚡完全访问' },
+  ];
 </script>
+
+<svelte:window onclick={closeMenus} />
 
 <!-- Hidden file input for image picker -->
 <input
@@ -296,7 +336,7 @@
 />
 
 <div class="composer">
-  <!-- Attachment chips -->
+  <!-- Image attachment chips -->
   {#if attachments.length > 0}
     <div class="attachment-strip">
       {#each attachments as att (att.id)}
@@ -316,387 +356,268 @@
     </div>
   {/if}
 
-  <div class="composer-inner" style="position: relative;">
-    {#if showSlash}
-      <SlashMenu query={slashQuery} skills={client.skills()} activeIndex={slashIndex} onselect={handleSlashSelect} />
-    {/if}
-    {#if showMention && mentionResults.length > 0}
-      <div class="mention-menu glass-menu animate-spring-in">
-        {#each mentionResults as item, i (item.path)}
-          <button class="mention-item" class:selected={i === mentionIndex}
-            onclick={() => {
-              const cursorPos = textareaEl?.selectionStart ?? 0;
-              const beforeAt = text.slice(0, cursorPos).lastIndexOf('@');
-              if (beforeAt >= 0) {
-                text = text.slice(0, beforeAt) + `@${item.path} ` + text.slice(cursorPos);
-              }
-              mentionQuery = ''; mentionResults = [];
-              textareaEl?.focus();
-            }}
-            type="button">
-            <Icon name="file-text" size="sm" />
-            <span class="mention-path">{item.path}</span>
-          </button>
+  <div class="composer-card">
+    <!-- @-mentioned file chips -->
+    {#if mentionChips.length > 0}
+      <div class="atch-row">
+        {#each mentionChips as path (path)}
+          <span class="atch">
+            <span class="fi2">{path.endsWith('/') ? 'D' : 'F'}</span>
+            <span class="atch-name">{path.split('/').filter(Boolean).pop()}</span>
+            <button class="rm" type="button" aria-label="移除引用" onclick={() => removeMentionChip(path)}>✕</button>
+          </span>
         {/each}
       </div>
     {/if}
-    <IconButton name="image" label="添加图片" size="sm" onclick={openFilePicker} />
-    <textarea
-      bind:this={textareaEl}
-      bind:value={text}
-      onkeydown={handleKeydown}
-      oninput={handleInput}
-      onpaste={handlePaste}
-      placeholder="Ask anything…  ( / for commands)"
-      rows="1"
-      spellcheck="false"
-      autocomplete="off"
-      autocapitalize="off"
-      class="composer-input"
-      class:busy={running}
-    ></textarea>
-    <button
-      class="send-btn"
-      disabled={running || (!text.trim() && !allUploaded)}
-      onclick={() => {
-        const canSend = !running && (text.trim() || allUploaded);
-        if (!canSend) return;
-        const sentAttachments = attachments.filter((a) => a.fileId).map((a) => ({ fileId: a.fileId!, kind: a.kind! }));
-        for (const att of attachments) URL.revokeObjectURL(att.previewUrl);
-        attachments = [];
-        if (text.trim()) recordHistory(text.trim());
-        historyBrowsing = false;
-        onsubmit(sentAttachments.length > 0 ? sentAttachments : undefined);
-      }}
-      type="button"
-      aria-label="发送"
-    >
-      <Icon name="send" size="md" />
-    </button>
+
+    <!-- Input row -->
+    <div class="inrow" style="position: relative;">
+      {#if showSlash}
+        <SlashMenu query={slashQuery} skills={client.skills()} activeIndex={slashIndex} onselect={handleSlashSelect} />
+      {/if}
+      {#if showMention && mentionResults.length > 0}
+        <div class="mention-menu glass-menu animate-spring-in">
+          {#each mentionResults as item, i (item.path)}
+            <button class="mention-item glass-menu-item" class:selected={i === mentionIndex}
+              onclick={() => insertMention(item.path)} type="button">
+              <Icon name="file-text" size="sm" />
+              <span class="mention-path">{item.path}</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
+      <IconButton name="plus" label="添加图片" size="sm" onclick={openFilePicker} />
+      <textarea
+        bind:this={textareaEl}
+        bind:value={text}
+        onkeydown={handleKeydown}
+        oninput={handleInput}
+        onpaste={handlePaste}
+        placeholder="输入消息，/ 技能 · @ 文件…"
+        rows="1"
+        spellcheck="false"
+        autocomplete="off"
+        autocapitalize="off"
+        class="composer-input"
+        class:busy={running}
+      ></textarea>
+      <button
+        class="sendc"
+        disabled={running || (!text.trim() && !allUploaded)}
+        onclick={doSend}
+        type="button"
+        aria-label="发送"
+      >
+        <Icon name="send" size="md" />
+      </button>
+    </div>
+
+    <!-- Control row -->
+    <div class="ctrl">
+      <!-- Permission mode: segmented control -->
+      <span class="mode-seg" role="group" aria-label="权限模式">
+        {#each PERMS as p (p.id)}
+          <button type="button" class:on={client.permission() === p.id} onclick={() => client.client.setPermission(p.id)}>{p.label}</button>
+        {/each}
+      </span>
+      <!-- Mode toggles -->
+      <button class="mini-toggle" class:on={client.planMode()} onclick={() => client.client.togglePlanMode()} type="button">Plan</button>
+      <button class="mini-toggle" class:on={client.goalMode()} onclick={() => client.client.toggleGoalMode()} type="button">Goal</button>
+      <button class="mini-toggle" class:on={client.swarmMode()} onclick={() => client.client.toggleSwarmMode()} type="button">Swarm</button>
+
+      <span style="flex:1"></span>
+
+      <!-- Token counter -->
+      {#if client.activeSessionUsage() && client.activeSessionUsage()!.contextLimit}
+        {@const usage = client.activeSessionUsage()!}
+        {@const pct = usage.contextLimit > 0 ? Math.min(100, (usage.contextTokens / usage.contextLimit) * 100) : 0}
+        <span class="tok" class:warning={pct >= 80} title="上下文用量">
+          <span class="ring" class:warning={pct >= 80} style="--pct: {pct}"></span>{kFmt(usage.contextTokens)} / {kFmt(usage.contextLimit)}
+        </span>
+      {/if}
+
+      <!-- Model picker -->
+      {#if client.models().length > 0}
+        <span class="pill-wrap">
+          <button class="cpill" type="button" onclick={(e) => { e.stopPropagation(); toggleMenu('model'); }}>
+            <span class="psq"></span><b>{activeModelName}</b><span class="chev">▾</span>
+          </button>
+          {#if openMenu === 'model'}
+            <div class="pop glass-menu animate-spring-in" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
+              {#each client.models() as m (m.id)}
+                <button class="pop-item glass-menu-item" class:on={(client.activeSessionModel() || client.defaultModel()) === m.id}
+                  onclick={() => { client.client.setModel(m.id); closeMenus(); }} type="button">
+                  {m.displayName || m.id}
+                  {#if (client.activeSessionModel() || client.defaultModel()) === m.id}<span class="src">当前</span>{/if}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </span>
+      {/if}
+
+      <!-- Thinking level picker -->
+      <span class="pill-wrap">
+        <button class="cpill" type="button" onclick={(e) => { e.stopPropagation(); toggleMenu('think'); }}>
+          <span class="sep"></span><b>{thinkLabel}</b><span class="chev">▾</span>
+        </button>
+        {#if openMenu === 'think'}
+          <div class="pop glass-menu animate-spring-in" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
+            {#each THINK_LEVELS as l (l.id)}
+              <button class="pop-item glass-menu-item" class:on={client.thinking() === l.id}
+                onclick={() => { client.client.setThinking(l.id); closeMenus(); }} type="button">
+                {l.label}
+                {#if client.thinking() === l.id}<span class="src">当前</span>{/if}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </span>
+    </div>
   </div>
 
-  <!-- Composer toolbar: permission pill + mode toggles + context ring + model picker -->
-  <div class="composer-toolbar">
-    <!-- Permission pill -->
-    <button
-      class="toolbar-pill perm-pill perm-{client.permission()}"
-      onclick={() => {
-        const modes = ['manual', 'auto', 'yolo'] as const;
-        const idx = modes.indexOf(client.permission());
-        client.client.setPermission(modes[(idx + 1) % 3]!);
-      }}
-      type="button"
-    >
-      {client.permission() === 'manual' ? '手动' : client.permission() === 'auto' ? '自动' : '完全访问'}
-    </button>
-
-    <!-- Mode toggles -->
-    <button
-      class="toolbar-pill mode-toggle"
-      class:active={client.planMode()}
-      onclick={() => client.client.togglePlanMode()}
-      type="button"
-    >Plan</button>
-    <button
-      class="toolbar-pill mode-toggle"
-      class:active={client.goalMode()}
-      onclick={() => client.client.toggleGoalMode()}
-      type="button"
-    >Goal</button>
-    <button
-      class="toolbar-pill mode-toggle"
-      class:active={client.swarmMode()}
-      onclick={() => client.client.toggleSwarmMode()}
-      type="button"
-    >Swarm</button>
-
-    <div class="toolbar-spacer"></div>
-
-    <!-- Context ring -->
-    {#if client.activeSessionUsage() && client.activeSessionUsage()!.contextLimit}
-      {@const usage = client.activeSessionUsage()!}
-      {@const pct = usage.contextLimit > 0 ? Math.min(100, (usage.contextTokens / usage.contextLimit) * 100) : 0}
-      <div class="ctx-indicator" class:warning={pct >= 80}>
-        <div class="ctx-ring" style="--pct: {pct}"></div>
-        <span>{kFmt(usage.contextTokens)}/{kFmt(usage.contextLimit)}</span>
-        {#if pct >= 80}
-          <button class="compact-btn" onclick={() => client.client.compact()} type="button">/compact</button>
-        {/if}
-      </div>
-    {/if}
-
-    <!-- Model picker -->
-    {#if client.models().length > 0}
-      <select
-        class="model-select"
-        value={client.activeSessionModel() || client.defaultModel()}
-        onchange={(e) => client.client.setModel((e.target as HTMLSelectElement).value)}
-      >
-        {#each client.models() as m (m.id)}
-          <option value={m.id}>{m.displayName || m.id}</option>
-        {/each}
-      </select>
-    {/if}
+  <!-- Compact FAB (composer 右下角外部) -->
+  <div class="fab-row">
+    <button class="fab" type="button" onclick={() => client.client.compact()}>⧉ 压缩对话</button>
   </div>
 </div>
 
 <style>
   .composer {
     flex: none;
-    padding: 6px 20px 10px;
-    max-width: 820px;
+    padding: 0 18px 10px;
+    max-width: 860px;
     width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
   }
 
-  /* Attachment strip */
-  .attachment-strip {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 6px;
-  }
+  /* ---- Image attachment strip ---- */
+  .attachment-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
   .attachment-chip {
-    position: relative;
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-md, 8px);
-    overflow: hidden;
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    position: relative; width: 56px; height: 56px;
+    border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--bd);
   }
-  .attachment-chip img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .attachment-chip img { width: 100%; height: 100%; object-fit: cover; }
   .attachment-chip.uploading img { opacity: 0.5; }
-  .attachment-chip.error { border-color: var(--color-danger, #ff453a); }
+  .attachment-chip.error { border-color: var(--err); }
   .chip-remove {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(0,0,0,0.6);
-    color: var(--color-text, rgba(255,255,255,0.92));
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
+    position: absolute; top: 2px; right: 2px; width: 18px; height: 18px;
+    border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
   }
-  .chip-loading {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  .chip-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
   .chip-loading::after {
-    content: '';
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.2);
-    border-top-color: var(--color-accent, #2dd4bf);
+    content: ''; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--ac);
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .chip-error {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-danger-soft, rgba(255,107,107,0.8));
-    color: var(--color-text, rgba(255,255,255,0.92));
-    font-weight: bold;
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: var(--err-soft); color: var(--err); font-weight: bold;
   }
 
-  .composer-inner {
-    display: flex;
-    align-items: flex-end;
-    gap: 4px;
+  /* ---- Composer card ---- */
+  .composer-card {
     background: var(--l2);
-    border: 1px solid var(--color-line, #2e2e2e);
-    border-radius: var(--radius-lg, 12px);
-    padding: 8px 8px 8px 8px;
-    transition: border-color var(--duration-fast, 120ms), box-shadow var(--duration-fast, 120ms);
+    border: 1px solid var(--bd2);
+    border-radius: var(--r-xl);
+    box-shadow: var(--toplight), 0 8px 24px rgba(0, 0, 0, 0.10);
+    transition: border-color var(--duration-fast) var(--ease);
   }
-  .composer-inner:focus-within {
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
-  }
+  .composer-card:focus-within { border-color: var(--ac-bd); }
 
-  .composer-input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: rgba(255,255,255,0.92);
-    font-family: var(--font-ui, inherit);
-    font-size: 15px;
-    line-height: 1.6;
-    resize: none;
-    outline: none;
-    max-height: 300px;
-    min-height: 44px;
-    padding: 10px 8px;
+  /* @-mention chips */
+  .atch-row { display: flex; gap: 6px; padding: 10px 12px 0; flex-wrap: wrap; }
+  .atch {
+    display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 6px 0 7px;
+    border-radius: var(--r-sm); border: 1px solid var(--bd); background: var(--l1);
+    font-size: 11px; font-family: var(--font-mono); color: var(--tx);
   }
-  .composer-input::placeholder { color: var(--color-text-faint, rgba(235,235,245,0.3)); }
+  .atch .fi2 { width: 13px; height: 13px; border-radius: 4px; background: var(--ac); color: #fff; font-size: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-ui); font-weight: 700; }
+  .atch .rm { color: var(--tx3); font-size: 11px; width: 14px; height: 14px; border: none; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: transparent; cursor: pointer; padding: 0; }
+  .atch .rm:hover { color: var(--err); background: var(--err-soft); }
+
+  /* Input row */
+  .inrow { display: flex; align-items: flex-end; gap: 6px; padding: 10px 12px 8px; }
+  .composer-input {
+    flex: 1; border: none; background: transparent; color: var(--tx);
+    font-family: var(--font-ui); font-size: 13px; line-height: 1.6;
+    resize: none; outline: none; max-height: 200px; min-height: 36px; padding: 6px 4px;
+  }
+  .composer-input::placeholder { color: var(--tx3); }
   .composer-input.busy { opacity: 0.6; }
 
-  .send-btn {
-    flex: none;
-    width: 34px;
-    height: 34px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-full, 999px);
-    border: none;
-    background: var(--color-text, #ececec);
-    color: var(--color-bg);
-    cursor: pointer;
-    transition: all var(--duration-fast, 120ms);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  .sendc {
+    flex: none; width: 28px; height: 28px; border-radius: 50%; border: none;
+    background: var(--ac); color: #fff; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
+    box-shadow: 0 2px 8px rgba(79, 168, 255, 0.35);
   }
-  .send-btn:disabled { opacity: 0.25; cursor: not-allowed; box-shadow: none; }
-  .send-btn:not(:disabled):hover { transform: scale(1.06); box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
-  .send-btn:not(:disabled):active { transform: scale(0.95); }
+  .sendc:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+  .sendc:not(:disabled):hover { background: var(--ac-h); transform: scale(1.06); }
+  .sendc:not(:disabled):active { transform: scale(0.95); }
 
-  /* Context usage bar */
-  .context-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 4px 0 0;
-    font-size: var(--text-xs, 11px);
-    color: var(--color-text-faint, #555);
-    font-family: var(--font-mono, monospace);
+  /* Control row */
+  .ctrl { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--bd); }
+  .mode-seg { display: inline-flex; border: 1px solid var(--bd); border-radius: var(--r-md); overflow: hidden; background: var(--l1); }
+  .mode-seg button {
+    padding: 4px 11px; font-size: 11px; font-weight: 500; color: var(--tx3); border: none;
+    background: transparent; cursor: pointer; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
   }
-  .context-bar.warning {
-    color: var(--color-warning, #d29922);
+  .mode-seg button:hover { color: var(--tx); }
+  .mode-seg button.on { background: var(--ac); color: #fff; font-weight: 600; }
+  .mini-toggle {
+    padding: 3px 8px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent;
+    color: var(--tx3); font-size: 10.5px; font-weight: 500; cursor: pointer;
+    transition: all var(--duration-fast) var(--ease);
   }
-  .context-ring {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: conic-gradient(
-      var(--color-text-muted, #999) calc(var(--pct, 0) * 1%),
-      rgba(255,255,255,0.1) 0
-    );
-  }
-  .context-text {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-  }
-  .compact-btn {
-    border: none;
-    background: rgba(255,255,255,0.06);
-    color: var(--color-warning, #d29922);
-    font-family: var(--font-mono, monospace);
-    font-size: var(--text-xs, 11px);
-    padding: 1px 6px;
-    border-radius: var(--radius-xs, 4px);
-    cursor: pointer;
-  }
-  .compact-btn:hover {
-    background: rgba(255,255,255,0.1);
-  }
+  .mini-toggle:hover { color: var(--tx); background: var(--ac-soft); }
+  .mini-toggle.on { background: var(--ac-soft); color: var(--ac); border-color: var(--ac-bd); }
 
-  /* ---- Composer toolbar ---- */
-  .composer-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 4px 0;
-    font-size: 12px;
-  }
-  .toolbar-spacer { flex: 1; }
-  .toolbar-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 3px 10px;
-    border: none;
-    border-radius: var(--radius-full, 999px);
-    background: var(--color-hover, rgba(255,255,255,0.06));
-    color: var(--color-text-muted, rgba(235,235,245,0.6));
-    font-size: 12px;
-    cursor: pointer;
-    transition: background 120ms, color 120ms;
-    white-space: nowrap;
-  }
-  .toolbar-pill:hover {
-    background: var(--color-selected, rgba(255,255,255,0.1));
-    color: var(--color-text, rgba(255,255,255,0.92));
-  }
-  .perm-pill.perm-manual { color: var(--color-text-muted); }
-  .perm-pill.perm-auto { color: var(--color-warning, #ffd60a); }
-  .perm-pill.perm-yolo { color: var(--color-danger, #ff453a); }
+  .tok { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx3); }
+  .tok.warning { color: var(--warn); }
+  .ring { width: 10px; height: 10px; border-radius: 50%; background: conic-gradient(var(--tx2) calc(var(--pct, 0) * 1%), var(--bd) 0); }
+  .ring.warning { background: conic-gradient(var(--warn) calc(var(--pct, 0) * 1%), var(--bd) 0); }
 
-  .mode-toggle.active {
-    background: var(--color-accent-soft, rgba(10,132,255,0.16));
-    color: var(--color-accent, #0a84ff);
+  .pill-wrap { position: relative; }
+  .cpill {
+    display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px;
+    border-radius: var(--r-sm); font-size: 11px; font-weight: 500; color: var(--tx2);
+    border: 1px solid transparent; background: transparent; cursor: pointer;
+    transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
   }
+  .cpill:hover { background: var(--ac-soft); color: var(--tx); }
+  .cpill b { color: var(--tx); font-weight: 600; }
+  .cpill .psq { width: 10px; height: 10px; border-radius: 3px; background: linear-gradient(135deg, #4fa8ff, #5bc0be); }
+  .cpill .sep { width: 1px; height: 12px; background: var(--bd2); }
+  .cpill .chev { font-size: 8px; color: var(--tx3); }
 
-  .ctx-indicator {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-family: var(--font-mono, monospace);
-    font-size: 11px;
-    color: var(--color-text-faint, rgba(235,235,245,0.3));
+  .pop {
+    position: absolute; bottom: calc(100% + 6px); right: 0; z-index: 200;
+    min-width: 170px; max-height: 300px; overflow-y: auto;
   }
-  .ctx-indicator.warning { color: var(--color-warning, #ffd60a); }
-  .ctx-ring {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: conic-gradient(
-      var(--color-text-muted, #999) calc(var(--pct, 0) * 1%),
-      rgba(255,255,255,0.1) 0
-    );
-  }
-  .ctx-indicator.warning .ctx-ring {
-    background: conic-gradient(
-      var(--color-warning, #ffd60a) calc(var(--pct, 0) * 1%),
-      rgba(255,255,255,0.1) 0
-    );
-  }
+  .pop-item { font-size: 12px; }
+  .pop-item.on { color: var(--ac); font-weight: 600; }
+  .pop-item .src { margin-left: auto; font-size: 9px; color: var(--tx3); border: 1px solid var(--bd); border-radius: 4px; padding: 1px 5px; }
 
-  .model-select {
-    border: none;
-    border-radius: var(--radius-full, 999px);
-    background: var(--color-hover, rgba(255,255,255,0.06));
-    color: var(--color-text-muted, rgba(235,235,245,0.6));
-    font-size: 12px;
-    padding: 3px 8px;
-    cursor: pointer;
-    outline: none;
-  }
-  .model-select:hover {
-    background: var(--color-selected, rgba(255,255,255,0.1));
-  }
   /* Mention menu */
   .mention-menu {
     position: absolute; bottom: 100%; left: 0; right: 0; z-index: 200;
-    max-height: 240px; overflow-y: auto; margin-bottom: 4px;
-    min-width: 280px;
+    max-height: 240px; overflow-y: auto; margin-bottom: 4px; min-width: 280px;
   }
-  .mention-item {
-    display: flex; align-items: center; gap: 8px; width: 100%;
-    padding: 7px 10px; border: none; border-radius: var(--radius-sm, 8px);
-    background: transparent; color: var(--color-text-muted, rgba(235,235,245,0.6));
-    font-size: 12px; cursor: pointer; text-align: left; font-family: inherit;
-    transition: background 80ms;
+  .mention-item.selected { background: var(--ac-soft); color: var(--tx); }
+  .mention-path { font-family: var(--font-mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Compact FAB */
+  .fab-row { display: flex; justify-content: flex-end; padding-top: 8px; }
+  .fab {
+    display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px;
+    border-radius: 999px; background: var(--l3); border: 1px solid var(--bd2);
+    color: var(--tx2); font-size: 11px; font-weight: 600; cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
   }
-  .mention-item.selected { background: var(--color-selected, rgba(45,212,191,0.12)); color: var(--color-text); }
-  .mention-item.selected :global(svg) { color: var(--color-accent, #2dd4bf); }
-  .mention-path { font-family: var(--font-mono, monospace); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fab:hover { color: var(--ac); border-color: var(--ac); transform: translateY(-1px); }
 </style>
