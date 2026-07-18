@@ -1,28 +1,46 @@
-<!-- WorkspaceView.svelte — main workspace: sidebar + chat area + right panel. -->
+<!-- WorkspaceView.svelte — main workspace: sidebar + (chat area + right panel | module view). -->
 <script lang="ts">
   import Sidebar from '../components/chat/Sidebar.svelte';
   import ChatArea from '../components/chat/ChatArea.svelte';
   import RightPanel from '../components/shell/RightPanel.svelte';
   import Resizer from '../components/shell/Resizer.svelte';
+  import PluginsView from './PluginsView.svelte';
+  import SubagentsView from './SubagentsView.svelte';
+  import ArchiveView from './ArchiveView.svelte';
 
   let { onnavigate = () => {} }: { onnavigate?: () => void } = $props();
 
-  let sidebarWidth = $state(220);
+  type ModuleView = 'chat' | 'plugins' | 'subagents' | 'archive';
+  let activeView = $state<ModuleView>('chat');
+
+  let sidebarWidth = $state(216);
 
   function onSidebarResize(delta: number) {
     sidebarWidth = Math.max(160, Math.min(300, sidebarWidth + delta));
+  }
+
+  function onmoduleview(view: string) {
+    activeView = view as ModuleView;
   }
 </script>
 
 <div class="workspace">
   <div class="sidebar-col" style="--sidebar-width: {sidebarWidth}px">
-    <Sidebar {onnavigate} />
+    <Sidebar {onnavigate} {onmoduleview} activeModule={activeView} />
   </div>
   <Resizer orientation="vertical" onResize={onSidebarResize} />
-  <main class="chat-col">
-    <ChatArea />
-  </main>
-  <RightPanel />
+  {#if activeView === 'chat'}
+    <main class="chat-col">
+      <ChatArea />
+    </main>
+    <RightPanel />
+  {:else if activeView === 'plugins'}
+    <PluginsView />
+  {:else if activeView === 'subagents'}
+    <SubagentsView />
+  {:else if activeView === 'archive'}
+    <ArchiveView />
+  {/if}
 </div>
 
 <style>
