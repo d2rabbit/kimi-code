@@ -81,9 +81,9 @@ class DaemonStore {
         if (!res.ok) throw new Error(`healthz returned ${res.status}`);
         this.state.status = 'connected';
         this.state.origin = origin;
-      } catch (e) {
+      } catch (error) {
         this.state.status = 'error';
-        this.state.error = e instanceof Error ? e.message : String(e);
+        this.state.error = error instanceof Error ? error.message : String(error);
       }
       return;
     }
@@ -124,9 +124,9 @@ class DaemonStore {
       }
       this.state.status = 'connected';
       this.state.origin = origin;
-    } catch (e) {
+    } catch (error) {
       this.state.status = 'error';
-      this.state.error = e instanceof Error ? e.message : String(e);
+      this.state.error = error instanceof Error ? error.message : String(error);
     }
   }
 
