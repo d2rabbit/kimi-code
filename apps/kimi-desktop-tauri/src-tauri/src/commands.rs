@@ -60,6 +60,16 @@ pub fn get_server_log_path() -> String {
         .into_owned()
 }
 
+/// Set the main window title (e.g. to the active session name).
+#[tauri::command]
+pub fn set_window_title(app: AppHandle, title: String) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.set_title(&title).map_err(|e| e.to_string())
+    } else {
+        Ok(())
+    }
+}
+
 /// Open a URL or file path in the system's default application.
 /// URLs must use http/https; file paths are opened as-is (Tauri IPC is only
 /// reachable from our own WebView, so the attack surface is limited, but we

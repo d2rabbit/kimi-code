@@ -76,17 +76,29 @@
     if (!newProviderId || Object.keys(PROVIDER_PRESETS).includes(newProviderId)) newProviderId = t;
   }
 
+  let providerSaving = $state(false);
+
   async function submitProvider() {
-    if (!newProviderId.trim()) return;
-    await client.client.saveProvider(newProviderId.trim(), {
-      type: newProviderType,
-      apiKey: newProviderKey.trim() || undefined,
-      baseUrl: newProviderUrl.trim() || undefined,
-    });
-    // 保存后自动拉取该供应商的模型清单，免手动刷新
-    try { await client.client.refreshProviderModels(newProviderId.trim()); } catch { /* 供应商可能暂不可达 */ }
-    showAddProvider = false;
-    newProviderId = ''; newProviderKey = ''; newProviderUrl = '';
+    if (!newProviderId.trim() || providerSaving) return;
+    providerSaving = true;
+    try {
+      await client.client.saveProvider(newProviderId.trim(), {
+        type: newProviderType,
+        apiKey: newProviderKey.trim() || undefined,
+        baseUrl: newProviderUrl.trim() || undefined,
+      });
+      // 保存后自动拉取该供应商的模型清单，免手动刷新
+      try {
+        await client.client.refreshProviderModels(newProviderId.trim());
+        toast.ok(`已保存并拉取到 ${client.models().length} 个模型`);
+      } catch {
+        toast.info('已保存供应商；模型暂不可达，可稍后手动刷新');
+      }
+      showAddProvider = false;
+      newProviderId = ''; newProviderKey = ''; newProviderUrl = '';
+    } finally {
+      providerSaving = false;
+    }
   }
 
   let showEditProvider = $state(false);
@@ -100,6 +112,28 @@
 
   // Usage hero: context ring geometry
   const usage = $derived(client.activeSessionUsage());
+
+  // 真实聚合：按工作区汇总全部会话的 token 与费用（来自 sessions 的 usage 字段）
+  const usageByWs = $derived.by(() => {
+    const map = new Map<string, { name: string; input: number; output: number; cache: number; cost: number; sessions: number }>();
+    for (const ws of client.workspaces()) map.set(ws.id, { name: ws.name, input: 0, output: 0, cache: 0, cost: 0, sessions: 0 });
+    for (const sess of client.sessions()) {
+      const key = sess.workspaceId ?? '_ungrouped';
+      if (!map.has(key)) map.set(key, { name: sess.cwd?.split('/').filter(Boolean).pop() ?? '未分组', input: 0, output: 0, cache: 0, cost: 0, sessions: 0 });
+      const agg = map.get(key)!;
+      agg.input += sess.usage?.inputTokens ?? 0;
+      agg.output += sess.usage?.outputTokens ?? 0;
+      agg.cache = (agg.cache ?? 0) + (sess.usage?.cacheReadTokens ?? 0);
+      agg.cost += sess.usage?.totalCostUsd ?? 0;
+      agg.sessions += 1;
+    }
+    return [...map.values()].filter((a) => a.sessions > 0).sort((a, b) => (b.input + b.output) - (a.input + a.output));
+  });
+  const usageTotals = $derived.by(() => {
+    let input = 0, output = 0, cache = 0, cost = 0;
+    for (const a of usageByWs) { input += a.input; output += a.output; cache += a.cache; cost += a.cost; }
+    return { input, output, cache, cost, sessions: usageByWs.reduce((n, a) => n + a.sessions, 0) };
+  });
   const ringPct = $derived(usage && usage.contextLimit > 0 ? Math.min(1, usage.contextTokens / usage.contextLimit) : 0);
   const RING_C = 2 * Math.PI * 34; // r=34 → 213.6
 </script>
@@ -240,6 +274,7 @@
         </div>
 
         <h3>模型列表</h3>
+        <p class="sub-desc" style="margin-top:-8px">模型随供应商自动同步；需要自定义别名时在最下方添加</p>
         {#if client.models().length > 0}
           {#each client.models() as m (m.id)}
             <div class="item-row">
@@ -292,7 +327,7 @@
             <div class="form-row-vertical"><span class="form-lbl">Base URL（可选，留空用默认端点）</span><input class="form-input" bind:value={newProviderUrl} placeholder={PROVIDER_PRESETS[newProviderType]?.baseUrl ?? 'https://…'} /></div>
             <div class="form-actions">
               <button class="btn sm" onclick={() => showAddProvider = false} type="button">取消</button>
-              <button class="btn pri sm" onclick={submitProvider} type="button">保存并拉取模型</button>
+              <button class="btn pri sm" disabled={providerSaving} onclick={submitProvider} type="button">{providerSaving ? '正在拉取模型…' : '保存并拉取模型'}</button>
             </div>
           </div>
         {:else}
@@ -395,42 +430,49 @@
       {:else if active === 'usage'}
         <h2>使用统计</h2>
         <p class="sub-desc">Token 用量、费用和额度概览</p>
-        {#if usage}
+        {#if usageTotals.sessions > 0}
           <div class="usage-hero">
-            <!-- Main stat card (gradient header + 2×2 big numbers) -->
             <div class="hero-main">
-              <div class="hero-head">
-                <span class="hero-tag">当前会话</span>
-                <span class="defchip">{client.activeSessionModel() || client.defaultModel() || '默认模型'}</span>
-              </div>
+              <div class="hero-head"><span class="hero-tag">全部会话 · {usageTotals.sessions} 个</span></div>
               <div class="hero-grid">
-                <div><div class="hg-l">输入 Token</div><div class="hg-v mono">{kFmt(usage.inputTokens)}</div></div>
-                <div><div class="hg-l">输出 Token</div><div class="hg-v mono">{kFmt(usage.outputTokens)}</div></div>
-                <div><div class="hg-l">缓存命中</div><div class="hg-v mono acc">{kFmt(usage.cacheReadTokens)}</div></div>
-                <div><div class="hg-l">费用</div><div class="hg-v mono ok">${usage.totalCostUsd.toFixed(4)}</div></div>
+                <div><div class="hg-l">输入 Token</div><div class="hg-v mono">{kFmt(usageTotals.input)}</div></div>
+                <div><div class="hg-l">输出 Token</div><div class="hg-v mono">{kFmt(usageTotals.output)}</div></div>
+                <div><div class="hg-l">缓存命中</div><div class="hg-v mono acc">{kFmt(usageTotals.cache)}</div></div>
+                <div><div class="hg-l">总费用</div><div class="hg-v mono ok">${usageTotals.cost.toFixed(4)}</div></div>
               </div>
             </div>
-            <!-- Context ring card -->
-            <div class="hero-ring">
-              <div class="ring-wrap">
-                <svg width="80" height="80" viewBox="0 0 80 80">
-                  <circle cx="40" cy="40" r="34" fill="none" stroke="var(--ac-soft)" stroke-width="6" />
-                  <circle cx="40" cy="40" r="34" fill="none" stroke="url(#ringGrad)" stroke-width="6" stroke-linecap="round"
-                    stroke-dasharray={RING_C} stroke-dashoffset={RING_C * (1 - ringPct)} transform="rotate(-90 40 40)" />
-                  <defs>
-                    <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stop-color="#4fa8ff" />
-                      <stop offset="100%" stop-color="#5bc0be" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div class="ring-c"><div class="mono ring-pct">{Math.round(ringPct * 100)}%</div><div class="ring-l">Context</div></div>
+            {#if usage}
+              <div class="hero-ring">
+                <div class="ring-wrap">
+                  <svg width="80" height="80" viewBox="0 0 80 80">
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="var(--ac-soft)" stroke-width="6" />
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="url(#ringGrad)" stroke-width="6" stroke-linecap="round"
+                      stroke-dasharray={RING_C} stroke-dashoffset={RING_C * (1 - ringPct)} transform="rotate(-90 40 40)" />
+                    <defs>
+                      <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#4fa8ff" />
+                        <stop offset="100%" stop-color="#5bc0be" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div class="ring-c"><div class="mono ring-pct">{Math.round(ringPct * 100)}%</div><div class="ring-l">Context</div></div>
+                </div>
+                <div class="ring-m mono">当前会话 {kFmt(usage.contextTokens)} / {kFmt(usage.contextLimit)}</div>
               </div>
-              <div class="ring-m mono">{kFmt(usage.contextTokens)} / {kFmt(usage.contextLimit)}</div>
-            </div>
+            {/if}
           </div>
+          <h3>按工作区</h3>
+          {#each usageByWs as a (a.name)}
+            {@const maxTok = Math.max(...usageByWs.map((x) => x.input + x.output), 1)}
+            <div class="ws-bar-row">
+              <span class="ws-name">{a.name}</span>
+              <div class="bar grad"><i style="width:{Math.round(((a.input + a.output) / maxTok) * 100)}%"></i></div>
+              <span class="mono ws-tok">{kFmt(a.input + a.output)}</span>
+              <span class="mono ws-cost">${a.cost.toFixed(4)}</span>
+            </div>
+          {/each}
         {:else}
-          <p class="empty-text">选择会话后显示用量数据。</p>
+          <p class="empty-text">暂无使用数据。</p>
         {/if}
 
         <h3>额度概览</h3>
@@ -447,17 +489,6 @@
           </div>
         </div>
 
-        <h3>按工作区</h3>
-        {#if usage}
-          <div class="ws-bar-row">
-            <span class="ws-name">{client.activeSession()?.title ?? '当前会话'}</span>
-            <div class="bar grad"><i style="width:100%"></i></div>
-            <span class="mono ws-tok">{kFmt(usage.inputTokens + usage.outputTokens)}</span>
-            <span class="mono ws-cost">${usage.totalCostUsd.toFixed(4)}</span>
-          </div>
-        {:else}
-          <p class="empty-text">暂无数据。</p>
-        {/if}
 
       {:else if active === 'guide'}
         <h2>引导</h2>

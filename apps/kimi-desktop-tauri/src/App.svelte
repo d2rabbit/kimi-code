@@ -30,6 +30,16 @@
 
   $effect(() => { void client.unreadCount(); client.client.updateBadge(); });
 
+  // ---- 桌面集成：窗口标题随活动会话 ----
+  $effect(() => {
+    const t = client.activeSession()?.title;
+    if ('__TAURI_INTERNALS__' in globalThis && t) {
+      void import('@tauri-apps/api/core').then(({ invoke }) =>
+        invoke('set_window_title', { title: `${t} · Kimi Code` }).catch(() => {}),
+      );
+    }
+  });
+
   // ---- 桌面集成：审批/问题/任务完成 → 系统通知 ----
   let prevPending = 0;
   let prevActivity = '';

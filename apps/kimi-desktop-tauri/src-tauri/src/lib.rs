@@ -135,6 +135,7 @@ pub fn run() {
             commands::read_server_token,
             commands::get_server_log_path,
             commands::open_path,
+            commands::set_window_title,
             commands::get_kimi_home,
             commands::read_text_file,
             commands::write_text_file,

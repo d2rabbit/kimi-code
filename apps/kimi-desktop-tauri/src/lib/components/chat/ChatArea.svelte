@@ -147,7 +147,7 @@
   .avatar.a { background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; }
 
   /* ---- QQ 式气泡 ---- */
-  .bubble { max-width: 78%; padding: 9px 13px; font-size: 13px; line-height: 1.65; }
+  .bubble { max-width: 78%; padding: 10px 14px; font-size: 13px; line-height: 1.65; }
   .u-bub {
     background: var(--ac-soft);
     border: 1px solid var(--ac-bd);
@@ -155,7 +155,7 @@
     border-radius: 14px 14px 4px 14px;
     box-shadow: var(--toplight);
   }
-  .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
   .a-text { max-width: 100%; padding: 2px 0; }
   .imgs { display: flex; gap: 4px; margin-bottom: 4px; }
   .imgs img { max-width: 100px; border-radius: 6px; }

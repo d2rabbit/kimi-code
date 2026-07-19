@@ -4,6 +4,7 @@
   import Icon from '../ui/Icon.svelte';
   import Empty from '../ui/Empty.svelte';
   import { tooltip } from '../../actions/tooltip';
+  import FolderPicker from '../shell/FolderPicker.svelte';
 
   let {
     onnavigate = () => {},
@@ -16,6 +17,7 @@
   } = $props();
 
   let menuSession = $state<{ id: string; title: string; x: number; y: number } | null>(null);
+  let showFolderPicker = $state(false);
   let renamingId = $state<string | null>(null);
   let renameValue = $state('');
   /** Collapsed workspace ids. */
@@ -28,6 +30,12 @@
     onmoduleview('chat');
   }
   function newChat() {
+    // 新建任务 = 先选工作文件夹（“添加工作区”的意义合并进这一步）
+    showFolderPicker = true;
+  }
+  async function selectFolder(path: string) {
+    showFolderPicker = false;
+    await client.client.addWorkspaceByPath(path);
     client.client.clearActiveSession();
     onmoduleview('chat');
   }
@@ -50,10 +58,6 @@
   }
   async function archive(id: string) { menuSession = null; await client.client.archiveSession(id); }
   async function fork(id: string) { menuSession = null; await client.client.forkSession(id); }
-  async function addWorkspace() {
-    const path = prompt('输入工作区路径:');
-    if (path) await client.client.addWorkspaceByPath(path);
-  }
   function closeMenus() { menuSession = null; }
 
   function wsSessions(wsId: string, root: string) {
@@ -129,7 +133,6 @@
     {#if client.sessions().length === 0 && client.workspaces().length === 0}
       <Empty icon="❯" title="暂无会话" desc="点击「新建任务」开始你的第一个任务" />
     {/if}
-    <button class="add-ws" onclick={addWorkspace}><Icon name="folder-plus" size="sm" /> 添加工作区</button>
   </div>
 
   <!-- Footer: account + settings -->
@@ -143,6 +146,10 @@
     <button class="gear" use:tooltip={'设置'} onclick={onnavigate}><Icon name="settings" size="md" /></button>
   </footer>
 </aside>
+
+{#if showFolderPicker}
+  <FolderPicker onselect={selectFolder} oncancel={() => showFolderPicker = false} />
+{/if}
 
 {#if menuSession}
   <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuSession.x, innerWidth - 170)}px; top: {Math.min(menuSession.y, innerHeight - 160)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
@@ -212,8 +219,6 @@
   .rename { flex: 1; padding: 3px 6px; border: 1px solid var(--bd2); border-radius: var(--r-sm); background: var(--l2); color: var(--tx); font-size: 12px; outline: none; margin: 0 4px; }
   .rename:focus { border-color: var(--ac); }
 
-  .add-ws { display: flex; align-items: center; gap: 6px; margin: 4px 12px 0; padding: 5px 8px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--tx3); font-size: 12px; cursor: pointer; }
-  .add-ws:hover { background: var(--color-hover); color: var(--tx2); }
 
   /* ---- Footer ---- */
   .footer { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--bd); position: relative; }
