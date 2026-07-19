@@ -60,6 +60,106 @@ pub fn get_server_log_path() -> String {
         .into_owned()
 }
 
+// ---- Git helpers (branch list / checkout, driven by the GitTree panel) ----
+
+/// Run `git` in `cwd` and return stdout on success.
+fn run_git(cwd: &str, args: &[&str]) -> Result<String, String> {
+    let output = std::process::Command::new("git")
+        .args(args)
+        .current_dir(cwd)
+        .output()
+        .map_err(|e| format!("spawn git: {e}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "git {:?} failed ({}): {}",
+            args,
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+/// List local branches of the repo at `cwd` (current first).
+#[tauri::command]
+pub fn list_git_branches(cwd: String) -> Result<Vec<String>, String> {
+    let out = run_git(&cwd, &["branch", "--format=%(refname:short)"])?;
+    let current = run_git(&cwd, &["branch", "--show-current"]).unwrap_or_default();
+    let current = current.trim().to_string();
+    let mut branches: Vec<String> = out
+        .lines()
+        .map(|l| l.trim().to_string())
+        .filter(|l| !l.is_empty())
+        .collect();
+    branches.retain(|b| b != &current);
+    if !current.is_empty() {
+        branches.insert(0, current);
+    }
+    Ok(branches)
+}
+
+/// Checkout a branch in the repo at `cwd`.
+#[tauri::command]
+pub fn git_checkout(cwd: String, branch: String) -> Result<(), String> {
+    if branch.trim().is_empty()
+        || branch.contains("..")
+        || branch.starts_with('-')
+        || branch.contains(' ')
+    {
+        return Err(format!("invalid branch name: {branch}"));
+    }
+    run_git(&cwd, &["checkout", branch.trim()])?;
+    Ok(())
+}
+
+// ---- Window controls (platform-adapted) ----
+// These are implemented in Rust because the JS-side window API is not
+// reliable across platforms (e.g. `hide()` availability). Close behavior is
+// adapted per platform: on Linux/Windows the app is tray-resident, so
+// "close" hides to the tray; on macOS custom traffic lights are not rendered
+// at all (native overlay owns the semantics).
+
+#[tauri::command]
+pub fn win_minimize(app: AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("main") {
+        w.minimize().map_err(|e| e.to_string())
+    } else {
+        Ok(())
+    }
+}
+
+#[tauri::command]
+pub fn win_toggle_maximize(app: AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("main") {
+        let maximized = w.is_maximized().map_err(|e| e.to_string())?;
+        if maximized {
+            w.unmaximize().map_err(|e| e.to_string())
+        } else {
+            w.maximize().map_err(|e| e.to_string())
+        }
+    } else {
+        Ok(())
+    }
+}
+
+#[tauri::command]
+pub fn win_close(app: AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("main") {
+        // Tray-resident on Linux/Windows: close = hide to tray (quit lives in
+        // the tray menu, matching the macOS convention).
+        #[cfg(not(target_os = "macos"))]
+        {
+            w.hide().map_err(|e| e.to_string())
+        }
+        #[cfg(target_os = "macos")]
+        {
+            w.close().map_err(|e| e.to_string())
+        }
+    } else {
+        Ok(())
+    }
+}
+
 /// Set the main window title (e.g. to the active session name).
 #[tauri::command]
 pub fn set_window_title(app: AppHandle, title: String) -> Result<(), String> {

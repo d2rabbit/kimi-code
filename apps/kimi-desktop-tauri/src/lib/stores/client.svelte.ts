@@ -334,7 +334,13 @@ async function load(): Promise<void> {
     ui.models = modelsR.status === 'fulfilled' ? modelsR.value : [];
 
     if (sessionsR.status === 'fulfilled') {
-      rawState.sessions = sessionsR.value.items ?? [];
+      const items = sessionsR.value.items ?? [];
+      // 过滤无效 session：0 轮对话且非当前活动会话的空壳（多为误点产生）。
+      // 刚创建的当前会话即使为 0 轮也保留（用户正在使用）。
+      const active = rawState.activeSessionId;
+      rawState.sessions = items.filter(
+        (sess) => (sess.usage?.turnCount ?? 0) > 0 || sess.id === active,
+      );
       // Auto-select the first session if any.
       if (rawState.sessions.length > 0 && !rawState.activeSessionId) {
         selectSession(rawState.sessions[0].id);
@@ -1043,7 +1049,8 @@ async function loadArchivedSessions(): Promise<void> {
   try {
     const a = getApi();
     const result = await a.listSessions({ archivedOnly: true });
-    archivedSessions = result.items;
+    // 同样过滤 0 轮对话的空壳归档会话
+    archivedSessions = result.items.filter((sess) => (sess.usage?.turnCount ?? 0) > 0);
   } catch {
     // Non-fatal.
   } finally {

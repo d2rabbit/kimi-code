@@ -8,36 +8,31 @@
   // Guard against non-Tauri environments (e.g. browser dev preview)
   const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
-  interface WinControls {
-    minimize: () => Promise<void> | void;
-    toggleMaximize: () => Promise<void> | void;
-    hide: () => Promise<void> | void;
-  }
+  import { invoke } from '@tauri-apps/api/core';
 
-  let appWindow: WinControls | null = $state(null);
+  let ready = $state(false);
   let isMac = $state(false);
 
   onMount(async () => {
     if (!isTauri) return;
     try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const { platform } = await import('@tauri-apps/plugin-os');
-      appWindow = getCurrentWindow();
       isMac = platform() === 'macos';
+      ready = true;
     } catch { /* non-Tauri: controls hidden */ }
   });
 
   const wsName = $derived(client.activeWorkspaceName() || '');
   const sessionTitle = $derived(client.activeSession()?.title || '新对话');
 
-  // 关闭 = 隐藏到托盘（应用常驻托盘；真正退出走托盘菜单），与 macOS 语义一致
-  function onClose() { void appWindow?.hide(); }
-  function onMinimize() { void appWindow?.minimize(); }
-  function onToggleMaximize() { void appWindow?.toggleMaximize(); }
+  // 关闭 = 隐藏到托盘（Linux/Windows 常驻托盘；macOS 用原生语义）
+  function onClose() { void invoke('win_close').catch(() => {}); }
+  function onMinimize() { void invoke('win_minimize').catch(() => {}); }
+  function onToggleMaximize() { void invoke('win_toggle_maximize').catch(() => {}); }
 </script>
 
 <header class="titlebar" data-tauri-drag-region>
-  {#if !isMac && appWindow}
+  {#if !isMac && ready}
     <!-- 左上角交通灯（悬停显示符号） -->
     <div class="lights" role="group" aria-label="窗口控制">
       <button class="light close" onclick={onClose} aria-label="关闭（隐藏到托盘）" title="关闭（隐藏到托盘）" type="button"><span class="sym">×</span></button>

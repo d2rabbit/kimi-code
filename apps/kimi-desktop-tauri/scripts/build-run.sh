@@ -80,7 +80,9 @@ fi
 BIN="$APP_DIR/src-tauri/target/release/kimi-desktop-tauri"
 [[ "$TARGET" == win32-* ]] && BIN="$BIN.exe"
 LOG="/tmp/kimi-desktop-tauri.log"
-setsid -f "$BIN" >"$LOG" 2>&1 < /dev/null
+# 清除会从启动器/宿主（如 ZCode AppImage）继承的环境标记，否则 KDE 会按
+# CHROME_DESKTOP 把本窗口归到宿主的 .desktop 组里（任务栏与宿主混在一起）。
+setsid -f env -u CHROME_DESKTOP -u APPIMAGE -u APPDIR "$BIN" >"$LOG" 2>&1 < /dev/null
 sleep 2
 CLIENT_PID="$(pgrep -f "release/kimi-desktop-tauri" | head -1 || true)"
 log "客户端已作为独立进程启动（pid: ${CLIENT_PID:-unknown}，ppid=init，不随本脚本/启动器退出）"

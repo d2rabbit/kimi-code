@@ -43,18 +43,21 @@
     finally { gitLoading = false; }
   }
 
-  // Load on session change; then keep GitTree live: poll every 5s while a
-  // session is active (the agent edits files continuously), and refresh once
-  // more whenever a turn completes (turn count settles).
+  // GitTree 刷新策略（避免频繁刷新）：
+  // - 会话切换时加载一次；
+  // - 仅当 agent 正在运行（可能正在改文件）时才 6s 轮询；
+  // - 每轮对话结束后再补一次。静止会话零轮询。
+  const isTauri = '__TAURI_INTERNALS__' in globalThis;
   $effect(() => {
     void activeSessionId;
     gitData = null;
-    if (!activeSessionId) return;
-    void loadGitStatus();
-    const timer = setInterval(() => { void loadGitStatus(); }, 5000);
+    if (activeSessionId) void loadGitStatus();
+  });
+  $effect(() => {
+    if (client.activity() !== 'running' || !activeSessionId) return;
+    const timer = setInterval(() => { void loadGitStatus(); }, 6000);
     return () => clearInterval(timer);
   });
-
   let lastTurnCount = 0;
   $effect(() => {
     const n = client.turns().length;
@@ -63,6 +66,38 @@
       if (activeSessionId && n > 0) void loadGitStatus();
     }
   });
+
+  // ---- 分支切换 ----
+  let branches = $state<string[]>([]);
+  let branchMenuOpen = $state(false);
+  let branchBusy = $state(false);
+  const sessionCwd = $derived(client.activeSession()?.cwd ?? '');
+
+  async function openBranchMenu() {
+    if (!isTauri || !sessionCwd) return;
+    branchMenuOpen = !branchMenuOpen;
+    if (branchMenuOpen) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        branches = await invoke<string[]>('list_git_branches', { cwd: sessionCwd });
+      } catch { branches = []; }
+    }
+  }
+
+  async function checkout(branch: string) {
+    if (branchBusy || !sessionCwd) return;
+    branchBusy = true;
+    branchMenuOpen = false;
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('git_checkout', { cwd: sessionCwd, branch });
+      await loadGitStatus();
+    } catch (e) {
+      console.error('checkout failed', e);
+    } finally {
+      branchBusy = false;
+    }
+  }
 
   // --- GitTree: build a nested tree from the flat entries map ---
   interface TreeDir { name: string; path: string; dirs: TreeDir[]; files: { name: string; path: string; status: string }[]; }
@@ -138,7 +173,22 @@
           {#if hasActiveSession && gitLoading}
             <p class="empty-note">加载 Git 状态…</p>
           {:else if hasActiveSession && gitData && Object.keys(gitData.entries).length > 0}
-            <div class="branch-row"><Icon name="git-branch" size="sm" /><span class="mono">{gitData.branch}</span></div>
+            <div class="branch-row">
+              <button class="branch-btn" onclick={openBranchMenu} type="button" title="切换分支">
+                <Icon name="git-branch" size="sm" /><span class="mono">{gitData.branch}</span><span class="chev">▾</span>
+              </button>
+              {#if branchMenuOpen}
+                <div class="branch-menu glass-menu animate-spring-in" role="menu">
+                  {#each branches as b (b)}
+                    <button class="glass-menu-item" class:on={b === gitData.branch} onclick={() => checkout(b)} type="button">
+                      {b}{#if b === gitData.branch}<span style="margin-left:auto;color:var(--ok)">✓</span>{/if}
+                    </button>
+                  {:else}
+                    <div class="glass-menu-item" style="color:var(--tx3);cursor:default">无本地分支</div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
             {#snippet treeNode(dir: TreeDir, depth: number)}
               {#each dir.dirs as d (d.path)}
                 <button class="dir" style="padding-left: {4 + depth * 14}px" onclick={() => toggleDir(d.path)} type="button">
@@ -225,7 +275,12 @@
   @keyframes pulse { 50% { opacity: 0.35; } }
 
   /* GitTree */
-  .branch-row { display: flex; align-items: center; gap: 5px; padding: 2px 4px 6px; color: var(--tx2); font-size: 11px; }
+  .branch-row { position: relative; display: flex; align-items: center; gap: 5px; padding: 2px 4px 6px; color: var(--tx2); font-size: 11px; }
+  .branch-btn { display: inline-flex; align-items: center; gap: 5px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--tx2); font: inherit; cursor: pointer; padding: 2px 5px; }
+  .branch-btn:hover { background: var(--ac-soft); color: var(--tx); }
+  .branch-btn .chev { font-size: 8px; color: var(--tx3); }
+  .branch-menu { position: absolute; top: 100%; left: 0; z-index: 60; min-width: 170px; max-height: 260px; overflow-y: auto; }
+  .branch-menu .glass-menu-item.on { color: var(--ac); font-weight: 600; }
   .gtree { font-size: 11px; }
   .dir {
     display: flex; align-items: center; gap: 5px; width: 100%;
