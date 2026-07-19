@@ -1,14 +1,21 @@
-<!-- TitleBar.svelte — platform-aware custom title bar with breadcrumb + window controls. -->
+<!-- TitleBar.svelte — platform-aware custom title bar.
+     非 macOS：左上角 macOS 风格交通灯（关=隐藏到托盘/最小化/最大化-还原）；
+     macOS：原生 overlay，只留左侧 80px 净空。中部为面包屑。 -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import * as client from '../../stores/client.svelte';
-  import Icon from '../ui/Icon.svelte';
 
   // Guard against non-Tauri environments (e.g. browser dev preview)
   const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
-  let appWindow: { minimize: () => void; toggleMaximize: () => void; close: () => void } | null = $state(null);
-  let isLinux = $state(false);
+  interface WinControls {
+    minimize: () => Promise<void> | void;
+    toggleMaximize: () => Promise<void> | void;
+    hide: () => Promise<void> | void;
+  }
+
+  let appWindow: WinControls | null = $state(null);
+  let isMac = $state(false);
 
   onMount(async () => {
     if (!isTauri) return;
@@ -16,15 +23,29 @@
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const { platform } = await import('@tauri-apps/plugin-os');
       appWindow = getCurrentWindow();
-      isLinux = platform() === 'linux';
-    } catch { /* non-Tauri: appWindow stays null */ }
+      isMac = platform() === 'macos';
+    } catch { /* non-Tauri: controls hidden */ }
   });
 
   const wsName = $derived(client.activeWorkspaceName() || '');
   const sessionTitle = $derived(client.activeSession()?.title || '新对话');
+
+  // 关闭 = 隐藏到托盘（应用常驻托盘；真正退出走托盘菜单），与 macOS 语义一致
+  function onClose() { void appWindow?.hide(); }
+  function onMinimize() { void appWindow?.minimize(); }
+  function onToggleMaximize() { void appWindow?.toggleMaximize(); }
 </script>
 
 <header class="titlebar" data-tauri-drag-region>
+  {#if !isMac && appWindow}
+    <!-- 左上角交通灯（悬停显示符号） -->
+    <div class="lights" role="group" aria-label="窗口控制">
+      <button class="light close" onclick={onClose} aria-label="关闭（隐藏到托盘）" title="关闭（隐藏到托盘）" type="button"><span class="sym">×</span></button>
+      <button class="light min" onclick={onMinimize} aria-label="最小化" title="最小化" type="button"><span class="sym">−</span></button>
+      <button class="light max" onclick={onToggleMaximize} aria-label="最大化 / 还原" title="最大化 / 还原" type="button"><span class="sym sym-max"></span></button>
+    </div>
+  {/if}
+
   <div class="breadcrumb" data-tauri-drag-region>
     {#if wsName}
       <span class="crumb">{wsName}</span>
@@ -32,19 +53,6 @@
     {/if}
     <span class="crumb current">{sessionTitle}</span>
   </div>
-  {#if isLinux && appWindow}
-    <div class="window-controls">
-      <button class="wc-btn" onclick={() => appWindow!.minimize()} aria-label="最小化" type="button">
-        <Icon name="minus" size="sm" />
-      </button>
-      <button class="wc-btn" onclick={() => appWindow!.toggleMaximize()} aria-label="最大化" type="button">
-        <Icon name="expand" size="sm" />
-      </button>
-      <button class="wc-btn wc-close" onclick={() => appWindow!.close()} aria-label="关闭" type="button">
-        <Icon name="close" size="sm" />
-      </button>
-    </div>
-  {/if}
 </header>
 
 <style>
@@ -53,22 +61,50 @@
     flex: none;
     display: flex;
     align-items: center;
+    gap: 12px;
     padding: 0 12px;
-    /* macOS: extra left padding to clear the traffic light buttons */
+    /* macOS: extra left padding to clear the native traffic light overlay */
     padding-left: var(--titlebar-pad-left, 12px);
     background: var(--l1);
-    border-bottom: 1px solid var(--glass-divider, rgba(255, 255, 255, 0.06));
+    border-bottom: 1px solid var(--bd);
     user-select: none;
     z-index: 100;
-  }
-  :global(html[data-color-scheme="light"]) .titlebar {
-    background: rgba(245, 245, 247, 0.6);
-    border-bottom-color: rgba(0, 0, 0, 0.04);
   }
   /* On macOS, leave space for the native traffic light overlay */
   :global([data-platform="macos"]) .titlebar {
     --titlebar-pad-left: 80px;
   }
+
+  /* ---- macOS 风格交通灯 ---- */
+  .lights { display: flex; gap: 8px; flex: none; }
+  .light {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+  }
+  .light.close { background: #ff5f57; }
+  .light.min { background: #febc2e; }
+  .light.max { background: #28c840; }
+  .light .sym {
+    font-size: 9px; font-weight: 700; line-height: 1;
+    color: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease);
+    font-family: var(--font-ui);
+  }
+  .light .sym-max {
+    width: 5px; height: 5px;
+    border: 1.2px solid rgba(0, 0, 0, 0.55);
+    border-radius: 1px;
+  }
+  .lights:hover .sym { opacity: 1; }
+  .light:hover { transform: scale(1.12); }
+  .light:active { transform: scale(0.94); }
+
   .breadcrumb {
     display: flex;
     align-items: center;
@@ -78,40 +114,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .crumb {
-    color: var(--color-text-muted, rgba(235, 235, 245, 0.6));
-  }
-  .crumb.current {
-    color: var(--color-text, rgba(255, 255, 255, 0.92));
-    font-weight: 500;
-  }
-  .sep {
-    color: var(--color-text-faint, rgba(235, 235, 245, 0.3));
-  }
-  .window-controls {
-    margin-left: auto;
-    display: flex;
-    gap: 8px;
-  }
-  .wc-btn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--color-text-muted, rgba(235, 235, 245, 0.6));
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 120ms, color 120ms;
-  }
-  .wc-btn:hover {
-    background: var(--color-hover, rgba(255, 255, 255, 0.06));
-    color: var(--color-text, rgba(255, 255, 255, 0.92));
-  }
-  .wc-close:hover {
-    background: rgba(255, 69, 58, 0.2);
-    color: #ff453a;
-  }
+  .crumb { color: var(--tx2); }
+  .crumb.current { color: var(--tx); font-weight: 500; }
+  .sep { color: var(--tx3); }
 </style>

@@ -74,8 +74,14 @@ if [[ "$NO_RUN" == "1" ]]; then
   exit 0
 fi
 
-# ---- 5. 启动完整客户端 ----
+# ---- 5. 以独立顶层进程启动完整客户端 ----
+# 关键：必须用 setsid 脱离当前 shell 的进程组/会话（尤其经 ZCode 等 agent
+# 启动器拉起时）——否则窗口会被宿主进程树托管、不可见或随宿主退出被杀。
 BIN="$APP_DIR/src-tauri/target/release/kimi-desktop-tauri"
 [[ "$TARGET" == win32-* ]] && BIN="$BIN.exe"
-log "启动客户端（前台运行，Ctrl+C 退出；agent 将随应用自起）…"
-exec "$BIN"
+LOG="/tmp/kimi-desktop-tauri.log"
+setsid -f "$BIN" >"$LOG" 2>&1 < /dev/null
+sleep 2
+CLIENT_PID="$(pgrep -f "release/kimi-desktop-tauri" | head -1 || true)"
+log "客户端已作为独立进程启动（pid: ${CLIENT_PID:-unknown}，ppid=init，不随本脚本/启动器退出）"
+log "日志: $LOG · 停止: kill ${CLIENT_PID:-<pid>}"
