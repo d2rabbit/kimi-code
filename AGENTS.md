@@ -90,6 +90,12 @@ Run from the repo root unless noted. Per-package: add `-C <path>` or `--filter <
 - Rules that only affect a specific directory: update the nearest sub-directory `AGENTS.md`.
 - Keep instruction updates focused and supported by code facts.
 
+## Agent Work Branches
+
+Some long-running efforts live on dedicated agent branches instead of short-lived feature branches. These are tracked here so contributors know the branch exists before rebasing or deleting it.
+
+- `feat/glm-agent` — working branch for tasks driven by the GLM model (ZCode / `builtin:bigmodel-coding-plan/GLM-5.2`). Branched from `feat/desktop-layout-polish` at `3596c754`. There is **no GLM provider implementation yet** — GLM is not wired into `packages/kosong` (supported provider `type` values: `kimi`, `anthropic`, `openai`, `openai_responses`, `google-genai`), no profile/config references it, and it is undocumented. Work on this branch is expected to land a GLM provider; until that happens, do not reference GLM in docs or `AGENTS.md` subdirectories as if it were a supported capability. Existing `Workflow Requirements` below still apply in full.
+
 ## Workflow Requirements
 
 - Prefer `rg` / `rg --files` when reading code.
