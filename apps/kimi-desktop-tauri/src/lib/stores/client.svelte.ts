@@ -335,12 +335,14 @@ async function load(): Promise<void> {
 
     if (sessionsR.status === 'fulfilled') {
       const items = sessionsR.value.items ?? [];
-      // 过滤无效 session：0 轮对话且非当前活动会话的空壳（多为误点产生）。
-      // 刚创建的当前会话即使为 0 轮也保留（用户正在使用）。
+      // 过滤无效 session：从未输入过内容的空壳（标题仍是默认 'New Session' 或空）。
+      // 注：turnCount/messageCount 对索引恢复的会话一律为 0，不能作为判据；
+      // 当前活动会话即使未输入也保留（用户正在使用）。
       const active = rawState.activeSessionId;
-      rawState.sessions = items.filter(
-        (sess) => (sess.usage?.turnCount ?? 0) > 0 || sess.id === active,
-      );
+      rawState.sessions = items.filter((sess) => {
+        const title = (sess.title ?? '').trim();
+        return (title !== '' && title !== 'New Session') || sess.id === active;
+      });
       // Auto-select the first session if any.
       if (rawState.sessions.length > 0 && !rawState.activeSessionId) {
         selectSession(rawState.sessions[0].id);
@@ -1049,8 +1051,11 @@ async function loadArchivedSessions(): Promise<void> {
   try {
     const a = getApi();
     const result = await a.listSessions({ archivedOnly: true });
-    // 同样过滤 0 轮对话的空壳归档会话
-    archivedSessions = result.items.filter((sess) => (sess.usage?.turnCount ?? 0) > 0);
+    // 同样过滤从未输入过内容的空壳归档会话
+    archivedSessions = result.items.filter((sess) => {
+      const title = (sess.title ?? '').trim();
+      return title !== '' && title !== 'New Session';
+    });
   } catch {
     // Non-fatal.
   } finally {
