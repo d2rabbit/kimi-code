@@ -28,7 +28,18 @@
   }
   const doneCount = $derived(realTasks.filter((t) => t.status === 'completed').length);
   const taskProgress = $derived(realTasks.length > 0 ? Math.round((doneCount / realTasks.length) * 100) : 0);
-  const goalTitle = $derived(client.activeSession()?.title || '完成当前会话目标');
+  // Active goal for the session (null when no goal is running). Falls back to
+  // the session title only when no goal is set, so the card stays informative.
+  const activeGoal = $derived(client.goal());
+  const goalTitle = $derived(activeGoal?.objective ?? client.activeSession()?.title ?? '完成当前会话目标');
+  const goalStatusLabel = $derived.by(() => {
+    const s = activeGoal?.status;
+    if (s === 'active') return '进行中';
+    if (s === 'paused') return '已暂停';
+    if (s === 'blocked') return '已阻塞';
+    if (s === 'complete') return '已完成';
+    return null;
+  });
 
   // --- Git data ---
   let gitData = $state<{
@@ -203,11 +214,14 @@
             <div class="task-subtitle">Kimi Code · 当前会话</div>
             <div class="goal-row">
               <span class="goal-label">目标</span>
-              {#if client.activity() === 'running'}<span class="goal-status"><span class="live-dot"></span>进行中</span>{/if}
+              {#if goalStatusLabel}<span class="goal-status"><span class="live-dot"></span>{goalStatusLabel}</span>{:else if client.activity() === 'running'}<span class="goal-status"><span class="live-dot"></span>进行中</span>{/if}
             </div>
             <div class="goal-card">
-              <span class="goal-caption">当前目标</span>
+              <span class="goal-caption">{activeGoal ? '目标模式' : '当前目标'}</span>
               <strong>{goalTitle}</strong>
+              {#if activeGoal?.completionCriterion}
+                <span class="goal-criterion">{activeGoal.completionCriterion}</span>
+              {/if}
             </div>
             <div class="task-progress-head">
               <span>任务进度</span>
@@ -367,6 +381,7 @@
   .goal-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--bd2); border-radius: 12px; background: var(--l2); margin-bottom: 26px; }
   .goal-caption { color: var(--tx3); font-size: 11px; }
   .goal-card strong { color: var(--tx); font-size: 14px; line-height: 1.45; font-weight: 600; }
+  .goal-criterion { color: var(--tx3); font-size: 11px; line-height: 1.4; padding-top: 4px; border-top: 1px dashed var(--bd2); }
   .task-progress-head { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 10px; color: var(--tx); font-size: 14px; font-weight: 650; }
   .task-progress-head b { padding: 5px 9px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-family: var(--font-mono); font-size: 11px; }
   .task-progress-track { height: 6px; overflow: hidden; border-radius: 999px; background: var(--bd); margin-bottom: 20px; }

@@ -7,6 +7,7 @@
   import ToolCard from './ToolCard.svelte';
   import ApprovalCard from './ApprovalCard.svelte';
   import QuestionCard from './QuestionCard.svelte';
+  import GoalStrip from './GoalStrip.svelte';
   import type { ToolCall, TurnBlock } from '../../types';
 
   let text = $state('');
@@ -54,6 +55,8 @@
       {#if client.activeSession()}<IconButton name="close" label="归档" size="sm" onclick={() => client.client.archiveSession(client.activeSessionId())} />{/if}
     </div>
   </header>
+
+  <GoalStrip />
 
   <div class="msgs" bind:this={scrollEl}>
     <div class="msgs-inner">
