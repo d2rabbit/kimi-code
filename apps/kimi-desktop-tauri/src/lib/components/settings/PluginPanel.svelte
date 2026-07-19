@@ -19,6 +19,8 @@
     description: string;
     developer: string;
     hasMcp: boolean;
+    skillCount: number;
+    commandCount: number;
   }
 
   const isTauri = '__TAURI_INTERNALS__' in globalThis;
@@ -231,6 +233,12 @@
                 <span class="trust-chip {trust.color}">{trust.label}</span>
                 {#if plugin.hasMcp}
                   <span class="mcp-chip">MCP</span>
+                {/if}
+                {#if plugin.skillCount > 0}
+                  <span class="count-chip" title="Skills 数量">{plugin.skillCount} skills</span>
+                {/if}
+                {#if plugin.commandCount > 0}
+                  <span class="count-chip" title="Commands 数量">{plugin.commandCount} commands</span>
                 {/if}
                 {#if !plugin.enabled}
                   <span class="disabled-chip">已禁用</span>
@@ -448,6 +456,14 @@
     border-radius: var(--radius-full, 999px);
     background: rgba(163, 113, 247, 0.14);
     color: #a371f7;
+    font-family: var(--font-mono, monospace);
+  }
+  .count-chip {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: var(--radius-full, 999px);
+    background: var(--color-accent-soft, rgba(79, 168, 255, 0.12));
+    color: var(--color-accent, #4fa8ff);
     font-family: var(--font-mono, monospace);
   }
   .disabled-chip {

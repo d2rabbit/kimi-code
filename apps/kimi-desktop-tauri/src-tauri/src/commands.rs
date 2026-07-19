@@ -346,11 +346,29 @@ fn count_subdir_entries(root: &str, subdir: &str) -> u32 {
 }
 
 /// Read and parse the installed plugins registry + manifests.
-/// Reads the embedded agent's home so the GUI matches what the agent sees.
+///
+/// Plugin install / enable / disable / remove all go through the `kimi` CLI
+/// sidecar, which writes to the SHARED home (`~/.kimi-code/plugins/`). The
+/// list must read from the same place the sidecar writes, otherwise the GUI
+/// would show a different set than what `kimi plugin list` reports. Fall back
+/// to the embedded agent's home for any plugin seeded there directly.
 #[tauri::command]
 pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
-    let plugins_dir = agent_home().join("plugins");
-    let installed_path = plugins_dir.join("installed.json");
+    let shared_plugins_dir = kimi_home().join("plugins");
+    let shared_installed = shared_plugins_dir.join("installed.json");
+    let desktop_plugins_dir = agent_home().join("plugins");
+    let desktop_installed = desktop_plugins_dir.join("installed.json");
+
+    // Prefer the shared registry (where the sidecar writes). Fall back to the
+    // embedded agent home, then to an empty list — never hard-error so the
+    // panel can render an "no plugins installed" state instead of a crash.
+    let installed_path = if shared_installed.exists() {
+        shared_installed
+    } else if desktop_installed.exists() {
+        desktop_installed
+    } else {
+        return Ok(Vec::new());
+    };
 
     let installed_content = stdfs::read_to_string(&installed_path)
         .map_err(|e| format!("Cannot read installed.json: {e}"))?;
