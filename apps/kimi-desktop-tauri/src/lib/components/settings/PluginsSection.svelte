@@ -19,7 +19,7 @@
 {#if pluginTab === 'installed'}
   <PluginPanel />
 {:else}
-  <p class="empty-text">插件市场即将上线。</p>
+  <p class="empty-text">插件市场尚未开放。已安装的插件切换到「已安装」标签查看与管理。</p>
 {/if}
 
 <style>

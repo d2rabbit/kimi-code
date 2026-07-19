@@ -220,12 +220,12 @@
           <div class="quota-card">
             <div class="quota-t"><span>Token 额度</span><span class="mono pct">—</span></div>
             <div class="bar"><i style="width:0%"></i></div>
-            <div class="quota-m mono">额度数据即将接入</div>
+            <div class="quota-m mono">账户配额由服务端管理，登录后在账单页查看</div>
           </div>
           <div class="quota-card">
             <div class="quota-t"><span>MCP 额度</span><span class="mono pct purple">—</span></div>
             <div class="bar purple"><i style="width:0%"></i></div>
-            <div class="quota-m mono">额度数据即将接入</div>
+            <div class="quota-m mono">账户配额由服务端管理，登录后在账单页查看</div>
           </div>
         </div>
 
@@ -308,7 +308,7 @@
           <span class="isq"><Icon name="bolt" size="sm" /></span>
           <span class="ir">
             <span class="it">自定义命令</span>
-            <span class="id">命令文件位于项目 .kimi/commands/ 与全局 commands/ 目录；管理界面即将推出</span>
+            <span class="id">命令文件位于项目 <code>.kimi/commands/</code> 与全局 <code>commands/</code> 目录，直接编辑 Markdown 即可创建</span>
           </span>
           <button class="btn sm" disabled type="button">＋ 新建</button>
         </div>
@@ -324,7 +324,7 @@
             <span class="isq"><Icon name="folder-solid" size="sm" /></span>
             <span class="ir">
               <span class="it">{ws.name}</span>
-              <span class="id mono">@ 提及当前基于实时文件搜索；语义索引即将推出</span>
+              <span class="id mono">@ 提及当前基于实时文件搜索（无持久索引）</span>
             </span>
             <button class="btn sm" disabled type="button">重建索引</button>
           </div>
@@ -383,12 +383,12 @@
           <div class="quota-card">
             <div class="quota-t"><span>模型额度</span><span class="mono pct">—</span></div>
             <div class="bar"><i style="width:0%"></i></div>
-            <div class="quota-m mono">额度数据即将接入</div>
+            <div class="quota-m mono">账户配额由服务端管理，登录后在账单页查看</div>
           </div>
           <div class="quota-card">
             <div class="quota-t"><span>MCP 额度</span><span class="mono pct purple">—</span></div>
             <div class="bar purple"><i style="width:0%"></i></div>
-            <div class="quota-m mono">额度数据即将接入</div>
+            <div class="quota-m mono">账户配额由服务端管理，登录后在账单页查看</div>
           </div>
         </div>
 

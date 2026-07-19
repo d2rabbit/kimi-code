@@ -124,6 +124,9 @@
       {#each client.sessions() as s (s.id)}
         <div class="s-row" class:active={s.id === client.activeSessionId() && activeModule === 'chat'}>
           <button class="s-btn" class:active={s.id === client.activeSessionId() && activeModule === 'chat'} onclick={(e) => select(e, s.id)} oncontextmenu={(e) => openMenu(e, s)}>
+            {#if s.status === 'running' || s.status === 'awaitingApproval' || s.status === 'awaitingQuestion'}
+              <span class="s-status-dot" data-status={s.status}></span>
+            {/if}
             <span class="s-title">{s.title || '新对话'}</span>
           </button>
           <button class="s-more" aria-label="更多" onclick={(e) => openMenu(e, s)}><span>⋯</span></button>
@@ -208,10 +211,13 @@
   .s-btn.active { color: var(--tx); font-weight: 500; }
   .s-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .s-status-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
-  .s-status-dot[data-status="running"] { background: var(--ok); animation: pulse 1.5s infinite; }
-  .s-status-dot[data-status="awaitingApproval"] { background: var(--warn); }
-  .s-status-dot[data-status="awaitingQuestion"] { background: var(--ac); }
+  .s-status-dot[data-status="running"] { background: var(--ok); box-shadow: 0 0 6px var(--ok); animation: pulse 1.5s infinite; }
+  .s-status-dot[data-status="awaitingApproval"] { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+  .s-status-dot[data-status="awaitingQuestion"] { background: var(--ac); box-shadow: 0 0 6px var(--ac); }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @media (prefers-reduced-motion: reduce) {
+    .s-status-dot[data-status="running"] { animation: none; }
+  }
   .s-more { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 4px; background: transparent; color: var(--tx3); cursor: pointer; opacity: 0; transition: opacity var(--duration-fast); }
   .s-row:hover .s-more { opacity: 1; }
   .s-more:hover { background: var(--color-hover); color: var(--tx2); }

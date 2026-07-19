@@ -126,7 +126,7 @@
       <span class="diff-chip del">−{diffStats.removed}</span>
     {/if}
     {#if tool.timing}
-      <span class="tool-timing">{tool.timing}</span>
+      <span class="tool-timing" class:ok={tool.status === 'ok'} class:err={tool.status === 'error'}>{tool.timing}</span>
     {/if}
     <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size="sm" />
   </button>
@@ -244,7 +244,12 @@
     color: var(--tx3);
     font-size: 10.5px;
     font-family: var(--font-mono);
+    padding: 1px 5px;
+    border-radius: var(--r-sm);
+    transition: color var(--duration-fast) var(--ease);
   }
+  .tool-timing.ok { color: var(--ok); }
+  .tool-timing.err { color: var(--err); }
 
   .diff-chip {
     flex: none;
