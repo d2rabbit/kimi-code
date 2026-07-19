@@ -45,9 +45,17 @@ fn pick_port() -> Result<u16, String> {
 
 /// Seed/backfill: copy user-level data from the shared CLI home so the
 /// embedded agent sees the user's real providers, models, sessions, plugins
-/// and MCP config — instead of a blank slate. Idempotent per item: an item
-/// is only copied when missing on the desktop side (never overwrites data the
-/// desktop user has since created).
+/// and MCP config — instead of a blank slate.
+///
+/// Two policies coexist:
+/// - **Config merge** (config.toml + mcp.json): the CLI's config is the
+///   read-only base; the desktop home's config overrides matching fields.
+///   Re-merged on every launch so CLI-side provider/model edits flow through
+///   without a manual re-seed. The CLI config file is NEVER modified — merge
+///   is one-way (CLI → desktop), result written to the desktop home only.
+/// - **One-time seed** (sessions/plugins/skills/agents/user-history): copied
+///   only when missing on the desktop side (never overwrites data the desktop
+///   user has since created).
 fn seed_agent_home_if_needed(home: &Path) -> Result<(), String> {
     std::fs::create_dir_all(home).map_err(|e| format!("create agent home: {e}"))?;
     let shared = crate::daemon::kimi_home();
@@ -55,11 +63,9 @@ fn seed_agent_home_if_needed(home: &Path) -> Result<(), String> {
         return Ok(());
     }
     // Never seed the server lock/token/device identity: those belong to the
-    // owning process/install. Sessions/config/plugins are user data and are
-    // carried over via this one-time-per-item copy.
+    // owning process/install. Sessions/plugins/skills are user data and are
+    // carried over via a one-time-per-item copy.
     for item in [
-        "config.toml",
-        "mcp.json",
         "sessions",
         "plugins",
         "skills",
@@ -72,7 +78,97 @@ fn seed_agent_home_if_needed(home: &Path) -> Result<(), String> {
             copy_recursively(&src, &dst)?;
         }
     }
+    // Config + MCP are re-merged every launch (CLI base + desktop overlay).
+    merge_config_toml(&shared, home)?;
+    merge_mcp_json(&shared, home)?;
     seed_session_index(&shared, home)?;
+    Ok(())
+}
+
+/// Merge `<shared>/config.toml` (read-only base) with `<home>/config.toml`
+/// (desktop overlay). Desktop values win on key collision; CLI values fill
+/// the gaps. Result is written to `<home>/config.toml` only — the shared CLI
+/// config file is never touched. Both files are parsed as TOML; merge is a
+/// shallow table-level union with nested `[providers."X"]` / `[models."X"]`
+/// merged key-by-key (desktop wins).
+fn merge_config_toml(shared: &Path, home: &Path) -> Result<(), String> {
+    let cli_path = shared.join("config.toml");
+    let dst_path = home.join("config.toml");
+    let cli_text = std::fs::read_to_string(&cli_path).unwrap_or_default();
+    let dst_text = std::fs::read_to_string(&dst_path).unwrap_or_default();
+    let cli_val: toml::Value = toml::from_str(&cli_text)
+        .map_err(|e| format!("parse shared config.toml: {e}"))?;
+    let mut dst_val: toml::Value = toml::from_str(&dst_text)
+        .unwrap_or(toml::Value::Table(Default::default()));
+
+    // In-place deep merge: dst starts as itself, then we pull in every CLI
+    // field that dst doesn't already set. Tables recurse so per-provider /
+    // per-model entries merge rather than wholesale-replace.
+    if let (Some(cli_tbl), Some(dst_tbl)) = (cli_val.as_table(), dst_val.as_table_mut()) {
+        deep_merge_tables(cli_tbl, dst_tbl);
+    }
+    let merged = toml::to_string_pretty(&dst_val)
+        .map_err(|e| format!("serialize merged config.toml: {e}"))?;
+    std::fs::write(&dst_path, merged).map_err(|e| format!("write config.toml: {e}"))?;
+    Ok(())
+}
+
+/// Recursively merge `src` (CLI, read-only) into `dst` (desktop overlay).
+/// For each key in `src`: if `dst` doesn't have it, copy it; if both are
+/// tables, recurse; otherwise keep `dst`'s value (desktop wins).
+fn deep_merge_tables(src: &toml::value::Table, dst: &mut toml::value::Table) {
+    for (key, cli_val) in src {
+        match dst.get_mut(key) {
+            Some(toml::Value::Table(dst_sub)) => {
+                if let Some(cli_sub) = cli_val.as_table() {
+                    deep_merge_tables(cli_sub, dst_sub);
+                }
+                // If dst[key] is a table but cli_val isn't, keep dst (desktop wins).
+            }
+            Some(_) => {
+                // dst already has a non-table value for this key — desktop wins.
+            }
+            None => {
+                // dst doesn't have it — pull from CLI (clone the whole subtree).
+                dst.insert(key.clone(), cli_val.clone());
+            }
+        }
+    }
+}
+
+/// Merge `<shared>/mcp.json` (read-only base) with `<home>/mcp.json`.
+/// Servers are keyed by name in `mcpServers`; desktop entries override
+/// same-named CLI entries, CLI entries fill the rest. Result written to
+/// `<home>/mcp.json` only.
+fn merge_mcp_json(shared: &Path, home: &Path) -> Result<(), String> {
+    let cli_path = shared.join("mcp.json");
+    let dst_path = home.join("mcp.json");
+    let cli_text = std::fs::read_to_string(&cli_path).unwrap_or_default();
+    let dst_text = std::fs::read_to_string(&dst_path).unwrap_or_default();
+
+    let cli_val: serde_json::Value = serde_json::from_str(&cli_text).unwrap_or_default();
+    let mut dst_val: serde_json::Value = serde_json::from_str(&dst_text).unwrap_or_default();
+
+    // Both files use { "mcpServers": { "<name>": {...} } } — merge the inner
+    // object so desktop's same-named server wins, CLI's fill the gaps.
+    if let (Some(cli_servers), Some(dst_obj)) = (
+        cli_val.get("mcpServers").and_then(|v| v.as_object()),
+        dst_val.as_object_mut(),
+    ) {
+        let dst_servers = dst_obj
+            .entry("mcpServers".to_string())
+            .or_insert_with(|| serde_json::Value::Object(Default::default()));
+        if let Some(dst_servers_obj) = dst_servers.as_object_mut() {
+            for (name, cli_cfg) in cli_servers {
+                dst_servers_obj
+                    .entry(name.clone())
+                    .or_insert_with(|| cli_cfg.clone());
+            }
+        }
+    }
+    let merged = serde_json::to_string_pretty(&dst_val)
+        .map_err(|e| format!("serialize mcp.json: {e}"))?;
+    std::fs::write(&dst_path, merged).map_err(|e| format!("write mcp.json: {e}"))?;
     Ok(())
 }
 
@@ -276,5 +372,62 @@ pub fn stop_embedded_agent(app: &AppHandle) {
                 let _ = proc.child.start_kill();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod merge_tests {
+    use super::*;
+
+    #[test]
+    fn merge_toml_cli_base_desktop_overlay() {
+        // CLI has default_model + provider x-aio; desktop has default_model override.
+        // After merge: desktop's default_model wins, CLI's provider fills in.
+        let tmp = tempfile::tempdir().unwrap();
+        let shared = tmp.path().join("shared");
+        let home = tmp.path().join("home");
+        std::fs::create_dir_all(&shared).unwrap();
+        std::fs::create_dir_all(&home).unwrap();
+        std::fs::write(shared.join("config.toml"), r#"
+default_model = "cli-model"
+
+[providers."x-aio"]
+type = "kimi"
+base_url = "https://cli.example.com/v1"
+api_key = "cli-key"
+"#).unwrap();
+        std::fs::write(home.join("config.toml"), r#"
+default_model = "desktop-model"
+telemetry = false
+"#).unwrap();
+
+        merge_config_toml(&shared, &home).unwrap();
+
+        let merged = std::fs::read_to_string(home.join("config.toml")).unwrap();
+        assert!(merged.contains("desktop-model"), "desktop default_model should win: {}", merged);
+        assert!(merged.contains("x-aio"), "CLI provider should fill in: {}", merged);
+        assert!(merged.contains("telemetry"), "desktop-only field should remain: {}", merged);
+        // CLI file must be untouched (read-only).
+        let cli_after = std::fs::read_to_string(shared.join("config.toml")).unwrap();
+        assert!(cli_after.contains("cli-model"), "CLI config must not be modified");
+    }
+
+    #[test]
+    fn merge_mcp_desktop_overrides_cli() {
+        let tmp = tempfile::tempdir().unwrap();
+        let shared = tmp.path().join("shared");
+        let home = tmp.path().join("home");
+        std::fs::create_dir_all(&shared).unwrap();
+        std::fs::create_dir_all(&home).unwrap();
+        std::fs::write(shared.join("mcp.json"), r#"{"mcpServers":{"cli-srv":{"command":"a"},"both-srv":{"command":"cli-ver"}}}"#).unwrap();
+        std::fs::write(home.join("mcp.json"), r#"{"mcpServers":{"desktop-srv":{"command":"b"},"both-srv":{"command":"desktop-ver"}}}"#).unwrap();
+
+        merge_mcp_json(&shared, &home).unwrap();
+
+        let merged = std::fs::read_to_string(home.join("mcp.json")).unwrap();
+        assert!(merged.contains("cli-srv"), "CLI-only server should fill in");
+        assert!(merged.contains("desktop-srv"), "desktop-only server should remain");
+        assert!(merged.contains("desktop-ver"), "desktop should override same-named server");
+        assert!(!merged.contains("cli-ver"), "CLI version of same-named server should be overridden");
     }
 }
