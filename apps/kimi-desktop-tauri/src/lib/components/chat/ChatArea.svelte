@@ -131,7 +131,7 @@
   .stop-btn:hover { background: var(--err-soft); }
 
   .msgs { flex: 1; overflow-y: auto; }
-  .msgs-inner { max-width: 760px; margin: 0 auto; padding: 20px 22px 8px; display: flex; flex-direction: column; gap: 18px; }
+  .msgs-inner { max-width: 920px; margin: 0 auto; padding: 24px 32px 12px; display: flex; flex-direction: column; gap: 18px; }
 
   .welcome { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 72px 20px; text-align: center; }
   .w-logo .w-mark { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; font-size: 19px; font-weight: 800; box-shadow: 0 0 24px rgba(79, 168, 255, 0.35); }
@@ -147,7 +147,7 @@
   .avatar.a { background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; }
 
   /* ---- QQ 式气泡 ---- */
-  .bubble { max-width: 78%; padding: 10px 14px; font-size: 13px; line-height: 1.65; }
+  .bubble { max-width: 88%; padding: 10px 14px; font-size: 13px; line-height: 1.65; }
   .u-bub {
     background: var(--ac-soft);
     border: 1px solid var(--ac-bd);

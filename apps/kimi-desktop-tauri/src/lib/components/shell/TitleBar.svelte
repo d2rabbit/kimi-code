@@ -23,7 +23,6 @@
   });
 
   const wsName = $derived(client.activeWorkspaceName() || '');
-  const sessionTitle = $derived(client.activeSession()?.title || '新对话');
 
   // 关闭 = 隐藏到托盘（Linux/Windows 常驻托盘；macOS 用原生语义）
   function onClose() { void invoke('win_close').catch(() => {}); }
@@ -33,11 +32,11 @@
 
 <header class="titlebar" data-tauri-drag-region>
   <div class="breadcrumb" data-tauri-drag-region>
+    <span class="brand">Kimi Code</span>
     {#if wsName}
-      <span class="crumb">{wsName}</span>
       <span class="sep">›</span>
+      <span class="crumb">{wsName}</span>
     {/if}
-    <span class="crumb current">{sessionTitle}</span>
   </div>
 
   {#if !isMac && ready}
@@ -95,12 +94,12 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 12px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  .brand { color: var(--tx); font-weight: 650; letter-spacing: -0.02em; }
   .crumb { color: var(--tx2); }
-  .crumb.current { color: var(--tx); font-weight: 500; }
   .sep { color: var(--tx3); }
 </style>

@@ -13,10 +13,10 @@
   type ModuleView = 'chat' | 'plugins' | 'subagents' | 'archive';
   let activeView = $state<ModuleView>('chat');
 
-  let sidebarWidth = $state(216);
+  let sidebarWidth = $state(224);
 
   function onSidebarResize(delta: number) {
-    sidebarWidth = Math.max(160, Math.min(300, sidebarWidth + delta));
+    sidebarWidth = Math.max(180, Math.min(320, sidebarWidth + delta));
   }
 
   function onmoduleview(view: string) {

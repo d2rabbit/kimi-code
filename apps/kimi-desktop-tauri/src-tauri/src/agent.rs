@@ -181,6 +181,11 @@ pub async fn start_embedded_agent(app: &AppHandle) -> Result<String, String> {
     let port = pick_port()?;
     let home = agent_home();
     seed_agent_home_if_needed(&home)?;
+    let cors_origins = if cfg!(debug_assertions) {
+        "http://tauri.localhost,tauri://localhost,http://localhost:1420,http://127.0.0.1:1420"
+    } else {
+        "http://tauri.localhost,tauri://localhost"
+    };
 
     let mut child = tokio::process::Command::new(&sea)
         .args([
@@ -197,10 +202,7 @@ pub async fn start_embedded_agent(app: &AppHandle) -> Result<String, String> {
         // is cross-origin to the agent's 127.0.0.1 origin. The daemon's CORS
         // middleware is whitelist-based (KIMI_CODE_CORS_ORIGINS), so whitelist
         // both spellings for REST + WS to work from the WebView.
-        .env(
-            "KIMI_CODE_CORS_ORIGINS",
-            "http://tauri.localhost,tauri://localhost",
-        )
+        .env("KIMI_CODE_CORS_ORIGINS", cors_origins)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::inherit())
