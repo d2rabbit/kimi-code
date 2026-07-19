@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
-# build-run.sh — 构建并运行完整的 Kimi Code 桌面客户端（Tauri + 内嵌 agent）。
+# build-run.sh — 构建 Kimi Code 桌面客户端（Tauri + 内嵌 kimi-code agent）。
 #
-# 这是完整客户端（非 web 版）：生产前端 + Rust release 二进制 + 随包内嵌
-# agent（SEA）。启动后应用会自起私有 agent（独立 home + 随机端口），无需
-# 任何外部 daemon。
+# 客户端的所有能力都来自 kimi-code 核心（内嵌 SEA = 单文件可执行 agent）。
+# 本脚本负责把 kimi-code 源码构建成 SEA，再内嵌进 Tauri 客户端，产出：
+#   - 默认 / --no-run / --foreground：可执行的 release 二进制（开发期使用）
+#   - --dist：可分发的安装包（.deb/.dmg/.msi/.AppImage，由 Tauri bundler 产出）
 #
 # 用法：
-#   bash scripts/build-run.sh              # 完整检查、构建并独立启动
-#   bash scripts/build-run.sh --foreground # 完整构建并前台运行，Ctrl+C 退出
-#   bash scripts/build-run.sh --no-run     # 只检查和构建，不启动
+#   bash scripts/build-run.sh               # 完整构建 + 独立启动（后台 setsid）
+#   bash scripts/build-run.sh --foreground  # 完整构建 + 前台运行（Ctrl+C 退出）
+#   bash scripts/build-run.sh --no-run      # 只构建，不启动
+#   bash scripts/build-run.sh --dist        # 构建并打包成安装包（产出 bundle/）
+#   bash scripts/build-run.sh --dist --skip-sea   # 打包，但复用已有 SEA（不重编 kimi-code）
 #   bash scripts/build-run.sh --help
 #
 set -euo pipefail
@@ -17,11 +20,14 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$APP_DIR/../.." && pwd)"
 PKG="@moonshot-ai/kimi-desktop-tauri"
 CLI_PKG="@moonshot-ai/kimi-code"
+WEB_PKG="@moonshot-ai/kimi-web"
 NO_RUN=0
 FOREGROUND=0
+DIST=0
+SKIP_SEA=0
 
 usage() {
-  sed -n '5,12p' "$0"
+  sed -n '5,15p' "$0"
 }
 
 for arg in "$@"; do
@@ -29,10 +35,19 @@ for arg in "$@"; do
     --) ;;
     --no-run) NO_RUN=1 ;;
     --foreground) FOREGROUND=1 ;;
+    --dist) DIST=1 ;;
+    --skip-sea) SKIP_SEA=1 ;;
     --help|-h) usage; exit 0 ;;
     *) echo "error: unknown option: $arg" >&2; usage >&2; exit 2 ;;
   esac
 done
+
+# 互斥校验：打包模式不存在「运行」概念
+if [[ "$DIST" == "1" && ("$FOREGROUND" == "1" || "$NO_RUN" == "1") ]]; then
+  echo "error: --dist cannot be combined with --foreground or --no-run" >&2
+  usage >&2
+  exit 2
+fi
 
 command -v pnpm >/dev/null 2>&1 || { echo "error: pnpm is required" >&2; exit 1; }
 command -v cargo >/dev/null 2>&1 || { echo "error: cargo is required" >&2; exit 1; }
@@ -50,34 +65,104 @@ EXE="kimi"
 [[ "$TARGET" == win32-* ]] && EXE="kimi.exe"
 
 log() { printf '\033[1;36m▸ %s\033[0m\n' "$*"; }
+warn() { printf '\033[1;33m⚠ %s\033[0m\n' "$*" >&2; }
+err()  { printf '\033[1;31m✖ %s\033[0m\n' "$*" >&2; }
 
-# ---- 1. 确保内嵌 agent（SEA）存在 ----
+# ---- 1. 构建内嵌 agent（SEA，始终从 kimi-code 源码构建） ----
+# SEA = Single Executable Application。客户端运行时自起私有 agent（独立 home +
+# 随机端口），无需任何外部 daemon。SEA 的构建链路：
+#   kimi-web 构建 → copy-web-assets → kimi-code SEA 打包（bundle/blob/inject/sign）
+# 缺少前置的 dist-web/ 会让 02-sea-blob.mjs 报错，因此每次都重新拷贝。
 SEA_SRC="$REPO_ROOT/apps/kimi-code/dist-native/bin/$TARGET/$EXE"
-if [[ ! -x "$SEA_SRC" ]]; then
-  if [[ -x "$HOME/.kimi-code/bin/$EXE" ]]; then
-    SEA_SRC="$HOME/.kimi-code/bin/$EXE"
-  else
-    log "构建内嵌 agent（SEA，首次约需数分钟）…"
-    pnpm --filter "$CLI_PKG" run build:native:sea
+
+if [[ "$SKIP_SEA" == "1" ]]; then
+  if [[ ! -x "$SEA_SRC" ]]; then
+    err "SEA binary not found at $SEA_SRC (--skip-sea requires an existing build)"
+    exit 1
   fi
+  log "复用已有 SEA（--skip-sea）: $SEA_SRC"
+else
+  log "构建 kimi-web 前端（SEA 内嵌用）…"
+  pnpm --filter "$WEB_PKG" run build
+
+  log "拷贝 kimi-web 资源到 kimi-code/dist-web …"
+  node "$REPO_ROOT/apps/kimi-code/scripts/copy-web-assets.mjs"
+
+  log "构建内嵌 agent（SEA，首次约需 5–10 分钟）…"
+  pnpm --filter "$CLI_PKG" run build:native:sea
+
+  if [[ ! -x "$SEA_SRC" ]]; then
+    err "SEA build finished but binary not found at $SEA_SRC"
+    exit 1
+  fi
+  log "内嵌 agent: $SEA_SRC"
 fi
-if [[ ! -x "$SEA_SRC" ]]; then
-  echo "error: SEA binary not found at $SEA_SRC" >&2
-  exit 1
-fi
-log "内嵌 agent: $SEA_SRC"
 
 # ---- 2. 前端完整检查（Svelte diagnostics） ----
 log "检查前端类型（svelte-check）…"
 pnpm --filter "$PKG" run typecheck
 
-# ---- 3. 前端生产构建（vite → dist/） ----
-log "构建前端（vite production）…"
-pnpm --filter "$PKG" run build
-
-# ---- 4. Rust 完整检查 ----
+# ---- 3. Rust 完整检查 ----
 log "检查客户端 Rust 代码（cargo check）…"
 cargo check --manifest-path "$APP_DIR/src-tauri/Cargo.toml" --no-default-features
+
+# =====================================================================
+# 路径 A：打包模式（--dist）—— 走 Tauri bundler，产出安装包
+# =====================================================================
+if [[ "$DIST" == "1" ]]; then
+  # Tauri 构建链会自动触发：
+  #   beforeBuildCommand   = pnpm build            （Svelte 前端 → dist/）
+  #   beforeBundleCommand  = node before-bundle.cjs （stage SEA → resources/bin/）
+  # bundle.targets = "all"，按当前平台产出全部格式（.deb/.dmg/.msi/.AppImage）。
+  log "Tauri 打包（tauri build，产出安装包）…"
+  # 透传平台信息给 before-bundle.cjs（与 CI workflow 的环境变量保持一致）。
+  export TAURI_PLATFORM="${TARGET%%-*}"
+  export TAURI_ARCH="${TARGET#*-}"
+
+  # 不用 set -e 直接退出：Tauri 在某一种 bundle 格式失败时（如 Linux 缺
+  # linuxdeploy/patchelf 导致 AppImage 失败）整体返回非零，但其它格式
+  # （deb/rpm）可能已成功产出。我们先列出所有产物，再根据情况决定退出码。
+  if ! ( cd "$APP_DIR" && pnpm run tauri:build ); then
+    TAURI_FAILED=1
+  else
+    TAURI_FAILED=0
+  fi
+
+  BUNDLE_DIR="$APP_DIR/src-tauri/target/release/bundle"
+  # 收集所有成功产出的安装包（按时间戳，最新的在前）。
+  mapfile -t BUNDLES < <(find "$BUNDLE_DIR" -type f \( \
+      -name '*.deb' -o -name '*.dmg' -o -name '*.msi' -o \
+      -name '*.AppImage' -o -name '*.exe' -o -name '*.rpm' \) \
+      -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2-)
+
+  if [[ ${#BUNDLES[@]} -gt 0 ]]; then
+    if [[ "$TAURI_FAILED" == "1" ]]; then
+      warn "Tauri 打包过程出错（可能某种格式失败），但以下产物已成功产出："
+    else
+      log "打包完成。安装包产物："
+    fi
+    for f in "${BUNDLES[@]}"; do printf '    %s\n' "$f"; done
+  else
+    err "未发现任何安装包产物，检查 $BUNDLE_DIR 与上方 Tauri 输出"
+  fi
+
+  if [[ "$TAURI_FAILED" == "1" ]]; then
+    err "Tauri 打包未完全成功。常见原因："
+    err "  Linux AppImage: 缺少 linuxdeploy/patchelf（apt install patchelf，或用 -b appimage 跳过）"
+    err "  macOS:          缺少签名身份（APPLE_SIGNING_IDENTITY）"
+    err "  Windows:        缺少 WiX Toolset（MSI bundler 依赖）"
+    exit 1
+  fi
+  exit 0
+fi
+
+# =====================================================================
+# 路径 B：开发期模式 —— 编译裸 release 二进制 + 直接运行
+# =====================================================================
+
+# ---- 4. 前端生产构建（vite → dist/） ----
+log "构建前端（vite production）…"
+pnpm --filter "$PKG" run build
 
 # ---- 5. Rust release 构建 ----
 # 必须显式启用 custom-protocol feature：tauri 的 build.rs 以
