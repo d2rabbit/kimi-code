@@ -194,6 +194,13 @@ export const tasks = () =>
     ? (rawState.tasksBySession[rawState.activeSessionId] ?? [])
     : [];
 
+// Active goal for the active session (null when no goal is running or it has
+// completed — see eventReducer `goalUpdated` case). Symmetric with `tasks()`.
+export const goal = () =>
+  rawState.activeSessionId
+    ? (rawState.goalBySession[rawState.activeSessionId] ?? null)
+    : null;
+
 // Warnings.
 export const warnings = () => rawState.warnings;
 
@@ -658,6 +665,23 @@ async function cancelTask(taskId: string): Promise<void> {
   await a.cancelTask(sid, taskId);
 }
 
+/**
+ * Send a goal lifecycle control action (pause / resume / cancel) to the daemon.
+ * The daemon emits a follow-up `goalUpdated` event that updates `goalBySession`;
+ * this function does not mutate local state itself.
+ */
+async function setGoalControl(action: 'pause' | 'resume' | 'cancel'): Promise<void> {
+  const sid = rawState.activeSessionId;
+  if (!sid) return;
+  try {
+    const a = getApi();
+    await a.updateSession(sid, { goalControl: action });
+  } catch {
+    // Swallow: the next `goalUpdated` event is the source of truth. surfaced
+    // through the GoalStrip status badge, not via throw.
+  }
+}
+
 /** Rename a session. */
 async function renameSession(sessionId: string, title: string): Promise<void> {
   const a = getApi();
@@ -1100,6 +1124,7 @@ export const client = {
   respondQuestion,
   dismissQuestion,
   cancelTask,
+  setGoalControl,
   renameSession,
   archiveSession,
   forkSession,
