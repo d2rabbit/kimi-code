@@ -1,2 +1,5 @@
-src-tauri/bin/*/kimi
-src-tauri/bin/*/kimi.exe
+# Staged SEA binaries — produced locally by before-bundle.cjs / build-run.sh.
+# The paths are relative to this .gitignore (src-tauri/), NOT to the repo root.
+bin/*/kimi
+bin/*/kimi.exe
+resources/bin/
