@@ -8,6 +8,7 @@
   import ApprovalCard from './ApprovalCard.svelte';
   import QuestionCard from './QuestionCard.svelte';
   import GoalStrip from './GoalStrip.svelte';
+  import ConversationToc, { type TocItem } from './ConversationToc.svelte';
   import type { ToolCall, TurnBlock } from '../../types';
 
   let text = $state('');
@@ -17,6 +18,86 @@
     void client.turns().length;
     void client.turns().at(-1)?.blocks?.length;
     if (scrollEl) requestAnimationFrame(() => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; });
+  });
+
+  // ---- Conversation TOC (one entry per user turn) ----
+  const tocItems = $derived<TocItem[]>(
+    client
+      .turns()
+      .filter((t) => t.role === 'user')
+      .map((t, i) => ({
+        id: t.id,
+        no: i + 1,
+        title: tocTitle(t.text),
+      })),
+  );
+
+  function tocTitle(raw: string): string {
+    const text = (raw ?? '').trim().replace(/\s+/g, ' ');
+    return text.length > 0 ? text : '对话';
+  }
+
+  // Track the user turn that currently owns the viewport middle.
+  let activeTurnId = $state<string | null>(null);
+  let tocObserver: IntersectionObserver | null = null;
+
+  function scrollToTurn(turnId: string): void {
+    const el = scrollEl?.querySelector(`[data-turn-id="${cssEscape(turnId)}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  // cssEscape shim — turn ids may contain characters that break attribute
+  // selectors. Prefer the native CSS.escape if available.
+  function cssEscape(s: string): string {
+    if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(s);
+    return s.replace(/["\\]/g, '\\$&');
+  }
+
+  // Rebuild the IntersectionObserver whenever the set of user turns changes.
+  $effect(() => {
+    // Subscribe to turns so this re-runs when they change.
+    const ids = client
+      .turns()
+      .filter((t) => t.role === 'user')
+      .map((t) => t.id);
+    if (!scrollEl || ids.length === 0) {
+      tocObserver?.disconnect();
+      tocObserver = null;
+      return;
+    }
+    tocObserver?.disconnect();
+    tocObserver = new IntersectionObserver(
+      (entries) => {
+        // Pick the topmost user-turn anchor whose intersection ratio is
+        // highest near the viewport top — the query "owning" the reading
+        // position sits just above center.
+        let best: { id: string; ratio: number } | null = null;
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const id = (entry.target as HTMLElement).dataset.turnId;
+          if (!id) continue;
+          if (!best || entry.intersectionRatio > best.ratio) {
+            best = { id, ratio: entry.intersectionRatio };
+          }
+        }
+        if (best) activeTurnId = best.id;
+      },
+      {
+        root: scrollEl,
+        // Track the band around the viewport top third — the user message
+        // anchored there is the one the reader is currently engaged with.
+        rootMargin: '-10% 0px -70% 0px',
+        threshold: [0, 0.25, 0.5, 1],
+      },
+    );
+    // Observe after the DOM has settled.
+    requestAnimationFrame(() => {
+      if (!tocObserver || !scrollEl) return;
+      const anchors = scrollEl.querySelectorAll('[data-turn-id]');
+      anchors.forEach((a) => tocObserver!.observe(a));
+    });
   });
 
   async function submit(attachments?: { fileId: string; kind: 'image' | 'video' }[]) {
@@ -59,6 +140,7 @@
   <GoalStrip />
 
   <div class="msgs" bind:this={scrollEl}>
+    <ConversationToc items={tocItems} activeId={activeTurnId} onselect={scrollToTurn} />
     <div class="msgs-inner">
       {#if client.turns().length === 0 && !client.sessionLoading()}
         <div class="welcome">
@@ -77,7 +159,7 @@
         {#each client.turns() as turn (turn.id)}
           {#if turn.role === 'user'}
             <!-- 用户：右侧气泡（QQ 聊天式） -->
-            <div class="msg user">
+            <div class="msg user" id="turn-{turn.id}" data-turn-id={turn.id}>
               <div class="bubble u-bub">
                 {#if turn.images?.length}<div class="imgs">{#each turn.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}</div>{/if}
                 {#if turn.text}<div class="u-text">{turn.text}</div>{/if}
@@ -133,7 +215,7 @@
   .stop-btn { padding: 3px 10px; border-radius: var(--r-sm); border: 1px solid var(--color-danger-bd); background: transparent; color: var(--err); font-size: 11px; cursor: pointer; }
   .stop-btn:hover { background: var(--err-soft); }
 
-  .msgs { flex: 1; overflow-y: auto; }
+  .msgs { flex: 1; overflow-y: auto; position: relative; }
   .msgs-inner { max-width: 920px; margin: 0 auto; padding: 24px 32px 12px; display: flex; flex-direction: column; gap: 18px; }
 
   .welcome { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 72px 20px; text-align: center; }
