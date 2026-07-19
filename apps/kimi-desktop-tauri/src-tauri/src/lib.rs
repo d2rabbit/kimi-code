@@ -141,6 +141,7 @@ pub fn run() {
             commands::win_close,
             commands::list_git_branches,
             commands::git_checkout,
+            commands::git_log,
             commands::get_kimi_home,
             commands::read_text_file,
             commands::write_text_file,

@@ -22,15 +22,35 @@
     return map[ext] ?? 'text';
   }
 
-  // Render diff content with colored lines.
-  function renderDiff(diff: string): { kind: 'add' | 'del' | 'meta' | 'ctx'; text: string }[] {
+  type DiffLine = {
+    kind: 'add' | 'del' | 'meta' | 'ctx';
+    text: string;
+    oldNumber: number | null;
+    newNumber: number | null;
+  };
+
+  function renderDiff(diff: string): DiffLine[] {
+    let oldNumber = 0;
+    let newNumber = 0;
     return diff.split('\n').map((line) => {
-      if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('@@')) {
-        return { kind: 'meta' as const, text: line };
+      if (line.startsWith('@@')) {
+        const match = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+        if (match) {
+          oldNumber = Number(match[1]);
+          newNumber = Number(match[2]);
+        }
+        return { kind: 'meta', text: line, oldNumber: null, newNumber: null };
       }
-      if (line.startsWith('+')) return { kind: 'add' as const, text: line };
-      if (line.startsWith('-')) return { kind: 'del' as const, text: line };
-      return { kind: 'ctx' as const, text: line };
+      if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('\\')) {
+        return { kind: 'meta', text: line, oldNumber: null, newNumber: null };
+      }
+      if (line.startsWith('+')) {
+        return { kind: 'add', text: line, oldNumber: null, newNumber: newNumber++ };
+      }
+      if (line.startsWith('-')) {
+        return { kind: 'del', text: line, oldNumber: oldNumber++, newNumber: null };
+      }
+      return { kind: 'ctx', text: line, oldNumber: oldNumber++, newNumber: newNumber++ };
     });
   }
 
@@ -85,13 +105,15 @@
       </div>
     {:else if client.previewMode() === 'diff' && diffLines.length > 0}
       <!-- Diff view -->
-      <pre class="diff-view">
+      <div class="diff-view">
         {#each diffLines as line, i (i)}
           <div class="diff-line diff-{line.kind}">
+            <span class="diff-number">{line.oldNumber ?? ''}</span>
+            <span class="diff-number">{line.newNumber ?? ''}</span>
             <span class="diff-content">{line.text}</span>
           </div>
         {/each}
-      </pre>
+      </div>
     {:else if client.previewContent() !== null && client.previewPath()}
       {#if isMarkdown(client.previewPath() ?? '')}
         <!-- Markdown render -->
@@ -198,14 +220,24 @@
   .diff-view {
     margin: 0;
     font-family: var(--font-mono, monospace);
-    font-size: 12px;
-    line-height: 1.6;
+    font-size: 11px;
+    line-height: 1.45;
   }
   .diff-line {
-    padding: 0 14px;
+    display: grid;
+    grid-template-columns: 38px 38px minmax(0, 1fr);
+    min-height: 20px;
     white-space: pre-wrap;
     word-break: break-all;
   }
+  .diff-number {
+    padding: 2px 7px;
+    color: var(--color-text-faint, rgba(235,235,245,0.3));
+    background: rgba(0,0,0,0.08);
+    text-align: right;
+    user-select: none;
+  }
+  .diff-content { min-width: 0; padding: 2px 10px; }
   .diff-add {
     background: var(--color-success-soft, rgba(78,201,176,0.08));
     color: var(--color-success, #30d158);
@@ -215,9 +247,12 @@
     color: var(--color-danger, #ff453a);
   }
   .diff-meta {
+    display: grid;
+    grid-template-columns: 38px 38px minmax(0, 1fr);
     color: var(--color-accent, #2dd4bf);
     font-weight: var(--weight-medium, 500);
   }
+  .diff-meta .diff-content { grid-column: 1 / -1; padding: 5px 12px; background: var(--color-accent-soft, rgba(45,212,191,0.08)); }
   .diff-ctx {
     color: var(--color-text-muted, rgba(235,235,245,0.6));
   }

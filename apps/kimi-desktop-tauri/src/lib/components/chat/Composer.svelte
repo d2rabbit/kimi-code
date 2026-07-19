@@ -509,7 +509,7 @@
   .composer {
     flex: none;
     padding: 0 18px 10px;
-    max-width: 860px;
+    max-width: 920px;
     width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
@@ -545,7 +545,7 @@
   .composer-card {
     background: var(--l2);
     border: 1px solid var(--bd2);
-    border-radius: var(--r-xl);
+    border-radius: 18px;
     box-shadow: var(--toplight), 0 6px 20px rgba(0, 0, 0, 0.08);
     transition: border-color var(--duration-fast) var(--ease);
   }
@@ -554,8 +554,8 @@
   /* @-mention chips */
   .atch-row { display: flex; gap: 6px; padding: 10px 12px 0; flex-wrap: wrap; }
   .atch {
-    display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 6px 0 7px;
-    border-radius: var(--r-sm); border: 1px solid var(--bd); background: var(--l1);
+    display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 7px 0 8px;
+    border-radius: 8px; border: 1px solid var(--bd2); background: var(--l1);
     font-size: 11px; font-family: var(--font-mono); color: var(--tx);
   }
   .atch .fi2 { width: 13px; height: 13px; border-radius: 4px; background: var(--ac); color: #fff; font-size: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-ui); font-weight: 700; }
@@ -563,17 +563,17 @@
   .atch .rm:hover { color: var(--err); background: var(--err-soft); }
 
   /* Input row */
-  .inrow { display: flex; align-items: flex-end; gap: 6px; padding: 10px 12px 8px; }
+  .inrow { display: flex; align-items: flex-end; gap: 8px; padding: 12px 14px 10px; min-height: 84px; }
   .composer-input {
     flex: 1; border: none; background: transparent; color: var(--tx);
-    font-family: var(--font-ui); font-size: 13px; line-height: 1.6;
-    resize: none; outline: none; max-height: 200px; min-height: 36px; padding: 6px 4px;
+    font-family: var(--font-ui); font-size: 14px; line-height: 1.6;
+    resize: none; outline: none; max-height: 200px; min-height: 52px; padding: 6px 4px;
   }
   .composer-input::placeholder { color: var(--tx3); }
   .composer-input.busy { opacity: 0.6; }
 
   .sendc {
-    flex: none; width: 28px; height: 28px; border-radius: 50%; border: none;
+    flex: none; width: 34px; height: 34px; border-radius: 50%; border: none;
     background: var(--ac); color: #fff; display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
     box-shadow: 0 2px 8px rgba(79, 168, 255, 0.35);
@@ -583,9 +583,9 @@
   .sendc:not(:disabled):active { transform: scale(0.95); }
 
   /* Control row */
-  .ctrl { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--bd); }
+  .ctrl { display: flex; align-items: center; gap: 6px; padding: 8px 12px 10px; border-top: 1px solid var(--bd); }
   .mini-toggle {
-    padding: 3px 8px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent;
+    padding: 0 10px; height: 30px; border: 1px solid transparent; border-radius: 8px; background: transparent;
     color: var(--tx3); font-size: 10.5px; font-weight: 500; cursor: pointer;
     transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
   }
@@ -601,8 +601,8 @@
   .mode-pill { border: 1px solid var(--bd); background: var(--l1); }
   .mode-pill .mic { font-size: 11px; }
   .cpill {
-    display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px;
-    border-radius: var(--r-sm); font-size: 11px; font-weight: 500; color: var(--tx2);
+    display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px;
+    border-radius: 8px; font-size: 11px; font-weight: 500; color: var(--tx2);
     border: 1px solid transparent; background: transparent; cursor: pointer;
     transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
   }

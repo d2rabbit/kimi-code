@@ -112,6 +112,49 @@ pub fn git_checkout(cwd: String, branch: String) -> Result<(), String> {
     Ok(())
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitCommit {
+    pub hash: String,
+    pub short_hash: String,
+    pub author: String,
+    pub relative_time: String,
+    pub subject: String,
+}
+
+/// Return a compact commit timeline for the repository at `cwd`.
+#[tauri::command]
+pub fn git_log(cwd: String, limit: Option<u32>) -> Result<Vec<GitCommit>, String> {
+    let limit = limit.unwrap_or(20).clamp(1, 100).to_string();
+    let out = run_git(
+        &cwd,
+        &[
+            "log",
+            "--no-decorate",
+            "--date=relative",
+            "--format=%H%x1f%h%x1f%an%x1f%ar%x1f%s%x1e",
+            "-n",
+            &limit,
+        ],
+    )?;
+    Ok(out
+        .split('\x1e')
+        .filter_map(|record| {
+            let fields: Vec<&str> = record.trim().split('\x1f').collect();
+            if fields.len() != 5 || fields[0].is_empty() {
+                return None;
+            }
+            Some(GitCommit {
+                hash: fields[0].to_string(),
+                short_hash: fields[1].to_string(),
+                author: fields[2].to_string(),
+                relative_time: fields[3].to_string(),
+                subject: fields[4].to_string(),
+            })
+        })
+        .collect())
+}
+
 // ---- Window controls (platform-adapted) ----
 // These are implemented in Rust because the JS-side window API is not
 // reliable across platforms (e.g. `hide()` availability). Close behavior is
