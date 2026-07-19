@@ -232,12 +232,17 @@
               {#if hasActiveSession && realTasks.length > 0}
                 {#each realTasks as task (task.id)}
                   {@const st = stepState(task.status)}
-                  <div class="task-item" class:todo={st === 'todo'}>
+                  {@const failing = task.status === 'failed' || task.status === 'cancelled'}
+                  <div class="task-item" class:todo={st === 'todo'} class:failing>
                     {#if st === 'done'}<span class="task-check done">✓</span>
                     {:else if st === 'run'}<span class="task-check run"></span>
+                    {:else if failing}<span class="task-check fail">✕</span>
                     {:else}<span class="task-check"></span>{/if}
                     <span class="task-name">{task.description}</span>
-                    <Icon name="chevron-down" size="sm" />
+                    {#if st === 'run'}
+                      <button class="task-cancel" title="取消任务" type="button"
+                        onclick={() => void client.client.cancelTask(task.id)}>取消</button>
+                    {/if}
                   </div>
                 {/each}
               {:else}
@@ -390,13 +395,21 @@
   .task-item { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 6px 4px; color: var(--tx); border-radius: 8px; transition: background var(--duration-fast) var(--ease); }
   .task-item:hover { background: var(--color-hover); }
   .task-item.todo { color: var(--tx3); }
+  .task-item.failing { color: var(--err); }
   .task-item :global(.icon-wrap) { margin-left: auto; color: var(--tx3); }
   .task-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .task-cancel { flex: none; padding: 2px 8px; border: 1px solid var(--color-danger-bd); border-radius: var(--r-sm); background: transparent; color: var(--err); font: inherit; font-size: 10.5px; cursor: pointer; opacity: 0; transition: opacity var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease); }
+  .task-item:hover .task-cancel { opacity: 1; }
+  .task-cancel:hover { background: var(--err-soft); }
   .task-check { width: 20px; height: 20px; flex: none; border: 2px solid var(--bd2); border-radius: 50%; }
   .task-check.done { display: flex; align-items: center; justify-content: center; border-color: var(--ok); background: var(--ok); color: #07140c; font-size: 12px; font-weight: 800; }
   .task-check.run { position: relative; border-color: var(--ac); }
   .task-check.run::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--ac); animation: pulse 1.5s ease-in-out infinite; }
+  .task-check.fail { display: flex; align-items: center; justify-content: center; border-color: var(--err); color: var(--err); font-size: 12px; font-weight: 800; }
   @keyframes pulse { 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) {
+    .task-check.run::after { animation: none; }
+  }
 
   /* Git tool */
   .git-stats { display: flex; gap: 10px; margin-bottom: 16px; }
