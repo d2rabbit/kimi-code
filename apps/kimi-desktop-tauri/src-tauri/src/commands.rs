@@ -155,6 +155,39 @@ pub fn git_log(cwd: String, limit: Option<u32>) -> Result<Vec<GitCommit>, String
         .collect())
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitCommitFile {
+    pub path: String,
+    pub status: String,
+    pub additions: u32,
+    pub deletions: u32,
+    pub diff: String,
+}
+
+/// Return the changed files and compact patches for a commit.
+#[tauri::command]
+pub fn git_commit_files(cwd: String, hash: String) -> Result<Vec<GitCommitFile>, String> {
+    if hash.is_empty() || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("invalid commit hash".to_string());
+    }
+    let names = run_git(&cwd, &["diff-tree", "--root", "--no-commit-id", "--name-status", "-r", &hash])?;
+    let mut files = Vec::new();
+    for line in names.lines().filter(|line| !line.trim().is_empty()) {
+        let mut parts = line.splitn(2, '\t');
+        let status = parts.next().unwrap_or("?").to_string();
+        let path = parts.next().unwrap_or("").to_string();
+        if path.is_empty() {
+            continue;
+        }
+        let diff = run_git(&cwd, &["show", "--format=", "--no-ext-diff", "--unified=3", &hash, "--", &path])?;
+        let additions = diff.lines().filter(|line| line.starts_with('+') && !line.starts_with("+++")).count() as u32;
+        let deletions = diff.lines().filter(|line| line.starts_with('-') && !line.starts_with("---")).count() as u32;
+        files.push(GitCommitFile { path, status, additions, deletions, diff });
+    }
+    Ok(files)
+}
+
 // ---- Window controls (platform-adapted) ----
 // These are implemented in Rust because the JS-side window API is not
 // reliable across platforms (e.g. `hide()` availability). Close behavior is

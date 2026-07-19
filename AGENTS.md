@@ -17,6 +17,7 @@ This is a TypeScript monorepo built for agent-assisted development. Keep the roo
 - `apps/kimi-code`: the CLI / TUI application. It consumes core capabilities through `@moonshot-ai/kimi-code-sdk` and must not depend directly on `@moonshot-ai/agent-core`. When writing or modifying its terminal UI, use the `write-tui` skill (`.agents/skills/write-tui/SKILL.md`).
 - `apps/kimi-web`: the browser web UI, a peer to the TUI. Vue 3 + Vite + vue-i18n; talks to the server over REST + WebSocket under `/api/v1`. It must not depend on `@moonshot-ai/agent-core` (wire types are re-implemented locally). See `apps/kimi-web/AGENTS.md`.
 - `apps/kimi-desktop`: the Electron desktop wrapper (`electron` + `electron-builder`). Dev: `pnpm run dev:desktop`; packaging via `electron-builder.config.cjs`.
+- `apps/kimi-desktop-tauri`: a Tauri 2 + Svelte 5 desktop client, a peer to the Electron app (does **not** bundle kimi-web; fresh Svelte frontend over the same daemon). Same boundaries as kimi-web: no `@moonshot-ai/agent-core` dependency (wire types copied locally), REST + WS flow directly from the WebView to the daemon, Tauri IPC reserved for native-only ops. Requires the Rust toolchain for `tauri:dev` / `tauri:build`. See `apps/kimi-desktop-tauri/AGENTS.md`.
 - `apps/vis`, `apps/vis/server`, `apps/vis/web`: visual debugging tools for sessions and replays.
 - `packages/agent-core`: the unified agent engine, including Agent, Session, profile, skills, tools, plan, permission, background, records, the in-process DI service layer (`src/services/`), and other core capabilities.
 - `packages/node-sdk`: the public TypeScript SDK and harness.
@@ -51,6 +52,7 @@ Run from the repo root unless noted. Per-package: add `-C <path>` or `--filter <
 - kimi-code CLI e2e: `pnpm -C apps/kimi-code run e2e` (sets `KIMI_E2E=1`) · real-LLM smoke: `... run e2e:real`
 - server-e2e: requires a running server (`KIMI_SERVER_URL`); see `packages/server-e2e/AGENTS.md`.
 - Dev: CLI `pnpm run dev:cli` · web `pnpm run dev:web` · desktop `pnpm run dev:desktop` · server `pnpm run dev:server` · vis `pnpm run vis` · docs `pnpm run dev:docs`
+- Tauri desktop: `pnpm --filter @moonshot-ai/kimi-desktop-tauri run tauri:dev` (full Rust + frontend) or `... run dev` (Vite frontend only, port 1420) · package: `... run tauri:build`. **Note:** `apps/kimi-desktop-tauri` is NOT covered by the root `pnpm run typecheck` or `pnpm run dev:desktop` — run `pnpm --filter @moonshot-ai/kimi-desktop-tauri run typecheck` (svelte-check) explicitly.
 - Full release gate (runs typecheck + lint + sherif + test + build + lint:pkg, then publishes): `pnpm run publish`
 
 ## Monorepo Workspace Maintenance
@@ -61,6 +63,7 @@ Run from the repo root unless noted. Per-package: add `-C <path>` or `--filter <
   - Missing a path in `flake.nix`'s `workspacePaths` will silently drop files from the Nix build's `src` fileset.
   - Missing a name in `flake.nix`'s `workspaceNames` will break `pnpmConfigHook` because dependencies for that workspace will not be fetched.
 - The automated "Check flake.nix workspace sync" (`scripts/check-nix-workspace.mjs`) only validates the transitive dependency **closure of `@moonshot-ai/kimi-code`**. A leaf package outside that closure (e.g. an e2e package nobody imports) slips through even when it is missing from `flake.nix`. A green check is therefore NOT proof that `flake.nix` is fully in sync — keep it updated by hand on every add/remove, do not rely on the check to catch omissions.
+- **Known drift (as of the `feat/kimi-desktop-tauri` branch):** `apps/kimi-desktop-tauri` (`@moonshot-ai/kimi-desktop-tauri`) is present under `apps/*` (so `pnpm-workspace.yaml` and the root `pnpm run build` pick it up) but is **NOT yet listed in `flake.nix`** `workspacePaths` / `workspaceNames`, and the root `typecheck` script does not include it. If you touch the Nix build or the release gate, add it to `flake.nix` (path `./apps/kimi-desktop-tauri`, name `@moonshot-ai/kimi-desktop-tauri`) and consider wiring its `svelte-check` into the root `typecheck`.
 
 ## General Coding Rules
 

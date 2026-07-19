@@ -35,20 +35,22 @@
     branch: string; ahead: number; behind: number;
     entries: Record<string, string>; additions: number; deletions: number;
   } | null>(null);
-  let gitLoading = $state(false);
   let gitLog = $state<{
     hash: string; shortHash: string; author: string; relativeTime: string; subject: string;
   }[]>([]);
   let gitLogLoading = $state(false);
+  type CommitFile = { path: string; status: string; additions: number; deletions: number; diff: string };
+  let commitFiles = $state<Record<string, CommitFile[]>>({});
+  let expandedCommit = $state<string | null>(null);
+  let expandedFile = $state<string | null>(null);
+  let commitFilesLoading = $state<string | null>(null);
 
   async function loadGitStatus() {
     if (!activeSessionId) return;
-    gitLoading = true;
     try {
       const api = getKimiWebApi();
       gitData = await api.getGitStatus(activeSessionId);
     } catch { gitData = null; }
-    finally { gitLoading = false; }
   }
 
   async function loadGitLog() {
@@ -73,6 +75,9 @@
     void activeSessionId;
     gitData = null;
     gitLog = [];
+    commitFiles = {};
+    expandedCommit = null;
+    expandedFile = null;
     if (activeSessionId) void loadGitStatus();
     if (activeSessionId) void loadGitLog();
   });
@@ -123,22 +128,46 @@
     }
   }
 
-  const changedFiles = $derived.by(() => {
-    if (!gitData) return [];
-    return Object.entries(gitData.entries)
-      .map(([path, status]) => ({ path, status }))
-      .sort((a, b) => a.path.localeCompare(b.path));
-  });
-
   const statusColor: Record<string, string> = {
     M: 'var(--warn)', A: 'var(--ok)', D: 'var(--err)', R: 'var(--color-done)', U: 'var(--color-warning)',
   };
 
-  // --- Review mode ---
-  function openReview(path: string) {
-    void client.client.openFilePreview(path, 'diff');
-    mode = 'review';
+  async function toggleCommit(hash: string) {
+    expandedFile = null;
+    if (expandedCommit === hash) {
+      expandedCommit = null;
+      return;
+    }
+    expandedCommit = hash;
+    if (commitFiles[hash]) return;
+    commitFilesLoading = hash;
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const files = await invoke<CommitFile[]>('git_commit_files', { cwd: sessionCwd, hash });
+      commitFiles = { ...commitFiles, [hash]: files };
+    } catch {
+      commitFiles = { ...commitFiles, [hash]: [] };
+    } finally {
+      commitFilesLoading = null;
+    }
   }
+
+  function toggleCommitFile(hash: string, path: string) {
+    const key = `${hash}:${path}`;
+    expandedFile = expandedFile === key ? null : key;
+  }
+
+  function diffPreview(diff: string): { kind: 'add' | 'del' | 'meta' | 'ctx'; text: string }[] {
+    return diff.split('\n').map((text) => ({
+      text,
+      kind: text.startsWith('+') && !text.startsWith('+++') ? 'add'
+        : text.startsWith('-') && !text.startsWith('---') ? 'del'
+          : text.startsWith('@') || text.startsWith('---') || text.startsWith('+++') ? 'meta'
+            : 'ctx',
+    }));
+  }
+
+  // --- Review mode ---
   function closeReview() {
     mode = 'default';
   }
@@ -237,44 +266,45 @@
                 <p class="empty-note">加载提交历史…</p>
               {:else if gitLog.length > 0}
                 {#each gitLog as commit (commit.hash)}
-                  <button class="commit-row" type="button" title={commit.subject}>
+                  <div class="commit-entry">
+                  <button class="commit-row" class:expanded={expandedCommit === commit.hash} onclick={() => toggleCommit(commit.hash)} type="button" title={commit.subject}>
                     <span class="commit-rail"><span class="commit-dot"></span></span>
                     <span class="commit-copy">
                       <span class="commit-subject">{commit.subject}</span>
                       <span class="commit-meta"><span class="commit-hash mono">{commit.shortHash}</span>{commit.author} · {commit.relativeTime}</span>
                     </span>
+                    <Icon name="chevron-right" size="sm" class="commit-chevron" />
                   </button>
+                  {#if expandedCommit === commit.hash}
+                    <div class="commit-files">
+                      {#if commitFilesLoading === commit.hash}
+                        <p class="empty-note">加载提交文件…</p>
+                      {:else if (commitFiles[commit.hash] ?? []).length > 0}
+                        {#each commitFiles[commit.hash] ?? [] as file (file.path)}
+                          {@const fileKey = `${commit.hash}:${file.path}`}
+                          <button class="commit-file" class:expanded={expandedFile === fileKey} onclick={() => toggleCommitFile(commit.hash, file.path)} type="button">
+                            <span class="commit-file-status" style="color: {statusColor[file.status[0] ?? ''] ?? 'var(--tx3)'}">{file.status[0] ?? '?'}</span>
+                            <span class="commit-file-name">{file.path}</span>
+                            <span class="commit-file-stats"><span class="add-text">+{file.additions}</span> <span class="del-text">−{file.deletions}</span></span>
+                            <Icon name="chevron-right" size="sm" />
+                          </button>
+                          {#if expandedFile === fileKey}
+                            <div class="commit-inline-diff">
+                              {#each diffPreview(file.diff) as line, lineIndex (`${file.path}-${lineIndex}`)}
+                                <div class="inline-diff-line diff-{line.kind}">{line.text}</div>
+                              {/each}
+                            </div>
+                          {/if}
+                        {/each}
+                      {:else}
+                        <p class="empty-note">此提交没有可展示的文件</p>
+                      {/if}
+                    </div>
+                  {/if}
+                  </div>
                 {/each}
               {:else}
                 <p class="empty-note">暂无提交历史</p>
-              {/if}
-            </div>
-            <div class="file-heading">
-              <span>变更文件 <b>{changedFiles.length}</b></span>
-              <span class="file-heading-hint">点击查看 diff</span>
-            </div>
-            <div class="file-scroll mono">
-              {#if hasActiveSession && gitLoading}
-                <p class="empty-note">加载 Git 状态…</p>
-              {:else if hasActiveSession && gitData && changedFiles.length > 0}
-                <div class="file-list">
-                  {#each changedFiles as f (f.path)}
-                    <button class="f" onclick={() => openReview(f.path)} type="button" title={f.path}>
-                      <span class="fst" style="color: {statusColor[f.status] ?? 'var(--tx3)'}">{f.status}</span>
-                      <span class="file-meta">
-                        <span class="fname">{f.path.split('/').pop() ?? f.path}</span>
-                        <span class="fpath">{f.path.includes('/') ? f.path.slice(0, f.path.lastIndexOf('/')) : '根目录'}</span>
-                      </span>
-                      <Icon name="arrow-right" size="sm" />
-                    </button>
-                  {/each}
-                </div>
-              {:else if hasActiveSession && gitData}
-                <p class="empty-note">工作区干净，无改动</p>
-              {:else if hasActiveSession}
-                <p class="empty-note">无法获取 Git 状态<span class="dim">（可能不是 Git 仓库）</span></p>
-              {:else}
-                <p class="empty-note">选择会话后显示改动</p>
               {/if}
             </div>
           </section>
@@ -378,29 +408,25 @@
   .commit-subject { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--tx); font-size: 11px; }
   .commit-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--tx3); font-size: 9px; }
   .commit-hash { margin-right: 5px; color: var(--ac); }
-  .file-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; color: var(--tx2); font-size: 13px; font-weight: 600; }
-  .file-heading b { color: var(--tx3); font-weight: 500; }
-  .file-heading-hint { color: var(--tx3); font-size: 10px; font-weight: 400; }
-  .file-scroll { overflow-y: auto; }
-  .f {
-    display: flex; align-items: center; gap: 8px; width: 100%;
-    padding: 7px 7px; border: 1px solid transparent; border-radius: 7px; background: transparent;
-    color: var(--tx2); font: inherit; cursor: pointer; text-align: left;
-    transition: background var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), transform 120ms var(--ease);
-  }
-  .f:hover { background: var(--ac-soft); border-color: var(--ac-bd); color: var(--tx); }
-  .f:active { transform: scale(0.98); }
-  .fst { font-weight: 700; width: 10px; text-align: center; flex: none; }
-  .file-list { display: flex; flex-direction: column; gap: 2px; }
-  .file-meta { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
-  .fname, .fpath { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .fname { color: var(--tx2); }
-  .fpath { color: var(--tx3); font-size: 9px; }
-  .f :global(svg) { flex: none; color: var(--tx3); opacity: 0; transition: opacity var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease); }
-  .f:hover :global(svg) { opacity: 1; transform: translateX(2px); }
+  .commit-chevron { flex: none; align-self: center; color: var(--tx3); transition: transform 160ms var(--ease); }
+  .commit-files { margin: 0 0 8px 25px; padding: 4px 0 4px 10px; border-left: 1px solid var(--bd2); }
+  .commit-file { display: flex; align-items: center; gap: 7px; width: 100%; min-height: 30px; padding: 4px 6px; border: none; border-radius: 5px; background: transparent; color: var(--tx2); font: inherit; text-align: left; cursor: pointer; }
+  .commit-file:hover, .commit-file.expanded { background: var(--color-hover); color: var(--tx); }
+  .commit-file-status { width: 14px; flex: none; font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
+  .commit-file-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 10px; }
+  .commit-file-stats { flex: none; font-family: var(--font-mono); font-size: 9px; }
+  .add-text { color: var(--ok); }
+  .del-text { color: var(--err); }
+  .commit-file :global(.icon-wrap) { flex: none; color: var(--tx3); transition: transform 160ms var(--ease); }
+  .commit-file.expanded :global(.icon-wrap) { transform: rotate(90deg); }
+  .commit-inline-diff { max-height: 260px; margin: 0 0 6px 21px; overflow: auto; border-radius: 5px; background: var(--l1); font-family: var(--font-mono); font-size: 9px; line-height: 1.45; }
+  .inline-diff-line { padding: 2px 6px; white-space: pre-wrap; word-break: break-word; }
+  .inline-diff-line.diff-add { background: var(--ok-soft); color: var(--ok); }
+  .inline-diff-line.diff-del { background: var(--err-soft); color: var(--err); }
+  .inline-diff-line.diff-meta { color: var(--ac); background: var(--ac-soft); }
+  .inline-diff-line.diff-ctx { color: var(--tx3); }
 
   .empty-note { font-size: 11px; color: var(--tx3); padding: 8px 4px; }
-  .empty-note .dim { opacity: 0.7; }
 
   /* Review mode */
   .rv-head {

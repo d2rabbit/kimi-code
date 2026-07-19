@@ -142,6 +142,7 @@ pub fn run() {
             commands::list_git_branches,
             commands::git_checkout,
             commands::git_log,
+            commands::git_commit_files,
             commands::get_kimi_home,
             commands::read_text_file,
             commands::write_text_file,
