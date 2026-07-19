@@ -32,15 +32,6 @@
 </script>
 
 <header class="titlebar" data-tauri-drag-region>
-  {#if !isMac && ready}
-    <!-- 左上角交通灯（悬停显示符号） -->
-    <div class="lights" role="group" aria-label="窗口控制">
-      <button class="light close" onclick={onClose} aria-label="关闭（隐藏到托盘）" title="关闭（隐藏到托盘）" type="button"><span class="sym">×</span></button>
-      <button class="light min" onclick={onMinimize} aria-label="最小化" title="最小化" type="button"><span class="sym">−</span></button>
-      <button class="light max" onclick={onToggleMaximize} aria-label="最大化 / 还原" title="最大化 / 还原" type="button"><span class="sym sym-max"></span></button>
-    </div>
-  {/if}
-
   <div class="breadcrumb" data-tauri-drag-region>
     {#if wsName}
       <span class="crumb">{wsName}</span>
@@ -48,6 +39,15 @@
     {/if}
     <span class="crumb current">{sessionTitle}</span>
   </div>
+
+  {#if !isMac && ready}
+    <!-- Linux / Windows：右上角窗口控制（系统约定布局） -->
+    <div class="win-ctrl" role="group" aria-label="窗口控制">
+      <button class="wc" onclick={onMinimize} aria-label="最小化" title="最小化" type="button"><span class="wc-sym">−</span></button>
+      <button class="wc" onclick={onToggleMaximize} aria-label="最大化 / 还原" title="最大化 / 还原" type="button"><span class="wc-sym wc-max"></span></button>
+      <button class="wc close" onclick={onClose} aria-label="关闭（隐藏到托盘）" title="关闭（隐藏到托盘）" type="button"><span class="wc-sym">×</span></button>
+    </div>
+  {/if}
 </header>
 
 <style>
@@ -70,35 +70,26 @@
     --titlebar-pad-left: 80px;
   }
 
-  /* ---- macOS 风格交通灯 ---- */
-  .lights { display: flex; gap: 8px; flex: none; }
-  .light {
-    width: 12px; height: 12px;
-    border-radius: 50%;
+  /* ---- Linux / Windows：右上角矩形窗口控制 ---- */
+  .win-ctrl { margin-left: auto; display: flex; gap: 2px; flex: none; }
+  .wc {
+    width: 30px; height: 26px;
     border: none;
-    padding: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--tx2);
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: transform var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+    transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
   }
-  .light.close { background: #ff5f57; }
-  .light.min { background: #febc2e; }
-  .light.max { background: #28c840; }
-  .light .sym {
-    font-size: 9px; font-weight: 700; line-height: 1;
-    color: rgba(0, 0, 0, 0.55);
-    opacity: 0;
-    transition: opacity var(--duration-fast) var(--ease);
-    font-family: var(--font-ui);
+  .wc:hover { background: var(--color-hover); color: var(--tx); }
+  .wc.close:hover { background: var(--err); color: #fff; }
+  .wc-sym { font-size: 12px; font-weight: 600; line-height: 1; font-family: var(--font-ui); }
+  .wc-max {
+    width: 8px; height: 8px;
+    border: 1.4px solid currentColor;
+    border-radius: 1.5px;
   }
-  .light .sym-max {
-    width: 5px; height: 5px;
-    border: 1.2px solid rgba(0, 0, 0, 0.55);
-    border-radius: 1px;
-  }
-  .lights:hover .sym { opacity: 1; }
-  .light:hover { transform: scale(1.12); }
-  .light:active { transform: scale(0.94); }
 
   .breadcrumb {
     display: flex;
