@@ -164,8 +164,34 @@ fn copy_recursively(src: &Path, dst: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Spawn options for the embedded agent. Defaults favour diagnosability:
+/// `info`-level logging so turn processing / model calls / MCP connections
+/// land in `<home>/server/server.log` — the previous `error` default left
+/// `turn.started → <silence>` failures invisible.
+pub struct StartAgentOptions {
+    /// Pino log level passed via `--log-level`. Defaults to `info`.
+    pub log_level: String,
+    /// Mount `/api/v1/debug/*` introspection routes. Defaults to off.
+    pub debug_endpoints: bool,
+}
+
+impl Default for StartAgentOptions {
+    fn default() -> Self {
+        Self {
+            log_level: "info".to_string(),
+            debug_endpoints: false,
+        }
+    }
+}
+
 /// Spawn (or return the running) embedded agent; resolves once healthy.
-pub async fn start_embedded_agent(app: &AppHandle) -> Result<String, String> {
+///
+/// `opts` only apply to a freshly-spawned agent; a reused live child keeps
+/// its original flags. To change log level at runtime, restart the app.
+pub async fn start_embedded_agent(
+    app: &AppHandle,
+    opts: StartAgentOptions,
+) -> Result<String, String> {
     let state = app.state::<AgentState>();
     let mut guard = state.0.lock().await;
 
@@ -187,16 +213,21 @@ pub async fn start_embedded_agent(app: &AppHandle) -> Result<String, String> {
         "http://tauri.localhost,tauri://localhost"
     };
 
-    let mut child = tokio::process::Command::new(&sea)
-        .args([
-            "server",
-            "run",
-            "--foreground",
-            "--port",
-            &port.to_string(),
-            "--log-level",
-            "error",
-        ])
+    let mut cmd = tokio::process::Command::new(&sea);
+    cmd.args([
+        "server",
+        "run",
+        "--foreground",
+        "--port",
+        &port.to_string(),
+        "--log-level",
+        &opts.log_level,
+    ]);
+    if opts.debug_endpoints {
+        cmd.arg("--debug-endpoints");
+    }
+
+    let mut child = cmd
         .env("KIMI_CODE_HOME", &home)
         // The WebView runs on Tauri's custom protocol (tauri.localhost), which
         // is cross-origin to the agent's 127.0.0.1 origin. The daemon's CORS

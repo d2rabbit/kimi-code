@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::agent::{agent_home, start_embedded_agent};
+use crate::agent::{agent_home, start_embedded_agent, StartAgentOptions};
 use crate::daemon::kimi_home;
 
 /// On-disk filename of the daemon's persistent bearer token (under the agent home).
@@ -28,9 +28,21 @@ pub struct EnsureServerResult {
 /// Called once on app startup. The agent is a private child process with its
 /// own KIMI_CODE_HOME (~/.kimi-code/desktop) and an ephemeral port — never a
 //  shared/foreign daemon. Emits `daemon:ready` with the origin.
+///
+/// `log_level` overrides the daemon's Pino log level (default `info`; one of
+/// fatal|error|warn|info|debug|trace|silent). `debug_endpoints` mounts the
+/// `/api/v1/debug/*` introspection routes. Both are read from env vars set by
+/// `build-run.sh` so testers can tune diagnostics without rebuilding Rust:
+///   KIMI_DESKTOP_LOG_LEVEL=debug
+///   KIMI_DESKTOP_DEBUG_ENDPOINTS=1
 #[tauri::command]
 pub async fn ensure_server(app: AppHandle) -> Result<EnsureServerResult, String> {
-    let origin = start_embedded_agent(&app).await?;
+    let opts = StartAgentOptions {
+        log_level: std::env::var("KIMI_DESKTOP_LOG_LEVEL")
+            .unwrap_or_else(|_| "info".to_string()),
+        debug_endpoints: std::env::var("KIMI_DESKTOP_DEBUG_ENDPOINTS").as_deref() == Ok("1"),
+    };
+    let origin = start_embedded_agent(&app, opts).await?;
     let _ = app.emit("daemon:ready", &origin);
     Ok(EnsureServerResult { origin })
 }

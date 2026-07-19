@@ -13,6 +13,7 @@
     "dev:web": "pnpm -C apps/kimi-web run dev",
     "dev:desktop": "pnpm -C apps/kimi-desktop run dev",
     "desktop:run": "pnpm -C apps/kimi-desktop-tauri run client:run",
+    "desktop:dev": "pnpm -C apps/kimi-desktop-tauri run client:dev",
     "desktop:build": "pnpm -C apps/kimi-desktop-tauri run client:build",
     "dev:server": "pnpm -C apps/kimi-code run dev:server",
     "build:plugin-marketplace": "pnpm -C apps/kimi-code run build:plugin-marketplace",

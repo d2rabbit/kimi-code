@@ -17,6 +17,7 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "client:run": "bash scripts/build-run.sh",
+    "client:dev": "bash scripts/dev-quick.sh",
     "client:build": "bash scripts/build-run.sh --no-run"
   },
   "dependencies": {

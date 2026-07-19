@@ -12,6 +12,8 @@
 #   bash scripts/build-run.sh --no-run      # 只构建，不启动
 #   bash scripts/build-run.sh --dist        # 构建并打包成安装包（产出 bundle/）
 #   bash scripts/build-run.sh --dist --skip-sea   # 打包，但复用已有 SEA（不重编 kimi-code）
+#   bash scripts/build-run.sh --log-level debug   # 诊断模式：daemon 写 debug 级日志
+#   bash scripts/build-run.sh --debug-endpoints   # 挂载 /api/v1/debug/* 内省路由
 #   bash scripts/build-run.sh --help
 #
 set -euo pipefail
@@ -25,20 +27,29 @@ NO_RUN=0
 FOREGROUND=0
 DIST=0
 SKIP_SEA=0
+# Daemon log level (fatal|error|warn|info|debug|trace|silent). Default `info`
+# records turn processing / model calls / MCP connections to server.log so
+# prompt failures are diagnosable. Override with --log-level when reproducing.
+LOG_LEVEL="${KIMI_DESKTOP_LOG_LEVEL:-info}"
+DEBUG_ENDPOINTS=0
 
 usage() {
-  sed -n '5,15p' "$0"
+  sed -n '5,17p' "$0"
 }
 
-for arg in "$@"; do
-  case "$arg" in
-    --) ;;
-    --no-run) NO_RUN=1 ;;
-    --foreground) FOREGROUND=1 ;;
-    --dist) DIST=1 ;;
-    --skip-sea) SKIP_SEA=1 ;;
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --) shift; break ;;
+    --no-run) NO_RUN=1; shift ;;
+    --foreground) FOREGROUND=1; shift ;;
+    --dist) DIST=1; shift ;;
+    --skip-sea) SKIP_SEA=1; shift ;;
+    --log-level)
+      [[ $# -ge 2 ]] || { echo "error: --log-level requires a value" >&2; exit 2; }
+      LOG_LEVEL="$2"; shift 2 ;;
+    --debug-endpoints) DEBUG_ENDPOINTS=1; shift ;;
     --help|-h) usage; exit 0 ;;
-    *) echo "error: unknown option: $arg" >&2; usage >&2; exit 2 ;;
+    *) echo "error: unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
 
@@ -192,14 +203,31 @@ fi
 BIN="$APP_DIR/src-tauri/target/release/kimi-desktop-tauri"
 [[ "$TARGET" == win32-* ]] && BIN="$BIN.exe"
 LOG="/tmp/kimi-desktop-tauri.log"
+
+# 诊断参数透传给 embedded agent（commands.rs::ensure_server 读取这两个 env）。
+# KIMI_DESKTOP_LOG_LEVEL 决定 daemon 写 server.log 的级别；默认 info。
+# KIMI_DESKTOP_DEBUG_ENDPOINTS=1 挂载 /api/v1/debug/* 内省路由。
+DEBUG_FLAG=""
+[[ "$DEBUG_ENDPOINTS" == "1" ]] && DEBUG_FLAG="1"
+if [[ "$LOG_LEVEL" != "info" || "$DEBUG_ENDPOINTS" == "1" ]]; then
+  log "诊断模式：log-level=$LOG_LEVEL debug-endpoints=$([[ "$DEBUG_ENDPOINTS" == "1" ]] && echo on || echo off)"
+  log "  daemon 日志：~/.kimi-code/desktop/server/server.log"
+fi
+
 # 清除会从启动器/宿主（如 ZCode AppImage）继承的环境标记，否则 KDE 会按
 # CHROME_DESKTOP 把本窗口归到宿主的 .desktop 组里（任务栏与宿主混在一起）。
 if [[ "$FOREGROUND" == "1" ]]; then
   log "前台启动客户端（Ctrl+C 退出）…"
-  exec env -u CHROME_DESKTOP -u APPIMAGE -u APPDIR "$BIN"
+  exec env -u CHROME_DESKTOP -u APPIMAGE -u APPDIR \
+      KIMI_DESKTOP_LOG_LEVEL="$LOG_LEVEL" \
+      KIMI_DESKTOP_DEBUG_ENDPOINTS="$DEBUG_FLAG" \
+      "$BIN"
 fi
 
-setsid -f env -u CHROME_DESKTOP -u APPIMAGE -u APPDIR "$BIN" >"$LOG" 2>&1 < /dev/null
+setsid -f env -u CHROME_DESKTOP -u APPIMAGE -u APPDIR \
+    KIMI_DESKTOP_LOG_LEVEL="$LOG_LEVEL" \
+    KIMI_DESKTOP_DEBUG_ENDPOINTS="$DEBUG_FLAG" \
+    "$BIN" >"$LOG" 2>&1 < /dev/null
 sleep 2
 CLIENT_PID="$(pgrep -f "release/kimi-desktop-tauri" | head -1 || true)"
 log "客户端已作为独立进程启动（pid: ${CLIENT_PID:-unknown}，ppid=init，不随本脚本/启动器退出）"
