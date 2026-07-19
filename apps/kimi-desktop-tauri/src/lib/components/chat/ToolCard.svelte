@@ -7,6 +7,7 @@
   import Icon from '../ui/Icon.svelte';
   import { toolLabel, toolSummary } from '../../lib/toolMeta';
   import * as client from '../../stores/client.svelte';
+  import SwarmCard from './SwarmCard.svelte';
 
   let {
     tool,
@@ -60,6 +61,7 @@
     if (['bash', 'shell', 'execute', 'run', 'exec'].includes(n)) return 'bash';
     if (['edit', 'write', 'multi_edit', 'multiedit'].includes(n)) return 'edit';
     if (['read', 'readfile'].includes(n)) return 'read';
+    if (['agentswarm', 'swarm'].includes(n)) return 'swarm';
     return 'generic';
   });
 
@@ -130,7 +132,9 @@
   </button>
 
   {#if expanded && tool.output && tool.output.length > 0}
-    {#if kind === 'bash'}
+    {#if kind === 'swarm'}
+      <SwarmCard {tool} />
+    {:else if kind === 'bash'}
       <!-- Bash：终端块（$ 命令 + 输出） -->
       <div class="term">
         {#if bashCmd}<div class="term-cmd"><span class="term-prompt">$</span>{bashCmd}</div>{/if}
