@@ -1701,3 +1701,273 @@ body {
     animation: none;
   }
 }
+
+/* ============================================================================
+   主题专属组件覆盖（让新主题真正呈现各自的设计语言）
+   之前只改了 token，组件继承的 border-width/shadow/filter 没变，
+   导致 brutal 没有厚黑边框、glass 没有毛玻璃、aqua 没有凝胶质感。
+============================================================================ */
+
+/* ===========================
+   BRUTAL — 组件级硬边框 + 硬阴影
+   =========================== */
+html[data-color-scheme="brutal"] .tool-card,
+html[data-color-scheme="brutal"] .plugin-card,
+html[data-color-scheme="brutal"] .item-row,
+html[data-color-scheme="brutal"] .task-item,
+html[data-color-scheme="brutal"] .scard,
+html[data-color-scheme="brutal"] .composer-card,
+html[data-color-scheme="brutal"] .glass-panel,
+html[data-color-scheme="brutal"] .approval-card,
+html[data-color-scheme="brutal"] .empty {
+  border: 2px solid #1a1a1a !important;
+  box-shadow: 4px 4px 0 #1a1a1a !important;
+  border-radius: 4px !important;
+  background: var(--l1) !important;
+}
+html[data-color-scheme="brutal"] .tool-card:hover,
+html[data-color-scheme="brutal"] .plugin-card:hover,
+html[data-color-scheme="brutal"] .item-row:hover {
+  box-shadow: 6px 6px 0 #1a1a1a !important;
+  transform: translate(-2px, -2px);
+}
+html[data-color-scheme="brutal"] .btn,
+html[data-color-scheme="brutal"] .seg-btn,
+html[data-color-scheme="brutal"] .refresh-btn,
+html[data-color-scheme="brutal"] .term-btn,
+html[data-color-scheme="brutal"] .empty-btn,
+html[data-color-scheme="brutal"] .gs-btn,
+html[data-color-scheme="brutal"] .stop-btn {
+  border: 2px solid #1a1a1a !important;
+  box-shadow: 3px 3px 0 #1a1a1a !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  transition: transform 80ms linear, box-shadow 80ms linear !important;
+}
+html[data-color-scheme="brutal"] .btn:active,
+html[data-color-scheme="brutal"] .seg-btn:active,
+html[data-color-scheme="brutal"] .newtask:active,
+html[data-color-scheme="brutal"] .tool-tab:active {
+  transform: translate(3px, 3px) !important;
+  box-shadow: none !important;
+}
+html[data-color-scheme="brutal"] .newtask {
+  border: 2px solid #1a1a1a !important;
+  box-shadow: 4px 4px 0 #1a1a1a !important;
+  animation: none !important;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+html[data-color-scheme="brutal"] .chip {
+  border: 2px solid #1a1a1a !important;
+  box-shadow: 2px 2px 0 #1a1a1a !important;
+  animation: none !important;
+  font-weight: 600;
+}
+html[data-color-scheme="brutal"] .tool-tab {
+  border: 2px solid transparent;
+  font-weight: 700;
+}
+html[data-color-scheme="brutal"] .tool-tab.active {
+  border: 2px solid #1a1a1a !important;
+  box-shadow: 3px 3px 0 #1a1a1a !important;
+  background: var(--brutal-yellow) !important;
+  color: #1a1a1a !important;
+}
+html[data-color-scheme="brutal"] .tool-tab::after { display: none; }
+html[data-color-scheme="brutal"] .bubble {
+  border: 2px solid #1a1a1a !important;
+  box-shadow: 3px 3px 0 #1a1a1a !important;
+}
+html[data-color-scheme="brutal"] .s-row::before,
+html[data-color-scheme="brutal"] .mod::before { display: none; }
+html[data-color-scheme="brutal"] .s-row,
+html[data-color-scheme="brutal"] .mod {
+  border-left: 3px solid transparent;
+  border-radius: 0 !important;
+}
+html[data-color-scheme="brutal"] .s-row:hover,
+html[data-color-scheme="brutal"] .mod:hover {
+  border-left-color: var(--brutal-pink);
+  background: var(--brutal-yellow) !important;
+  color: #1a1a1a !important;
+}
+html[data-color-scheme="brutal"] .s-row.active {
+  border-left-color: var(--brutal-pink);
+  background: var(--brutal-yellow) !important;
+}
+html[data-color-scheme="brutal"] .header,
+html[data-color-scheme="brutal"] .sidebar,
+html[data-color-scheme="brutal"] .rail {
+  border: 2px solid #1a1a1a !important;
+  border-radius: 0 !important;
+}
+html[data-color-scheme="brutal"] .header { border-bottom-width: 2px !important; }
+html[data-color-scheme="brutal"] .sidebar { border-right-width: 2px !important; }
+html[data-color-scheme="brutal"] .rail { border-left-width: 2px !important; }
+
+/* ===========================
+   GLASS — 组件级毛玻璃覆盖
+   =========================== */
+html[data-color-scheme="glass"] .tool-card,
+html[data-color-scheme="glass"] .plugin-card,
+html[data-color-scheme="glass"] .item-row,
+html[data-color-scheme="glass"] .task-item,
+html[data-color-scheme="glass"] .scard,
+html[data-color-scheme="glass"] .composer-card,
+html[data-color-scheme="glass"] .glass-panel,
+html[data-color-scheme="glass"] .approval-card,
+html[data-color-scheme="glass"] .goal-strip,
+html[data-color-scheme="glass"] .empty {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.20) !important;
+}
+html[data-color-scheme="glass"] .sidebar,
+html[data-color-scheme="glass"] .rail {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(16px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.5) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+html[data-color-scheme="glass"] .header {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(16px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.5) !important;
+}
+html[data-color-scheme="glass"] .newtask {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.35), rgba(196, 181, 253, 0.25)) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+  animation: none !important;
+}
+html[data-color-scheme="glass"] .chip {
+  background: rgba(255, 255, 255, 0.10) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  animation: none !important;
+}
+html[data-color-scheme="glass"] .tool-tab.active {
+  background: rgba(167, 139, 250, 0.20) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+html[data-color-scheme="glass"] .bubble {
+  background: rgba(167, 139, 250, 0.12) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(167, 139, 250, 0.25) !important;
+}
+html[data-color-scheme="glass"] .btn,
+html[data-color-scheme="glass"] .seg-btn,
+html[data-color-scheme="glass"] .refresh-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+/* ===========================
+   AQUA — 组件级凝胶质感覆盖
+   =========================== */
+html[data-color-scheme="aqua"] .newtask,
+html[data-color-scheme="aqua"] .btn.primary,
+html[data-color-scheme="aqua"] .seg-btn.on {
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 50%),
+    linear-gradient(180deg, #6aa6f8 0%, #1862d8 55%, #0c4cc0 100%) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.60),
+    inset 0 -3px 6px rgba(255, 255, 255, 0.35),
+    0 2px 6px rgba(0, 30, 90, 0.35) !important;
+  color: #fff !important;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(0, 30, 90, 0.30);
+  border: none !important;
+  animation: none !important;
+}
+html[data-color-scheme="aqua"] .btn,
+html[data-color-scheme="aqua"] .seg-btn,
+html[data-color-scheme="aqua"] .refresh-btn,
+html[data-color-scheme="aqua"] .term-btn {
+  background:
+    radial-gradient(100% 80% at 50% -10%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 50%),
+    linear-gradient(180deg, #f8fafc 0%, #dee3eb 100%) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.80),
+    inset 0 -2px 4px rgba(0, 30, 90, 0.08),
+    0 1px 2px rgba(0, 30, 90, 0.12) !important;
+  border: 1px solid rgba(0, 30, 90, 0.15) !important;
+  color: var(--tx) !important;
+  font-weight: 500;
+}
+html[data-color-scheme="aqua"] .tool-card,
+html[data-color-scheme="aqua"] .plugin-card,
+html[data-color-scheme="aqua"] .item-row,
+html[data-color-scheme="aqua"] .scard,
+html[data-color-scheme="aqua"] .glass-panel,
+html[data-color-scheme="aqua"] .approval-card {
+  background:
+    radial-gradient(100% 60% at 50% 0%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 40%),
+    linear-gradient(180deg, #ffffff 0%, #eef1f5 100%) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.70),
+    0 4px 12px rgba(0, 30, 90, 0.12) !important;
+  border: 1px solid rgba(0, 30, 90, 0.10) !important;
+}
+html[data-color-scheme="aqua"] .sidebar,
+html[data-color-scheme="aqua"] .rail {
+  background: repeating-linear-gradient(180deg, #f2f4f7 0 2px, #e7eaef 2px 4px) !important;
+}
+html[data-color-scheme="aqua"] .header {
+  background:
+    radial-gradient(100% 50% at 50% 0%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 60%),
+    linear-gradient(180deg, #eef1f5 0%, #dee3eb 100%) !important;
+  border-bottom: 1px solid rgba(0, 30, 90, 0.10) !important;
+}
+html[data-color-scheme="aqua"] .composer-card {
+  background:
+    radial-gradient(100% 60% at 50% 0%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 40%),
+    linear-gradient(180deg, #ffffff 0%, #eef1f5 100%) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.70),
+    inset 0 -2px 4px rgba(0, 30, 90, 0.08),
+    0 4px 12px rgba(0, 30, 90, 0.10) !important;
+  border: 1px solid rgba(0, 30, 90, 0.12) !important;
+}
+html[data-color-scheme="aqua"] .chip {
+  background:
+    radial-gradient(100% 80% at 50% -10%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 50%),
+    linear-gradient(180deg, #e8edf4 0%, #d4dae4 100%) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.60), 0 1px 2px rgba(0, 30, 90, 0.10) !important;
+  border: 1px solid rgba(0, 30, 90, 0.10) !important;
+  animation: none !important;
+}
+html[data-color-scheme="aqua"] .bubble {
+  background:
+    radial-gradient(100% 60% at 50% 0%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 40%),
+    linear-gradient(180deg, #e8edf4 0%, #d4dae4 100%) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.60), 0 2px 8px rgba(0, 30, 90, 0.10) !important;
+  border: 1px solid rgba(0, 30, 90, 0.08) !important;
+}
+html[data-color-scheme="aqua"] .tool-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+html[data-color-scheme="aqua"] .tool-tab.active {
+  background:
+    radial-gradient(100% 80% at 50% -10%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 50%),
+    linear-gradient(180deg, #6aa6f8 0%, #1862d8 100%) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.50), 0 1px 3px rgba(0,30,90,0.25) !important;
+  border: 1px solid rgba(0, 30, 90, 0.15) !important;
+}
