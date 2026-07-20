@@ -55,6 +55,9 @@
   let expandedCommit = $state<string | null>(null);
   let expandedFile = $state<string | null>(null);
   let commitFilesLoading = $state<string | null>(null);
+  let expandedWdFile = $state<string | null>(null);
+  let wdDiffs = $state<Record<string, string>>({});
+  let wdDiffsLoading = $state<string | null>(null);
 
   async function loadGitStatus() {
     if (!activeSessionId) return;
@@ -276,6 +279,57 @@
                 </div>
               </div>
             {/if}
+
+            <!-- 工作区改动（uncommitted changes）-->
+            {#if hasActiveSession && gitData && Object.keys(gitData.entries).length > 0}
+              <div class="wd-heading">
+                <span>工作区改动</span>
+                <b>{Object.keys(gitData.entries).length}</b>
+              </div>
+              <div class="wd-list">
+                {#each Object.entries(gitData.entries) as [path, status] (path)}
+                  <button
+                    class="wd-file"
+                    class:expanded={expandedWdFile === path}
+                    onclick={async () => {
+                      if (expandedWdFile === path) { expandedWdFile = null; return; }
+                      expandedWdFile = path;
+                      if (!wdDiffs[path]) {
+                        wdDiffsLoading = path;
+                        try {
+                          const api = getKimiWebApi();
+                          const result = await api.getFileDiff(activeSessionId, path);
+                          wdDiffs = { ...wdDiffs, [path]: result.diff };
+                        } catch { wdDiffs = { ...wdDiffs, [path]: '' }; }
+                        finally { wdDiffsLoading = null; }
+                      }
+                    }}
+                    type="button"
+                  >
+                    <span class="wd-status" style="color: {statusColor[status[0] ?? ''] ?? 'var(--tx3)'}">{status[0] ?? '?'}</span>
+                    <span class="wd-path">{path.split('/').pop()}</span>
+                    <span class="wd-dir">{path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : ''}</span>
+                    <Icon name="chevron-down" size="sm" class="wd-chevron" />
+                  </button>
+                  {#if expandedWdFile === path}
+                    <div class="wd-diff">
+                      {#if wdDiffsLoading === path}
+                        <p class="empty-note">加载 diff…</p>
+                      {:else if wdDiffs[path]}
+                        {#each diffPreview(wdDiffs[path]) as line, i (`wd-${path}-${i}`)}
+                          <div class="dline" class:add={line.kind === 'add'} class:del={line.kind === 'del'} class:meta={line.kind === 'meta'}>
+                            <span class="dtx">{line.text}</span>
+                          </div>
+                        {/each}
+                      {:else}
+                        <p class="empty-note">无 diff 内容</p>
+                      {/if}
+                    </div>
+                  {/if}
+                {/each}
+              </div>
+            {/if}
+
             <div class="timeline-heading">
               <span>提交历史</span>
               <span class="timeline-count">{gitLog.length}</span>
@@ -438,6 +492,17 @@
   .branch-menu { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; max-height: 260px; overflow-y: auto; }
   .branch-menu .glass-menu-item.on { color: var(--ac); font-weight: 600; }
   .timeline-heading { display: flex; align-items: center; gap: 7px; padding-top: 2px; margin-bottom: 6px; color: var(--tx2); font-size: 12px; font-weight: 650; }
+  .wd-heading { display: flex; align-items: center; gap: 7px; padding-top: 2px; margin-bottom: 6px; color: var(--tx2); font-size: 12px; font-weight: 650; }
+  .wd-heading b { min-width: 18px; padding: 2px 5px; border-radius: 999px; background: var(--ac-soft); color: var(--ac); font-family: var(--font-mono); font-size: 9px; text-align: center; }
+  .wd-list { margin: 0 -4px 14px; padding-bottom: 3px; border-bottom: 1px solid var(--bd); }
+  .wd-file { display: flex; align-items: center; gap: 7px; width: 100%; padding: 5px 6px; border: none; border-radius: 6px; background: transparent; color: var(--tx2); font-size: 11px; cursor: pointer; text-align: left; transition: background var(--duration-fast) var(--ease); }
+  .wd-file:hover { background: var(--color-hover); }
+  .wd-status { width: 12px; flex: none; font-family: var(--font-mono); font-weight: 700; }
+  .wd-path { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx); }
+  .wd-dir { color: var(--tx3); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80px; }
+  .wd-chevron { flex: none; color: var(--tx3); transition: transform 160ms var(--ease); }
+  .wd-file.expanded .wd-chevron { transform: rotate(180deg); }
+  .wd-diff { max-height: 300px; overflow-y: auto; margin: 0 0 6px 19px; border-radius: 6px; background: var(--l1); font-family: var(--font-mono); font-size: 10px; line-height: 1.5; }
   .timeline-count { min-width: 18px; padding: 2px 5px; border-radius: 999px; background: var(--l3); color: var(--tx3); font-family: var(--font-mono); font-size: 9px; text-align: center; }
   .git-timeline { position: relative; margin: 0 -4px 18px; padding-bottom: 3px; border-bottom: 1px solid var(--bd); }
   .commit-row { position: relative; display: flex; align-items: stretch; gap: 9px; width: 100%; min-height: 43px; padding: 5px 4px; border: none; border-radius: 7px; background: transparent; color: var(--tx2); text-align: left; cursor: pointer; transition: background var(--duration-fast) var(--ease); }
