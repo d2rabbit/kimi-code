@@ -4,7 +4,7 @@ Package-local rules for `apps/kimi-desktop-tauri` (`@moonshot-ai/kimi-desktop-ta
 
 ## What it is
 
-A Tauri 2 + Svelte 5 desktop client for Kimi Code, a peer to the Electron-based `apps/kimi-desktop`. It does **not** bundle kimi-web; the frontend is a fresh Svelte implementation. Unlike the Electron app, the Tauri client **owns its own isolated embedded agent** — the Rust main process spawns the bundled SEA (`kimi server run --foreground`) as a private child process bound to the app lifecycle, using an isolated `KIMI_CODE_HOME` (`~/.kimi-code/desktop`) and an ephemeral loopback port. It never attaches to the shared CLI daemon (port 58627) or any foreign daemon. See `src-tauri/src/agent.rs`.
+A Tauri 2 + Svelte 5 desktop client for Kimi Code, a peer to the Electron-based `apps/kimi-desktop`. It does **not** bundle kimi-web; the frontend is a fresh Svelte implementation. Unlike the Electron app, the Tauri client **owns its own isolated embedded agent** — the Rust main process spawns the bundled SEA (`kimi web --no-open`) as a private child process bound to the app lifecycle, using an isolated `KIMI_CODE_HOME` (`~/.kimi-code/desktop`) and an ephemeral loopback port. It never attaches to the shared CLI daemon (port 58627) or any foreign daemon. See `src-tauri/src/agent.rs`.
 
 ## Stack
 

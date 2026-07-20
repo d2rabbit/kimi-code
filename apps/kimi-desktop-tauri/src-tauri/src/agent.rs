@@ -1,6 +1,6 @@
 // agent.rs — app-owned embedded Kimi agent (private server process).
 //
-// Spawns the bundled SEA (`kimi server run --foreground`) as a long-lived
+// Spawns the bundled SEA (`kimi web --no-open`) as a long-lived
 // child process bound to the app lifecycle. Uses an ISOLATED KIMI_CODE_HOME
 // (~/.kimi-code/desktop) so it never contends with the shared CLI daemon for
 // the server lock / token / sessions, and an ephemeral loopback port instead
@@ -311,9 +311,8 @@ pub async fn start_embedded_agent(
 
     let mut cmd = tokio::process::Command::new(&sea);
     cmd.args([
-        "server",
-        "run",
-        "--foreground",
+        "web",
+        "--no-open",
         "--port",
         &port.to_string(),
         "--log-level",
