@@ -17,16 +17,22 @@
 use std::path::PathBuf;
 use tauri::Manager;
 
+/// Whether to resolve agent paths in dev mode. True when compiled in debug,
+/// OR when the KIMI_DESKTOP_DEV env var is set (lets release builds find the
+/// dev workspace during testing without resource staging).
+fn is_dev_mode() -> bool {
+    cfg!(debug_assertions) || std::env::var("KIMI_DESKTOP_DEV").as_deref() == Ok("1")
+}
+
 /// Resolve the main.cjs path (the kimi-code JS bundle).
 ///
 /// - **Dev**: `apps/kimi-code/dist-native/intermediates/main.cjs` — produced
 ///   by `tsdown --config tsdown.native.config.ts` (skipping the SEA injection
-///   steps). Falls back to `~/.kimi-code/bin/main.cjs` if the dev build is
-///   missing.
+///   steps).
 /// - **Packaged**: `<resource_dir>/main.cjs` — placed there by the Tauri
 ///   `beforeBundleCommand` / resource bundling.
 pub fn resolve_agent_script(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    if cfg!(debug_assertions) {
+    if is_dev_mode() {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let apps_dir = manifest_dir
             .ancestors()
@@ -68,7 +74,7 @@ pub fn resolve_agent_script(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 /// - **Packaged**: `<resource_dir>/node[.exe]` — bundled alongside main.cjs so
 ///   the app is self-contained without requiring users to install Node.
 pub fn resolve_node_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    if cfg!(debug_assertions) {
+    if is_dev_mode() {
         // Dev: use system node
         which_node()
     } else {

@@ -194,14 +194,11 @@ pnpm --filter "$PKG" run build
 log "构建客户端（cargo --release --features custom-protocol）…"
 cargo build --release --features custom-protocol --manifest-path "$APP_DIR/src-tauri/Cargo.toml"
 
-# ---- 6. 为直接运行的二进制配备内嵌 agent ----
-# 新架构：main.cjs 作为 resource 被 Tauri 打包。dev 模式下 release 二进制
-# 通过 sea_path.rs 的 dev 路径直接找 dist-native/intermediates/main.cjs，
-# 不需要手动 staging。但为了离线/打包场景，复制到 target/release/resources/。
-DEST="$APP_DIR/src-tauri/target/release/resources"
-mkdir -p "$DEST"
-cp -f "$AGENT_SCRIPT" "$DEST/main.cjs"
-log "agent 已配备: $DEST/main.cjs"
+# ---- 6. dev 模式无需 staging ----
+# 新架构：dev 模式下 release 二进制通过 sea_path.rs 的 dev 路径直接找
+# apps/kimi-code/dist-native/intermediates/main.cjs，不需要复制到 resources/。
+# 打包时（--dist）由 before-bundle.cjs 负责把 main.cjs 复制到 src-tauri/resources/。
+log "agent 已就绪（dev 直接引用）: $AGENT_SCRIPT"
 
 if [[ "$NO_RUN" == "1" ]]; then
   log "构建完成（--no-run）。二进制: $APP_DIR/src-tauri/target/release/kimi-desktop-tauri"
@@ -230,12 +227,14 @@ fi
 if [[ "$FOREGROUND" == "1" ]]; then
   log "前台启动客户端（Ctrl+C 退出）…"
   exec env -u CHROME_DESKTOP -u APPIMAGE -u APPDIR \
+      KIMI_DESKTOP_DEV=1 \
       KIMI_DESKTOP_LOG_LEVEL="$LOG_LEVEL" \
       KIMI_DESKTOP_DEBUG_ENDPOINTS="$DEBUG_FLAG" \
       "$BIN"
 fi
 
 setsid -f env -u CHROME_DESKTOP -u APPIMAGE -u APPDIR \
+    KIMI_DESKTOP_DEV=1 \
     KIMI_DESKTOP_LOG_LEVEL="$LOG_LEVEL" \
     KIMI_DESKTOP_DEBUG_ENDPOINTS="$DEBUG_FLAG" \
     "$BIN" >"$LOG" 2>&1 < /dev/null
