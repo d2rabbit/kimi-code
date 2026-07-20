@@ -60,8 +60,53 @@ if [[ "$DIST" == "1" && ("$FOREGROUND" == "1" || "$NO_RUN" == "1") ]]; then
   exit 2
 fi
 
-command -v pnpm >/dev/null 2>&1 || { echo "error: pnpm is required" >&2; exit 1; }
 command -v cargo >/dev/null 2>&1 || { echo "error: cargo is required" >&2; exit 1; }
+
+# ---- Node 版本管理器自动切换（低版本 Node 环境友好）----
+# SEA 构建依赖 Node 的 --experimental-sea-config（Node 22+ 专属），bun/deno
+# 无等价物。如果当前 Node 版本 < 24.15（.nvmrc 要求），尝试用版本管理器切换；
+# 这样不动系统 Node，只在项目目录临时切到正确版本。
+NODE_REQUIRED="24.15"
+node_version_ok() {
+  command -v node >/dev/null 2>&1 || return 1
+  local v; v=$(node --version 2>/dev/null | sed 's/^v//')
+  local major; major=${v%%.*}
+  [ "$major" -ge "${NODE_REQUIRED%%.*}" ] 2>/dev/null
+}
+
+if ! node_version_ok; then
+  log "当前 Node 版本不足（需要 >= $NODE_REQUIRED），尝试用版本管理器切换…"
+  # fnm（推荐，跨平台，最快）
+  if command -v fnm >/dev/null 2>&1; then
+    eval "$(fnm env --shell bash 2>/dev/null)" 2>/dev/null || true
+    fnm use --install-if-missing 2>/dev/null && log "fnm 已切换 Node → $(node --version)" || warn "fnm use 失败，请手动: fnm install $NODE_REQUIRED && fnm use"
+  # mise（fnm 的继任者，兼容 .tool-versions）
+  elif command -v mise >/dev/null 2>&1; then
+    eval "$(mise activate bash 2>/dev/null)" 2>/dev/null || true
+    mise install node 2>/dev/null && log "mise 已安装 Node → $(mise exec -- node --version 2>/dev/null)" || warn "mise install 失败，请手动: mise install node@24"
+  # nvm（最传统，但需要 source 加载）
+  elif [ -s "$HOME/.nvm/nvm.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$HOME/.nvm/nvm.sh" 2>/dev/null
+    nvm use --silent 2>/dev/null && log "nvm 已切换 Node → $(node --version)" || { nvm install >/dev/null 2>&1 && log "nvm 已安装 Node → $(node --version)" || warn "nvm install 失败，请手动: nvm install 24"; }
+  fi
+fi
+
+if ! node_version_ok; then
+  err "Node >= $NODE_REQUIRED 必需（SEA 构建依赖 --experimental-sea-config）。"
+  err "  当前: $(node --version 2>/dev/null || echo '未安装')"
+  err "  推荐: 安装 fnm (curl -fsSL https://fnm.vercel.app/install | bash)，然后 fnm install 24"
+  err "  或:   mise (curl https://mise.run | sh)，然后 mise install node@24"
+  err "  或:   nvm (curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash)，然后 nvm install 24"
+  err "  这些版本管理器不动系统 Node，只在项目目录临时切换。"
+  exit 1
+fi
+
+command -v pnpm >/dev/null 2>&1 || {
+  log "pnpm 未安装，用 corepack 启用…"
+  corepack enable pnpm 2>/dev/null && corepack prepare pnpm@10.33.0 --activate 2>/dev/null
+  command -v pnpm >/dev/null 2>&1 || { err "pnpm 仍不可用，手动安装: npm install -g pnpm@10.33.0"; exit 1; }
+}
 
 # ---- 平台目标（与 sea_path.rs 的命名一致） ----
 case "$(uname -s)-$(uname -m)" in
