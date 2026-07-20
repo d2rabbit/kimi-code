@@ -11,14 +11,12 @@ import './lib/styles/global.css';
 import App from './App.svelte';
 
 // Apply the persisted color scheme before mounting the app to avoid a flash.
-// Default to dark (Codex-style) if no preference is stored.
+// Default to dark if no preference is stored. All 7 themes are recognized.
+const VALID_SCHEMES = ['light', 'dark', 'system', 'clay', 'brutal', 'glass', 'aqua'];
 try {
   const scheme = localStorage.getItem('kimi-web.color-scheme');
-  if (scheme === 'light' || scheme === 'dark' || scheme === 'system') {
-    document.documentElement.dataset.colorScheme = scheme;
-  } else {
-    document.documentElement.dataset.colorScheme = 'dark';
-  }
+  document.documentElement.dataset.colorScheme =
+    scheme && VALID_SCHEMES.includes(scheme) ? scheme : 'dark';
 } catch {
   document.documentElement.dataset.colorScheme = 'dark';
 }
