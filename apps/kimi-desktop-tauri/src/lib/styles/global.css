@@ -1487,3 +1487,118 @@ button:not(:disabled):active,
     transition: none;
   }
 }
+
+/* ============================================================================
+   第二轮 UI 细节优化（所有主题受益，纯 CSS 增量）
+   - 输入框 focus ring（accent 光晕）
+   - Welcome logo 呼吸光晕
+   - 滚动条 hover 扩宽 + 平滑出现
+   - Empty 状态 icon 微动效
+   - 头像入场动画
+   - Chip 按钮 hover 提升
+============================================================================ */
+
+/* ---- 输入框 focus ring ---- */
+.composer-card:focus-within {
+  box-shadow: 0 0 0 3px var(--ac-soft);
+}
+.rename:focus,
+.term-btn:focus-visible,
+.refresh-btn:focus-visible,
+.seg-btn:focus-visible {
+  box-shadow: var(--p-focus-ring);
+}
+
+/* ---- Welcome logo 呼吸光晕 ---- */
+@keyframes w-breathe {
+  0%, 100% { box-shadow: 0 0 24px rgba(79, 168, 255, 0.35); }
+  50% { box-shadow: 0 0 36px rgba(79, 168, 255, 0.55); }
+}
+.w-logo .w-mark {
+  animation: w-breathe 3s ease-in-out infinite;
+}
+
+/* ---- 滚动条 hover 扩宽 ---- */
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+  transition: width 0.15s ease;
+}
+*::-webkit-scrollbar:hover {
+  width: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--bd2);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--tx3);
+  width: 8px;
+}
+
+/* ---- Empty 状态 icon 微动效 ---- */
+@keyframes empty-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.empty-ic {
+  animation: empty-float 2.8s ease-in-out infinite;
+}
+
+/* ---- 头像入场 ---- */
+@keyframes avatar-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+.avatar {
+  animation: avatar-in 0.3s var(--ease) backwards;
+}
+
+/* ---- Chip 按钮 hover 提升（welcome 快捷入口） ---- */
+.chip {
+  transition: border-color var(--duration-fast) var(--ease),
+    background var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease),
+    transform var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease);
+}
+.chip:hover {
+  box-shadow: 0 4px 12px var(--ac-soft);
+}
+
+/* ---- Dialog/Modal 入场增强（用 spring 曲线） ---- */
+.glass-menu,
+.modal-content,
+.theme-card {
+  animation: dialog-in 0.22s var(--ease-spring, var(--ease));
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---- 加载 spinner 增强 ---- */
+@keyframes spinner-glow {
+  0%, 100% { border-top-color: var(--ac); }
+  50% { border-top-color: var(--ac-h); }
+}
+.spinner {
+  animation: spin 0.7s linear infinite, spinner-glow 1.4s ease-in-out infinite;
+}
+
+/* ---- reduced-motion 守护（第二轮） ---- */
+@media (prefers-reduced-motion: reduce) {
+  .w-logo .w-mark,
+  .empty-ic,
+  .avatar,
+  .glass-menu,
+  .modal-content,
+  .theme-card,
+  .spinner {
+    animation: none;
+  }
+  *::-webkit-scrollbar,
+  *::-webkit-scrollbar:hover {
+    transition: none;
+  }
+}
