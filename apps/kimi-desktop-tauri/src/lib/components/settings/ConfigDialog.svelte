@@ -830,6 +830,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.4);
+    animation: kimi-fade-in var(--duration-fast, 120ms) var(--ease, ease);
   }
   .form-card {
     background: var(--color-surface, rgba(28,28,30,0.72));
@@ -840,6 +841,7 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+    animation: kimi-fade-in-up var(--duration-base, 160ms) var(--ease-out, ease);
   }
   .form-card h4 { margin: 0 0 4px; font-size: var(--text-base, 14px); font-weight: var(--weight-medium, 500); }
   .form-card label { display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm, 13px); color: var(--color-text-muted, rgba(235,235,245,0.6)); }
@@ -975,9 +977,8 @@
     border: 2px solid rgba(255,255,255,0.1);
     border-top-color: var(--color-text, #ececec);
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
   .mono {
     font-family: var(--font-mono, monospace);
   }

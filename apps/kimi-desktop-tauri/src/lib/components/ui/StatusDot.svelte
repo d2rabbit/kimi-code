@@ -31,16 +31,9 @@
   }
   .status-running {
     background: var(--color-accent, #2dd4bf);
-    animation: pulse 1.2s ease-in-out infinite;
+    animation: kimi-pulse var(--duration-pulse, 1.5s) ease-in-out infinite;
   }
   .status-error {
     background: var(--color-danger, #ff453a);
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .status-running { animation: none; }
   }
 </style>

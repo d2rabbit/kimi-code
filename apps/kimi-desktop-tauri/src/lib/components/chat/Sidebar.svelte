@@ -211,10 +211,9 @@
   .s-btn.active { color: var(--tx); font-weight: 500; }
   .s-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .s-status-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
-  .s-status-dot[data-status="running"] { background: var(--ok); box-shadow: 0 0 6px var(--ok); animation: pulse 1.5s infinite; }
+  .s-status-dot[data-status="running"] { background: var(--ok); box-shadow: 0 0 6px var(--ok); animation: kimi-pulse 1.5s infinite; }
   .s-status-dot[data-status="awaitingApproval"] { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
   .s-status-dot[data-status="awaitingQuestion"] { background: var(--ac); box-shadow: 0 0 6px var(--ac); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   @media (prefers-reduced-motion: reduce) {
     .s-status-dot[data-status="running"] { animation: none; }
   }

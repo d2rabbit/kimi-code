@@ -209,8 +209,7 @@
   .hdr { flex: none; height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid var(--bd); }
   .hdr-title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip-run { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 8px; font-size: 10.5px; font-weight: 600; background: var(--ok-soft); color: var(--ok); }
-  .dot-run { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .dot-run { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); animation: kimi-pulse 1.5s infinite; }
   .hdr-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
   .stop-btn { padding: 3px 10px; border-radius: var(--r-sm); border: 1px solid var(--color-danger-bd); background: transparent; color: var(--err); font-size: 11px; cursor: pointer; }
   .stop-btn:hover { background: var(--err-soft); }
@@ -225,7 +224,7 @@
   .chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--bd); background: var(--l2); box-shadow: var(--toplight); color: var(--tx2); font-size: 12px; cursor: pointer; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease); }
   .chip:hover { border-color: var(--ac-bd); color: var(--ac); background: var(--ac-soft); transform: translateY(-1px); }
 
-  .msg { display: flex; gap: 10px; font-size: 13px; line-height: 1.65; }
+  .msg { display: flex; gap: 10px; font-size: 13px; line-height: 1.65; animation: kimi-fade-in var(--duration-fast, 120ms) var(--ease, ease); }
   .msg.user { justify-content: flex-end; }
   .avatar { width: 22px; height: 22px; border-radius: var(--r-sm); flex: none; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; margin-top: 2px; }
   .avatar.u { background: var(--amb-soft); color: var(--amb); }
@@ -255,6 +254,5 @@
   .compact { text-align: center; font-size: 11px; color: var(--tx3); padding: 6px; border-top: 1px solid var(--bd); border-bottom: 1px solid var(--bd); }
 
   .loading { display: flex; justify-content: center; padding: 30px; }
-  .spinner { width: 20px; height: 20px; border: 2px solid var(--bd); border-top-color: var(--ac); border-radius: 50%; animation: spin 0.7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--bd); border-top-color: var(--ac); border-radius: 50%; animation: kimi-spin var(--duration-spin, 0.8s) linear infinite; }
 </style>

@@ -368,7 +368,7 @@
     display: flex; flex-direction: column; overflow: hidden;
     background: var(--l1);
     border-left: 1px solid var(--bd);
-    transition: width var(--duration-base) var(--ease);
+    transition: width var(--duration-base, 160ms) var(--ease, ease);
   }
   .rail.review { width: 520px; }
 
@@ -398,7 +398,7 @@
   .goal-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
   .goal-label { color: var(--tx); font-size: 16px; font-weight: 650; }
   .goal-status { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 7px; background: var(--ok-soft); color: var(--ok); font-family: var(--font-mono); font-size: 11px; }
-  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); animation: pulse 1.5s ease-in-out infinite; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); animation: kimi-pulse 1.5s ease-in-out infinite; }
   .goal-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--bd2); border-radius: 12px; background: var(--l2); margin-bottom: 26px; }
   .goal-caption { color: var(--tx3); font-size: 11px; }
   .goal-card strong { color: var(--tx); font-size: 14px; line-height: 1.45; font-weight: 600; }
@@ -406,7 +406,7 @@
   .task-progress-head { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 10px; color: var(--tx); font-size: 14px; font-weight: 650; }
   .task-progress-head b { padding: 5px 9px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-family: var(--font-mono); font-size: 11px; }
   .task-progress-track { height: 6px; overflow: hidden; border-radius: 999px; background: var(--bd); margin-bottom: 20px; }
-  .task-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--ok); transition: width 220ms var(--ease-out); }
+  .task-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--ok); transform-origin: left center; transition: transform 220ms var(--ease-out, ease); }
   .task-list { display: flex; flex-direction: column; gap: 4px; }
   .task-item { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 6px 4px; color: var(--tx); border-radius: 8px; transition: background var(--duration-fast) var(--ease); }
   .task-item:hover { background: var(--color-hover); }
@@ -420,9 +420,8 @@
   .task-check { width: 20px; height: 20px; flex: none; border: 2px solid var(--bd2); border-radius: 50%; }
   .task-check.done { display: flex; align-items: center; justify-content: center; border-color: var(--ok); background: var(--ok); color: #07140c; font-size: 12px; font-weight: 800; }
   .task-check.run { position: relative; border-color: var(--ac); }
-  .task-check.run::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--ac); animation: pulse 1.5s ease-in-out infinite; }
+  .task-check.run::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--ac); animation: kimi-pulse 1.5s ease-in-out infinite; }
   .task-check.fail { display: flex; align-items: center; justify-content: center; border-color: var(--err); color: var(--err); font-size: 12px; font-weight: 800; }
-  @keyframes pulse { 50% { opacity: 0.35; } }
   @media (prefers-reduced-motion: reduce) {
     .task-check.run::after { animation: none; }
   }

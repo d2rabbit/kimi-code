@@ -807,8 +807,30 @@ body {
   * {
     animation-duration: 0.001ms !important;
     animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* ---- Shared animation keyframes (single source of truth) ---- */
+/* Use these via the .animate-* utility classes or reference directly. */
+@keyframes kimi-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes kimi-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes kimi-fade-in {
+  from { opacity: 0; }
+}
+@keyframes kimi-fade-in-up {
+  from { opacity: 0; transform: translateY(6px); }
+}
+/* Duration tokens for looping animations */
+:root {
+  --duration-spin: 0.8s;
+  --duration-pulse: 1.5s;
 }
 
 /* ---- 内容字号联动（用户可调 UI 字号） ---- */

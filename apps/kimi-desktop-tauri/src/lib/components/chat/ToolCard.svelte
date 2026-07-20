@@ -132,6 +132,7 @@
   </button>
 
   {#if expanded && tool.output && tool.output.length > 0}
+    <div class="tool-expand-area">
     {#if kind === 'swarm'}
       <SwarmCard {tool} />
     {:else if kind === 'bash'}
@@ -179,10 +180,14 @@
         {/if}
       </div>
     {/if}
+    </div>
   {/if}
 </div>
 
 <style>
+  .tool-expand-area {
+    animation: kimi-fade-in var(--duration-fast, 120ms) var(--ease-out, ease);
+  }
   .tool-card {
     margin: 6px 0;
     border-radius: var(--r-lg);

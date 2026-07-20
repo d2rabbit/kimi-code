@@ -53,9 +53,9 @@
     align-items: center;
     justify-content: center;
     background: var(--overlay);
-    animation: fadeIn 0.15s ease;
+    animation: dialogFadeIn var(--duration-base, 160ms) var(--ease, ease);
   }
-  @keyframes fadeIn {
+  @keyframes dialogFadeIn {
     from { opacity: 0; }
   }
   .dialog {
@@ -67,10 +67,11 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.2);
-    animation: springIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: dialogIn var(--duration-slow, 260ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+    will-change: transform, opacity;
   }
-  @keyframes springIn {
-    from { transform: scale(0.92) translateY(12px); opacity: 0; }
+  @keyframes dialogIn {
+    from { transform: scale(0.96) translateY(8px); opacity: 0; }
     to { transform: scale(1) translateY(0); opacity: 1; }
   }
   .dialog-header {
@@ -90,8 +91,5 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .dialog-backdrop, .dialog { animation: none; }
   }
 </style>

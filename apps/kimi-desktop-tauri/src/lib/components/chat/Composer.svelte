@@ -533,9 +533,8 @@
   .chip-loading::after {
     content: ''; width: 14px; height: 14px; border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--ac);
-    animation: spin 0.8s linear infinite;
+    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
   .chip-error {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     background: var(--err-soft); color: var(--err); font-weight: bold;

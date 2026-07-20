@@ -273,7 +273,8 @@
     height: 100%;
     background: var(--color-text-muted, #999);
     border-radius: var(--radius-full, 999px);
-    transition: width 0.3s ease, background 0.2s ease;
+    transform-origin: left center;
+    transition: transform var(--duration-slow, 260ms) var(--ease, ease), background var(--duration-base, 160ms) var(--ease, ease);
   }
   .usage-bar-fill.warning {
     background: var(--color-warning, #d29922);
@@ -463,7 +464,7 @@
     border: 2px solid rgba(255,255,255,0.1);
     border-top-color: var(--color-text, #ececec);
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
   }
   .mini-spinner {
     width: 12px;
@@ -471,8 +472,7 @@
     border: 1.5px solid rgba(255,255,255,0.1);
     border-top-color: currentColor;
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
     display: inline-block;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
 </style>

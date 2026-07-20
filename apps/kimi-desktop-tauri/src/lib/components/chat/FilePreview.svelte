@@ -194,9 +194,8 @@
     border-radius: 50%;
     border: 2px solid var(--color-line, rgba(84,84,88,0.65));
     border-top-color: var(--color-accent, #2dd4bf);
-    animation: spin 0.9s linear infinite;
+    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Code view */
   .code-view {

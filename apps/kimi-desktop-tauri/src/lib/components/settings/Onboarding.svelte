@@ -55,6 +55,7 @@
 
 <div class="ob" role="dialog" aria-modal="true">
   <div class="ob-card">
+    {#key step}
     {#if step === 1}
       <!-- Step 1: welcome -->
       <div class="ob-head">
@@ -126,6 +127,7 @@
         </div>
       </div>
     {/if}
+    {/key}
   </div>
   {#if showLogin}
     <LoginDialog onclose={() => showLogin = false} />
@@ -137,7 +139,7 @@
     position: fixed; inset: 0; z-index: var(--z-modal, 400);
     display: flex; align-items: center; justify-content: center;
     background: var(--overlay); padding: 24px;
-    animation: fade-in 0.18s var(--ease);
+    animation: kimi-fade-in var(--duration-base, 160ms) var(--ease, ease);
   }
   .ob-card {
     width: min(480px, 100%);
@@ -146,7 +148,10 @@
     border-radius: 16px;
     box-shadow: var(--toplight), var(--sh-lg);
     overflow: hidden;
-    animation: spring-in 0.2s var(--ease);
+    animation: kimi-fade-in-up var(--duration-slow, 260ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+  .ob-head, .ob-body {
+    animation: kimi-fade-in var(--duration-base, 160ms) var(--ease, ease);
   }
 
   .ob-head { padding: 28px 28px 0; text-align: center; }
@@ -171,8 +176,8 @@
   .ob-feat .fd { font-size: 11px; color: var(--tx3); margin-top: 2px; }
 
   .ob-dots { display: flex; gap: 6px; justify-content: center; padding: 4px 0; }
-  .ob-dots i { width: 6px; height: 6px; border-radius: 99px; background: var(--bd2); transition: width 0.2s var(--ease), background 0.2s var(--ease); }
-  .ob-dots i.on { width: 18px; background: var(--ac); }
+  .ob-dots i { width: 6px; height: 6px; border-radius: 99px; background: var(--bd2); transition: transform var(--duration-base, 160ms) var(--ease, ease), background var(--duration-base, 160ms) var(--ease, ease); transform-origin: center; }
+  .ob-dots i.on { transform: scaleX(3); background: var(--ac); }
   .ob-actions { display: flex; gap: 10px; justify-content: center; padding-top: 4px; }
   .ob-skip { text-align: center; padding: 0 0 20px; font-size: 11px; color: var(--tx3); cursor: pointer; }
   .ob-skip:hover { color: var(--tx); }
@@ -197,7 +202,4 @@
   .ob-segmented { display: flex; gap: 2px; background: var(--l1); border: 1px solid var(--bd); border-radius: var(--r-md); padding: 2px; }
   .ob-seg-btn { padding: 4px 12px; border: none; background: transparent; color: var(--tx2); font-size: 12px; border-radius: var(--r-sm); cursor: pointer; transition: background 0.12s var(--ease), color 0.12s var(--ease); }
   .ob-seg-btn.on { background: var(--ac); color: #fff; font-weight: 600; }
-
-  @keyframes fade-in { from { opacity: 0; } }
-  @keyframes spring-in { from { opacity: 0; transform: scale(0.96) translateY(6px); } }
 </style>
