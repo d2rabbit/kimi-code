@@ -130,10 +130,11 @@
         <h2>常规</h2>
         <p class="sub-desc">外观偏好和应用设置</p>
         <div class="scard">
-          <span class="lab"><span class="t">界面主题</span><span class="d">深色 / 浅色 / 跟随系统</span></span>
+          <span class="lab"><span class="t">界面主题</span><span class="d">深色 / 浅色 / 粘土 / 跟随系统</span></span>
           <div class="seg">
             <button class="seg-btn" class:on={!client.colorScheme() || client.colorScheme() === 'dark'} onclick={() => client.client.setColorScheme('dark')}>深色</button>
             <button class="seg-btn" class:on={client.colorScheme() === 'light'} onclick={() => client.client.setColorScheme('light')}>浅色</button>
+            <button class="seg-btn" class:on={client.colorScheme() === 'clay'} onclick={() => client.client.setColorScheme('clay')}>粘土</button>
             <button class="seg-btn" class:on={client.colorScheme() === 'system'} onclick={() => client.client.setColorScheme('system')}>跟随系统</button>
           </div>
         </div>

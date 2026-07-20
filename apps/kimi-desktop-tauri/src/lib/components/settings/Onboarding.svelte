@@ -17,7 +17,7 @@
 
   let step = $state(1);
   let selectedLocale = $state<LocaleCode>('zh');
-  let selectedScheme = $state<'light' | 'dark' | 'system'>('dark');
+  let selectedScheme = $state<'light' | 'dark' | 'system' | 'clay'>('dark');
   let showLogin = $state(false);
 
   $effect(() => {
@@ -32,7 +32,7 @@
     setLocale(code);
   }
 
-  function chooseScheme(scheme: 'light' | 'dark' | 'system') {
+  function chooseScheme(scheme: 'light' | 'dark' | 'system' | 'clay') {
     selectedScheme = scheme;
     client.client.setColorScheme(scheme);
   }
@@ -105,8 +105,8 @@
       </div>
       <div class="ob-body">
         <div class="theme-cards">
-          {#each [['dark', '深色磨砂', 'd'], ['light', '浅色磨砂', 'l'], ['system', '跟随系统', 's']] as [val, label, cls]}
-            <button class="theme-card" class:on={selectedScheme === val} onclick={() => chooseScheme(val as 'light' | 'dark' | 'system')} type="button">
+          {#each [['dark', '深色磨砂', 'd'], ['light', '浅色磨砂', 'l'], ['clay', '粘土风格', 'c'], ['system', '跟随系统', 's']] as [val, label, cls]}
+            <button class="theme-card" class:on={selectedScheme === val} onclick={() => chooseScheme(val as 'light' | 'dark' | 'system' | 'clay')} type="button">
               <div class="pv {cls}"></div>
               <div class="tn">{label}</div>
             </button>
