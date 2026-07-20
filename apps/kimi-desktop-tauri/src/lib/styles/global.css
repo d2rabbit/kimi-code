@@ -1370,3 +1370,120 @@ html[data-color-scheme="aqua"] .newtask {
     animation: none;
   }
 }
+
+/* ============================================================================
+   全局交互动画增强（所有主题受益，纯 CSS 增量）
+   汲取 namethatui.com 交互设计最佳实践：
+   - 按钮统一按压反馈（scale 0.97）
+   - 卡片 hover 微 lift（translateY -1px + 阴影加深）
+   - 消息气泡入场（fade + slide-up）
+   - 列表项 hover 左侧 accent 竖条
+============================================================================ */
+
+/* ---- 按钮统一按压反馈（推广到所有可点击元素） ---- */
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active,
+[role="tab"]:not(:disabled):active,
+.btn:not(:disabled):active,
+.seg-btn:not(:disabled):active,
+.refresh-btn:not(:disabled):active,
+.term-btn:not(:disabled):active,
+.theme-card:not(:disabled):active,
+.gs-btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* ---- 卡片 hover 微 lift ---- */
+.tool-card:hover,
+.plugin-card:hover,
+.item-row:hover,
+.task-item:hover {
+  transform: translateY(-1px);
+}
+.tool-card,
+.plugin-card,
+.item-row,
+.task-item {
+  transition: transform var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease),
+    background var(--duration-fast) var(--ease);
+}
+
+/* ---- 消息气泡入场动画 ---- */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.msg.user,
+.msg.agent,
+.tool-card,
+.compact {
+  animation: msg-in 0.24s var(--ease) backwards;
+}
+
+/* ---- Sidebar 会话项 hover 左侧 accent 竖条 ---- */
+.s-row {
+  position: relative;
+  transition: background var(--duration-fast) var(--ease);
+}
+.s-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  background: var(--ac);
+  border-radius: 0 2px 2px 0;
+  transform: translateY(-50%);
+  transition: height var(--duration-base) var(--ease);
+}
+.s-row:hover::before { height: 40%; }
+.s-row.active::before { height: 60%; }
+
+/* ---- 模块导航项 hover 左侧竖条 ---- */
+.mod {
+  position: relative;
+}
+.mod::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  background: var(--ac);
+  border-radius: 0 2px 2px 0;
+  transform: translateY(-50%);
+  transition: height var(--duration-base) var(--ease);
+}
+.mod:hover::before { height: 50%; }
+.mod.on::before { height: 70%; }
+
+/* ---- reduced-motion 守护 ---- */
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):active,
+  [role="button"]:not(:disabled):active,
+  [role="tab"]:not(:disabled):active,
+  .btn:not(:disabled):active,
+  .seg-btn:not(:disabled):active,
+  .refresh-btn:not(:disabled):active,
+  .term-btn:not(:disabled):active,
+  .theme-card:not(:disabled):active,
+  .gs-btn:not(:disabled):active {
+    transform: none;
+  }
+  .tool-card:hover,
+  .plugin-card:hover,
+  .item-row:hover,
+  .task-item:hover {
+    transform: none;
+  }
+  .msg.user, .msg.agent, .tool-card, .compact {
+    animation: none;
+  }
+  .s-row::before, .mod::before {
+    transition: none;
+  }
+}

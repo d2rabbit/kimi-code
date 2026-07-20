@@ -377,9 +377,23 @@
   .tool-brand { display: inline-flex; align-items: center; gap: 7px; color: var(--tx); font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
   .tool-brand :global(.icon-wrap) { color: var(--ac); }
   .tool-tabs { display: flex; align-items: center; gap: 2px; margin-left: auto; padding: 3px; border: 1px solid var(--bd); border-radius: 8px; background: var(--l2); }
-  .tool-tab { display: inline-flex; align-items: center; gap: 5px; height: 27px; padding: 0 8px; border: none; border-radius: 6px; background: transparent; color: var(--tx3); font-size: 11px; cursor: pointer; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), transform 120ms var(--ease); }
-  .tool-tab:hover { color: var(--tx); }
+  .tool-tab { display: inline-flex; align-items: center; gap: 5px; height: 27px; padding: 0 8px; border: none; border-radius: 6px; background: transparent; color: var(--tx3); font-size: 11px; cursor: pointer; position: relative; transition: background var(--duration-base) var(--ease), color var(--duration-fast) var(--ease), transform 120ms var(--ease); }
+  .tool-tab:hover { color: var(--tx); background: var(--color-hover); }
   .tool-tab.active { background: var(--ac-soft); color: var(--ac); }
+  /* active 下划线从中心展开 */
+  .tool-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--ac);
+    border-radius: 1px;
+    transform: translateX(-50%);
+    transition: width var(--duration-base) var(--ease);
+  }
+  .tool-tab.active::after { width: 60%; }
   .tool-tab:active { transform: scale(0.97); }
   .tool-view { flex: 1; min-height: 0; overflow: hidden; }
   .task-view, .git-view { padding: 18px 16px; overflow-y: auto; }
