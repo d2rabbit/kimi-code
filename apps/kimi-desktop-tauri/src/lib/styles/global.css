@@ -1602,3 +1602,102 @@ button:not(:disabled):active,
     transition: none;
   }
 }
+
+/* ============================================================================
+   呼吸感增强（所有主题受益）
+   微妙的、持续的、低频的有机动效，让界面"活着"。
+   原则：极其微妙（scale 1→1.02，opacity 0.88→1）、低频（2.5-5s）、
+   错峰（不同元素不同周期，避免机械同步）。
+============================================================================ */
+
+/* ---- Agent 头像呼吸（gradient 表面微缩放） ---- */
+@keyframes avatar-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.avatar.a {
+  animation: avatar-breathe 3.5s ease-in-out infinite;
+}
+
+/* ---- 新建任务按钮光晕呼吸 ---- */
+@keyframes newtask-glow {
+  0%, 100% { box-shadow: 0 1px 6px rgba(79, 168, 255, 0.22); }
+  50% { box-shadow: 0 2px 12px rgba(79, 168, 255, 0.38); }
+}
+.newtask {
+  animation: newtask-glow 3s ease-in-out infinite;
+}
+
+/* ---- 运行中 chip 呼吸（标题栏的"运行中"徽章） ---- */
+@keyframes chip-run-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+.chip-run {
+  animation: chip-run-breathe 1.8s ease-in-out infinite;
+}
+
+/* ---- Welcome chips 集合呼吸（错峰，波浪感） ---- */
+@keyframes chip-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+.chip {
+  animation: chip-breathe 4s ease-in-out infinite;
+}
+.chip:nth-child(2) { animation-delay: 0.5s; }
+.chip:nth-child(3) { animation-delay: 1s; }
+.chip:nth-child(4) { animation-delay: 1.5s; }
+
+/* ---- body 背景层极慢色彩偏移（雾晕呼吸，~10s 周期） ---- */
+@keyframes haze-drift {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 2% 1%; }
+}
+body {
+  background-size: 100% 100%;
+  animation: haze-drift 10s ease-in-out infinite;
+}
+
+/* ---- session 状态点 glow 呼吸增强（加深光晕脉动） ---- */
+.s-status-dot[data-status="running"],
+.dot-run {
+  animation: dot-glow 1.6s ease-in-out infinite;
+}
+@keyframes dot-glow {
+  0%, 100% { box-shadow: 0 0 4px currentColor; opacity: 1; }
+  50% { box-shadow: 0 0 10px currentColor; opacity: 0.6; }
+}
+
+/* ---- Goal active 状态点加深呼吸 ---- */
+.st-active .gs-dot {
+  animation: goal-glow 1.8s ease-in-out infinite;
+}
+@keyframes goal-glow {
+  0%, 100% { box-shadow: 0 0 6px var(--ac); opacity: 1; }
+  50% { box-shadow: 0 0 14px var(--ac); opacity: 0.5; }
+}
+
+/* ---- Composer 输入框边框微呼吸（运行中状态） ---- */
+.composer-card:focus-within {
+  animation: focus-breathe 2.8s ease-in-out infinite;
+}
+@keyframes focus-breathe {
+  0%, 100% { box-shadow: 0 0 0 3px var(--ac-soft); }
+  50% { box-shadow: 0 0 0 4px var(--ac-soft); }
+}
+
+/* ---- reduced-motion 守护（呼吸感） ---- */
+@media (prefers-reduced-motion: reduce) {
+  .avatar.a,
+  .newtask,
+  .chip-run,
+  .chip,
+  body,
+  .s-status-dot[data-status="running"],
+  .dot-run,
+  .st-active .gs-dot,
+  .composer-card:focus-within {
+    animation: none;
+  }
+}
