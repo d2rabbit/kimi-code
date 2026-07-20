@@ -4,12 +4,11 @@
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
   import FilePreview from '../chat/FilePreview.svelte';
-  import TerminalPanel from './TerminalPanel.svelte';
   import * as client from '../../stores/client.svelte';
   import { getKimiWebApi } from '../../api';
 
   type Mode = 'default' | 'review';
-  type Tool = 'git' | 'tasks' | 'terminal';
+  type Tool = 'git' | 'tasks';
   let mode = $state<Mode>('default');
   let activeTool = $state<Tool>('git');
   let collapsed = $state(false);
@@ -197,9 +196,6 @@
             {:else if activeTool === 'tasks'}
               <Icon name="check-list" size="sm" />
               <span>任务进度</span>
-            {:else}
-              <Icon name="terminal" size="sm" />
-              <span>终端</span>
             {/if}
           </div>
           <div class="tool-tabs" role="tablist" aria-label="右侧工具">
@@ -208,9 +204,6 @@
             </button>
             <button class:active={activeTool === 'tasks'} class="tool-tab" onclick={() => activeTool = 'tasks'} type="button" role="tab" aria-selected={activeTool === 'tasks'}>
               <Icon name="check-list" size="sm" /><span>任务</span>
-            </button>
-            <button class:active={activeTool === 'terminal'} class="tool-tab" onclick={() => activeTool = 'terminal'} type="button" role="tab" aria-selected={activeTool === 'terminal'}>
-              <Icon name="terminal" size="sm" /><span>终端</span>
             </button>
           </div>
           <button class="collapse-btn" onclick={toggle} aria-label="折叠右栏" type="button"><Icon name="panel-collapse" size="sm" /></button>
@@ -256,14 +249,6 @@
                 <p class="empty-note">暂无进行中的计划</p>
               {/if}
             </div>
-          </section>
-        {:else if activeTool === 'terminal'}
-          <section class="tool-view terminal-view">
-            {#if hasActiveSession}
-              <TerminalPanel />
-            {:else}
-              <p class="empty-note">选择会话后启动终端</p>
-            {/if}
           </section>
         {:else}
           <section class="tool-view git-view">

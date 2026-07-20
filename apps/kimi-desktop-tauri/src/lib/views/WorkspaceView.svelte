@@ -3,6 +3,7 @@
   import Sidebar from '../components/chat/Sidebar.svelte';
   import ChatArea from '../components/chat/ChatArea.svelte';
   import RightPanel from '../components/shell/RightPanel.svelte';
+  import TerminalDrawer from '../components/shell/TerminalDrawer.svelte';
   import Resizer from '../components/shell/Resizer.svelte';
   import PluginsView from './PluginsView.svelte';
   import SubagentsView from './SubagentsView.svelte';
@@ -32,6 +33,7 @@
   {#if activeView === 'chat'}
     <main class="chat-col">
       <ChatArea />
+      <TerminalDrawer />
     </main>
     <RightPanel />
   {:else if activeView === 'plugins'}
