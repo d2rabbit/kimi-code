@@ -1971,3 +1971,90 @@ html[data-color-scheme="aqua"] .tool-tab.active {
   box-shadow: inset 0 1px 1px rgba(255,255,255,0.50), 0 1px 3px rgba(0,30,90,0.25) !important;
   border: 1px solid rgba(0, 30, 90, 0.15) !important;
 }
+
+/* ===========================
+   CLAY — 组件级粘土质感覆盖
+   补齐 clay 主题的立体阴影 + 厚圆角 + 柔和受光
+   =========================== */
+html[data-color-scheme="clay"] .tool-card,
+html[data-color-scheme="clay"] .plugin-card,
+html[data-color-scheme="clay"] .item-row,
+html[data-color-scheme="clay"] .task-item,
+html[data-color-scheme="clay"] .scard,
+html[data-color-scheme="clay"] .glass-panel,
+html[data-color-scheme="clay"] .approval-card,
+html[data-color-scheme="clay"] .empty {
+  border-radius: 14px !important;
+  border: 1px solid rgba(55, 28, 10, 0.10) !important;
+  box-shadow:
+    0 6px 16px rgba(55, 28, 10, 0.10),
+    inset 0 -3px 8px rgba(55, 28, 10, 0.06),
+    inset 0 3px 8px rgba(255, 255, 255, 0.45) !important;
+}
+html[data-color-scheme="clay"] .composer-card {
+  border-radius: 16px !important;
+  border: 1px solid rgba(55, 28, 10, 0.10) !important;
+  box-shadow:
+    0 8px 20px rgba(55, 28, 10, 0.10),
+    inset 0 -4px 10px rgba(55, 28, 10, 0.06),
+    inset 0 4px 10px rgba(255, 255, 255, 0.45) !important;
+}
+html[data-color-scheme="clay"] .newtask {
+  border-radius: 12px !important;
+  border: 1px solid rgba(200, 97, 46, 0.20) !important;
+  box-shadow:
+    0 4px 12px rgba(200, 97, 46, 0.18),
+    inset 0 -3px 8px rgba(140, 60, 20, 0.10),
+    inset 0 3px 8px rgba(255, 255, 255, 0.40) !important;
+  animation: none !important;
+}
+html[data-color-scheme="clay"] .btn,
+html[data-color-scheme="clay"] .seg-btn,
+html[data-color-scheme="clay"] .refresh-btn,
+html[data-color-scheme="clay"] .term-btn {
+  border-radius: 10px !important;
+  border: 1px solid rgba(55, 28, 10, 0.08) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.50),
+    inset 0 -1px 2px rgba(55, 28, 10, 0.06) !important;
+  font-weight: 500;
+}
+html[data-color-scheme="clay"] .chip {
+  border-radius: 999px !important;
+  border: 1px solid rgba(55, 28, 10, 0.08) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.45),
+    0 2px 6px rgba(55, 28, 10, 0.06) !important;
+  animation: none !important;
+}
+html[data-color-scheme="clay"] .bubble {
+  border-radius: 14px 14px 4px 14px !important;
+  border: 1px solid rgba(55, 28, 10, 0.08) !important;
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.40),
+    0 3px 10px rgba(55, 28, 10, 0.06) !important;
+}
+html[data-color-scheme="clay"] .tool-tab {
+  border-radius: 8px !important;
+  border: 1px solid transparent;
+}
+html[data-color-scheme="clay"] .tool-tab.active {
+  border-radius: 8px !important;
+  border: 1px solid rgba(200, 97, 46, 0.15) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.40),
+    inset 0 -1px 2px rgba(200, 97, 46, 0.08) !important;
+}
+html[data-color-scheme="clay"] .header,
+html[data-color-scheme="clay"] .sidebar,
+html[data-color-scheme="clay"] .rail {
+  border-color: rgba(55, 28, 10, 0.08) !important;
+}
+html[data-color-scheme="clay"] .sidebar {
+  background: var(--l1) !important;
+  box-shadow: inset -2px 0 6px rgba(55, 28, 10, 0.03) !important;
+}
+html[data-color-scheme="clay"] .rail {
+  background: var(--l1) !important;
+  box-shadow: inset 2px 0 6px rgba(55, 28, 10, 0.03) !important;
+}
