@@ -22,12 +22,25 @@ export interface SlashCommand {
 }
 
 export const SLASH_COMMANDS: SlashCommand[] = [
+  // 会话管理
   { name: '/help',       desc: 'commands.help.desc' },
   { name: '/new',        desc: 'commands.new.desc' },
   { name: '/clear',      desc: 'commands.clear.desc' },
-  { name: '/model',      desc: 'commands.model.desc' },
+  { name: '/sessions',   desc: 'commands.sessions.desc' },
+  { name: '/fork',       desc: 'commands.fork.desc' },
+  { name: '/undo',       desc: 'commands.undo.desc' },
+  { name: '/compact',    desc: 'commands.compact.desc', acceptsInput: true },
+  { name: '/init',       desc: 'commands.init.desc', acceptsInput: true },
+  // 账号与配置
   { name: '/login',      desc: 'commands.login.desc' },
+  { name: '/logout',     desc: 'commands.logout.desc' },
+  { name: '/provider',   desc: 'commands.provider.desc' },
+  { name: '/model',      desc: 'commands.model.desc' },
   { name: '/permission', desc: 'commands.permission.desc' },
+  { name: '/settings',   desc: 'commands.settings.desc' },
+  { name: '/theme',      desc: 'commands.theme.desc' },
+  { name: '/experiments',desc: 'commands.experiments.desc' },
+  // 模式切换
   { name: '/plan',       desc: 'commands.plan.desc' },
   { name: '/swarm',      desc: 'commands.swarm.desc', acceptsInput: true },
   { name: '/goal',       desc: 'commands.goal.desc', acceptsInput: true },
@@ -35,9 +48,15 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { name: '/auto',       desc: 'commands.auto.desc' },
   { name: '/yolo',       desc: 'commands.yolo.desc' },
   { name: '/thinking',   desc: 'commands.thinking.desc' },
-  { name: '/compact',    desc: 'commands.compact.desc', acceptsInput: true },
-  { name: '/undo',       desc: 'commands.undo.desc' },
-  { name: '/fork',       desc: 'commands.fork.desc' },
+  // 扩展
+  { name: '/mcp',        desc: 'commands.mcp.desc' },
+  { name: '/plugins',    desc: 'commands.plugins.desc' },
+  { name: '/tasks',      desc: 'commands.tasks.desc' },
+  { name: '/usage',      desc: 'commands.usage.desc' },
+  { name: '/add-dir',    desc: 'commands.add-dir.desc', acceptsInput: true },
+  { name: '/title',      desc: 'commands.title.desc', acceptsInput: true },
+  { name: '/export-md',  desc: 'commands.export-md.desc', acceptsInput: true },
+  { name: '/version',    desc: 'commands.version.desc' },
   { name: '/status',     desc: 'commands.status.desc' },
 ];
 

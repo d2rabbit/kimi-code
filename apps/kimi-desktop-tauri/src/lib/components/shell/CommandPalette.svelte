@@ -29,11 +29,28 @@
 
   // Build command list reactively
   const commands = $derived<CommandItem[]>([
+    // 会话操作
     { id: 'new', title: '新建对话', category: 'action', icon: 'chat-new', shortcut: '⌘N', action: () => client.client.clearActiveSession() },
     { id: 'search', title: '搜索会话', category: 'action', icon: 'search', keywords: 'sessions find', action: () => {} },
-    { id: 'settings', title: '设置', category: 'action', icon: 'settings', action: () => onnavigate() },
     { id: 'fork', title: 'Fork 当前会话', category: 'action', icon: 'git-branch', action: () => client.client.forkSession() },
-    { id: 'compact', title: '压缩对话', category: 'action', icon: 'contract', action: () => client.client.compact() },
+    { id: 'compact', title: '压缩对话', category: 'action', icon: 'contract', keywords: 'compress', action: () => client.client.compact() },
+    { id: 'undo', title: '撤销上一轮', category: 'action', icon: 'arrow-left', keywords: 'rollback revert', action: () => client.client.undo() },
+    // 配置
+    { id: 'settings', title: '设置', category: 'action', icon: 'settings', action: () => onnavigate() },
+    { id: 'theme-dark', title: '深色主题', category: 'action', icon: 'star', keywords: 'theme dark', action: () => client.client.setColorScheme('dark') },
+    { id: 'theme-light', title: '浅色主题', category: 'action', icon: 'star-outline', keywords: 'theme light', action: () => client.client.setColorScheme('light') },
+    { id: 'theme-clay', title: '粘土主题', category: 'action', icon: 'globe', keywords: 'theme clay', action: () => client.client.setColorScheme('clay') },
+    { id: 'theme-brutal', title: '粗野主题', category: 'action', icon: 'tool', keywords: 'theme brutal', action: () => client.client.setColorScheme('brutal') },
+    { id: 'theme-glass', title: '玻璃主题', category: 'action', icon: 'sparkles', keywords: 'theme glass', action: () => client.client.setColorScheme('glass') },
+    { id: 'theme-aqua', title: '水凝主题', category: 'action', icon: 'image', keywords: 'theme aqua', action: () => client.client.setColorScheme('aqua') },
+    // 模式切换
+    { id: 'mode-plan', title: '切换计划模式', category: 'action', icon: 'list', keywords: 'plan mode', action: () => client.client.togglePlanMode() },
+    { id: 'mode-swarm', title: '切换 Swarm 模式', category: 'action', icon: 'bolt', keywords: 'swarm mode', action: () => client.client.toggleSwarmMode() },
+    { id: 'mode-goal', title: '切换 Goal 模式', category: 'action', icon: 'target', keywords: 'goal mode', action: () => client.client.toggleGoalMode() },
+    // 权限
+    { id: 'perm-manual', title: '权限：手动', category: 'action', icon: 'sliders', keywords: 'permission manual', action: () => client.client.setPermission('manual') },
+    { id: 'perm-auto', title: '权限：自动', category: 'action', icon: 'sliders', keywords: 'permission auto', action: () => client.client.setPermission('auto') },
+    { id: 'perm-yolo', title: '权限：YOLO', category: 'action', icon: 'sliders', keywords: 'permission yolo', action: () => client.client.setPermission('yolo') },
     ...client.sessions().slice(0, 20).map((s) => ({
       id: `session-${s.id}`,
       title: s.title || '新对话',
