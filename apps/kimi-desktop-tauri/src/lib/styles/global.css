@@ -985,3 +985,388 @@ html[data-color-scheme="clay"] .clay-hover:active {
     inset 0 -4px 10px rgba(55, 28, 10, 0.22),
     inset 0 4px 10px rgba(255, 255, 255, 0.35);
 }
+
+/* ---- 全局动画增强 token（所有主题受益，新增不改既有） ---- */
+:root {
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* 轻度过冲，弹窗/卡片入场 */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);   /* 强减速（同 --ease，显式别名） */
+  --duration-in: 200ms;                               /* 入场统一时长 */
+}
+
+/* ============================================================================
+   BRUTAL — 新粗野主义（第四主题，独立于 dark / light / clay）
+   来源：https://namethatui.com/styles/neobrutalism
+   厚黑边框 + 硬偏移阴影（零模糊）+ 饱和 flat 色块 + 按下推入动画。
+   纯 CSS，不需要 backdrop-filter。纯新增，不改任何现有规则。
+============================================================================ */
+html[data-color-scheme="brutal"] {
+  /* ---- primitives ---- */
+  --bg: #fefae0;          /* 奶油白底 */
+  --l1: #ffffff;          /* 卡片/输入框 */
+  --l2: #ffd166;          /* 高亮黄 */
+  --l3: #fff9e6;
+
+  --bd: #1a1a1a;          /* 纯黑边框（用深灰避免太硬） */
+  --bd2: #1a1a1a;
+
+  --tx: #1a1a1a;
+  --tx2: #3d3d3d;
+  --tx3: #5c5c5c;
+
+  --ac: #ef476f;          /* 热粉强调 */
+  --ac-h: #d63d61;
+  --ac-soft: rgba(239, 71, 111, 0.15);
+  --ac-bd: #1a1a1a;       /* 强调按钮也是黑边框 */
+
+  --ok: #06d6a0;          /* 青柠绿 */
+  --ok-soft: rgba(6, 214, 160, 0.15);
+  --warn: #ffd166;        /* 黄 */
+  --warn-soft: rgba(255, 209, 102, 0.20);
+  --err: #ef476f;         /* 热粉 */
+  --err-soft: rgba(239, 71, 111, 0.15);
+  --amb: #fb8500;         /* 橙 */
+  --amb-soft: rgba(251, 133, 0, 0.15);
+
+  /* 硬偏移阴影：零模糊，solid black displaced */
+  --toplight: none;       /* 粗野不要顶光 */
+  --sh: 4px 4px 0 #1a1a1a;
+  --sh-lg: 6px 6px 0 #1a1a1a;
+
+  --overlay: rgba(26, 26, 26, 0.35);
+
+  --haze: none;           /* 粗野不要雾晕 */
+  --grain-op: 0;
+
+  /* 代码高亮（高饱和） */
+  --syn-k: #ef476f;
+  --syn-s: #06d6a0;
+  --syn-f: #118ab2;
+  --syn-n: #fb8500;
+
+  /* ---- semantic layer ---- */
+  --color-bg: var(--bg);
+  --color-surface: var(--l1);
+  --color-surface-raised: var(--l2);
+  --color-surface-sunken: var(--bg);
+  --color-sidebar-bg: var(--l1);
+  --color-text: var(--tx);
+  --color-text-muted: var(--tx2);
+  --color-text-faint: var(--tx3);
+  --color-text-on-accent: #ffffff;
+  --color-line: var(--bd);
+  --color-line-strong: var(--bd2);
+  --color-selected: var(--ac-soft);
+  --color-hover: rgba(26, 26, 26, 0.06);
+  --color-accent: var(--ac);
+  --color-accent-hover: var(--ac-h);
+  --color-accent-soft: var(--ac-soft);
+  --color-accent-bd: var(--ac-bd);
+  --accent-primary: var(--ac);
+  --color-success: var(--ok);
+  --color-success-soft: var(--ok-soft);
+  --color-success-bd: #1a1a1a;
+  --color-warning: var(--amb);
+  --color-warning-soft: var(--amb-soft);
+  --color-warning-bd: #1a1a1a;
+  --color-danger: var(--err);
+  --color-danger-soft: var(--err-soft);
+  --color-danger-bd: #1a1a1a;
+  --color-done: #118ab2;
+  --color-done-soft: rgba(17, 138, 178, 0.15);
+  --color-done-bd: #1a1a1a;
+  --color-info: var(--ac);
+  --color-logo-dev: #ef476f;
+  --glass-divider: var(--bd);
+
+  --shadow-xs: 2px 2px 0 #1a1a1a;
+  --shadow-sm: 3px 3px 0 #1a1a1a;
+  --shadow-md: 4px 4px 0 #1a1a1a;
+  --shadow-lg: var(--sh-lg);
+  --shadow-xl: 8px 8px 0 #1a1a1a;
+
+  --p-focus-ring: 0 0 0 3px var(--ac);
+  --p-focus-ring-strong: 0 0 0 3px var(--ac), 0 0 0 5px #1a1a1a;
+  --p-selection: rgba(239, 71, 111, 0.25);
+
+  color-scheme: light;
+}
+
+/* ---- Brutal 专属装饰色板 ---- */
+html[data-color-scheme="brutal"] {
+  --brutal-yellow: #ffd166;
+  --brutal-pink: #ef476f;
+  --brutal-lime: #06d6a0;
+  --brutal-cyan: #118ab2;
+  --brutal-cream: #fefae0;
+}
+
+/* ---- Brutal 按下动画：推入阴影 ---- */
+html[data-color-scheme="brutal"] .brutal-press {
+  transition: transform var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease);
+}
+html[data-color-scheme="brutal"] .brutal-press:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-color-scheme="brutal"] .brutal-press:active {
+    transform: none;
+  }
+}
+
+/* ============================================================================
+   GLASS — 玻璃拟态（第五主题，独立于 dark / light / clay / brutal）
+   来源：https://namethatui.com/styles/glassmorphism
+   半透明玻璃面 + backdrop-filter（仅此主题作用域，不污染其它主题）
+   + 深色紫蓝壁纸渐变 + 漂浮轻阴影 + 内高光。
+============================================================================ */
+html[data-color-scheme="glass"] {
+  /* ---- primitives ---- */
+  --bg: #0f0f23;          /* 深紫黑底（壁纸渐变覆盖之） */
+  --l1: rgba(255, 255, 255, 0.08);   /* 玻璃面 */
+  --l2: rgba(255, 255, 255, 0.12);   /* 高亮玻璃面 */
+  --l3: rgba(255, 255, 255, 0.16);   /* Dialog 玻璃面 */
+
+  --bd: rgba(255, 255, 255, 0.18);
+  --bd2: rgba(255, 255, 255, 0.28);
+
+  --tx: #f0f0ff;
+  --tx2: #c8c8e8;
+  --tx3: #8888b8;
+
+  --ac: #a78bfa;          /* 紫 */
+  --ac-h: #c4b5fd;
+  --ac-soft: rgba(167, 139, 250, 0.18);
+  --ac-bd: rgba(167, 139, 250, 0.40);
+
+  --ok: #6ee7b7;
+  --ok-soft: rgba(110, 231, 183, 0.15);
+  --warn: #fcd34d;
+  --warn-soft: rgba(252, 211, 77, 0.15);
+  --err: #fca5a5;
+  --err-soft: rgba(252, 165, 165, 0.15);
+  --amb: #fbbf24;
+  --amb-soft: rgba(251, 191, 36, 0.15);
+
+  /* 玻璃阴影：轻外投影 + 内高光顶 */
+  --toplight: inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  --sh:
+    0 8px 32px rgba(0, 0, 0, 0.37),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  --sh-lg:
+    0 16px 48px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.30);
+
+  --overlay: rgba(0, 0, 0, 0.55);
+
+  /* 壁纸渐变：紫蓝粉，固定背景 */
+  --haze:
+    linear-gradient(135deg, #667eea 0%, #764ba2 40%, #f093fb 100%);
+  --grain-op: 0.03;
+
+  /* 代码高亮（霓虹紫蓝） */
+  --syn-k: #c4b5fd;
+  --syn-s: #6ee7b7;
+  --syn-f: #93c5fd;
+  --syn-n: #fcd34d;
+
+  /* ---- semantic layer ---- */
+  --color-bg: var(--bg);
+  --color-surface: var(--l1);
+  --color-surface-raised: var(--l2);
+  --color-surface-sunken: var(--bg);
+  --color-sidebar-bg: var(--l1);
+  --color-text: var(--tx);
+  --color-text-muted: var(--tx2);
+  --color-text-faint: var(--tx3);
+  --color-text-on-accent: #ffffff;
+  --color-line: var(--bd);
+  --color-line-strong: var(--bd2);
+  --color-selected: var(--ac-soft);
+  --color-hover: rgba(255, 255, 255, 0.06);
+  --color-accent: var(--ac);
+  --color-accent-hover: var(--ac-h);
+  --color-accent-soft: var(--ac-soft);
+  --color-accent-bd: var(--ac-bd);
+  --accent-primary: var(--ac);
+  --color-success: var(--ok);
+  --color-success-soft: var(--ok-soft);
+  --color-success-bd: rgba(110, 231, 183, 0.30);
+  --color-warning: var(--warn);
+  --color-warning-soft: var(--warn-soft);
+  --color-warning-bd: rgba(252, 211, 77, 0.30);
+  --color-danger: var(--err);
+  --color-danger-soft: var(--err-soft);
+  --color-danger-bd: rgba(252, 165, 165, 0.30);
+  --color-done: #a78bfa;
+  --color-done-soft: rgba(167, 139, 250, 0.15);
+  --color-done-bd: rgba(167, 139, 250, 0.30);
+  --color-info: var(--ac);
+  --color-logo-dev: #a78bfa;
+  --glass-divider: var(--bd);
+
+  --shadow-xs: 0 2px 8px rgba(0, 0, 0, 0.20);
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.37);
+  --shadow-lg: var(--sh-lg);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.50);
+
+  --p-focus-ring: 0 0 0 3px rgba(167, 139, 250, 0.40);
+  --p-focus-ring-strong: 0 0 0 3px rgba(167, 139, 250, 0.40), 0 0 0 1px var(--ac);
+  --p-selection: rgba(167, 139, 250, 0.30);
+
+  color-scheme: dark;
+}
+
+/* ---- Glass 专属：backdrop-filter + 壁纸背景层（仅此主题） ---- */
+html[data-color-scheme="glass"] body {
+  background: var(--haze);
+  background-attachment: fixed;
+}
+html[data-color-scheme="glass"] .glass-panel,
+html[data-color-scheme="glass"] .plugin-card,
+html[data-color-scheme="glass"] .scard,
+html[data-color-scheme="glass"] .item-row,
+html[data-color-scheme="glass"] .task-item,
+html[data-color-scheme="glass"] .header,
+html[data-color-scheme="glass"] .modal-content {
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+}
+
+/* ============================================================================
+   AQUA — Mac OS X 糖果凝胶（第六主题，独立于其它所有主题）
+   来源：https://namethatui.com/styles/aqua
+   糖果凝胶控件 + 细条纹表面 + 发光水蓝 + 软深阴影 + 默认按钮微脉动。
+   纯 CSS 渐变 + inset shadow，不需要 backdrop-filter。
+============================================================================ */
+html[data-color-scheme="aqua"] {
+  /* ---- primitives ---- */
+  --bg: #e7eaef;          /* 条纹灰白底 */
+  --l1: #f2f4f7;          /* 浅条纹面 */
+  --l2: #d8dde5;          /* 中灰面 */
+  --l3: #ffffff;          /* 纯白高亮 */
+
+  --bd: rgba(0, 30, 90, 0.12);
+  --bd2: rgba(0, 30, 90, 0.20);
+
+  --tx: #1a1a2e;
+  --tx2: #3d3d5c;
+  --tx3: #5c5c7a;
+
+  --ac: #1862d8;          /* 水蓝 */
+  --ac-h: #1450b8;
+  --ac-soft: rgba(24, 98, 216, 0.12);
+  --ac-bd: rgba(24, 98, 216, 0.30);
+
+  --ok: #2d9a4e;
+  --ok-soft: rgba(45, 154, 78, 0.12);
+  --warn: #c47e00;
+  --warn-soft: rgba(196, 126, 0, 0.12);
+  --err: #c4302b;
+  --err-soft: rgba(196, 48, 43, 0.12);
+  --amb: #d48806;
+  --amb-soft: rgba(212, 136, 6, 0.12);
+
+  /* 凝胶阴影：软外投影 + 内高光顶 + 内暗影底 */
+  --toplight: inset 0 1px 1px rgba(255, 255, 255, 0.70);
+  --sh:
+    0 4px 12px rgba(0, 30, 90, 0.18),
+    inset 0 1px 1px rgba(255, 255, 255, 0.60),
+    inset 0 -2px 4px rgba(0, 30, 90, 0.10);
+  --sh-lg:
+    0 12px 32px rgba(0, 30, 90, 0.25),
+    inset 0 2px 2px rgba(255, 255, 255, 0.70),
+    inset 0 -3px 6px rgba(0, 30, 90, 0.12);
+
+  --overlay: rgba(0, 30, 90, 0.35);
+
+  /* 条纹背景：repeating-linear-gradient ~2px 条纹 */
+  --haze:
+    repeating-linear-gradient(180deg, #f2f4f7 0 2px, #e7eaef 2px 4px);
+  --grain-op: 0;
+
+  /* 代码高亮（Aqua 蓝） */
+  --syn-k: #c4302b;
+  --syn-s: #2d9a4e;
+  --syn-f: #1862d8;
+  --syn-n: #c47e00;
+
+  /* ---- semantic layer ---- */
+  --color-bg: var(--bg);
+  --color-surface: var(--l1);
+  --color-surface-raised: var(--l3);
+  --color-surface-sunken: var(--l2);
+  --color-sidebar-bg: var(--l1);
+  --color-text: var(--tx);
+  --color-text-muted: var(--tx2);
+  --color-text-faint: var(--tx3);
+  --color-text-on-accent: #ffffff;
+  --color-line: var(--bd);
+  --color-line-strong: var(--bd2);
+  --color-selected: var(--ac-soft);
+  --color-hover: rgba(0, 30, 90, 0.04);
+  --color-accent: var(--ac);
+  --color-accent-hover: var(--ac-h);
+  --color-accent-soft: var(--ac-soft);
+  --color-accent-bd: var(--ac-bd);
+  --accent-primary: var(--ac);
+  --color-success: var(--ok);
+  --color-success-soft: var(--ok-soft);
+  --color-success-bd: rgba(45, 154, 78, 0.28);
+  --color-warning: var(--warn);
+  --color-warning-soft: var(--warn-soft);
+  --color-warning-bd: rgba(196, 126, 0, 0.28);
+  --color-danger: var(--err);
+  --color-danger-soft: var(--err-soft);
+  --color-danger-bd: rgba(196, 48, 43, 0.26);
+  --color-done: #6f42c1;
+  --color-done-soft: rgba(111, 66, 193, 0.12);
+  --color-done-bd: rgba(111, 66, 193, 0.26);
+  --color-info: var(--ac);
+  --color-logo-dev: #1862d8;
+  --glass-divider: var(--bd);
+
+  --shadow-xs: 0 1px 3px rgba(0, 30, 90, 0.10);
+  --shadow-sm: 0 2px 6px rgba(0, 30, 90, 0.14);
+  --shadow-md: 0 4px 12px rgba(0, 30, 90, 0.18);
+  --shadow-lg: var(--sh-lg);
+  --shadow-xl: 0 16px 48px rgba(0, 30, 90, 0.30);
+
+  --p-focus-ring: 0 0 0 3px rgba(24, 98, 216, 0.30);
+  --p-focus-ring-strong: 0 0 0 3px rgba(24, 98, 216, 0.30), 0 0 0 1px var(--ac);
+  --p-selection: rgba(24, 98, 216, 0.20);
+
+  color-scheme: light;
+}
+
+/* ---- Aqua 专属：条纹背景 + 凝胶按钮渐变 ---- */
+html[data-color-scheme="aqua"] body {
+  background: var(--haze);
+}
+/* 凝胶蓝按钮渐变（顶部高光 + 内发光 + 深底） */
+html[data-color-scheme="aqua"] .newtask,
+html[data-color-scheme="aqua"] .btn.primary,
+html[data-color-scheme="aqua"] .seg-btn.on {
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 50%),
+    linear-gradient(180deg, #6aa6f8 0%, #1862d8 55%, #0c4cc0 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.60),
+    inset 0 -3px 6px rgba(255, 255, 255, 0.35),
+    0 1px 3px rgba(0, 30, 90, 0.40);
+}
+/* 默认按钮微脉动动画 */
+@keyframes aqua-pulse {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50% { filter: brightness(1.15) saturate(1.12); }
+}
+html[data-color-scheme="aqua"] .newtask {
+  animation: aqua-pulse 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-color-scheme="aqua"] .newtask {
+    animation: none;
+  }
+}

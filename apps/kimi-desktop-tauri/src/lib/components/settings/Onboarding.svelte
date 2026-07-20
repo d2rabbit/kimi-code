@@ -17,7 +17,7 @@
 
   let step = $state(1);
   let selectedLocale = $state<LocaleCode>('zh');
-  let selectedScheme = $state<'light' | 'dark' | 'system' | 'clay'>('dark');
+  let selectedScheme = $state<'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua'>('dark');
   let showLogin = $state(false);
 
   $effect(() => {
@@ -32,7 +32,7 @@
     setLocale(code);
   }
 
-  function chooseScheme(scheme: 'light' | 'dark' | 'system' | 'clay') {
+  function chooseScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua') {
     selectedScheme = scheme;
     client.client.setColorScheme(scheme);
   }
@@ -105,8 +105,8 @@
       </div>
       <div class="ob-body">
         <div class="theme-cards">
-          {#each [['dark', '深色磨砂', 'd'], ['light', '浅色磨砂', 'l'], ['clay', '粘土风格', 'c'], ['system', '跟随系统', 's']] as [val, label, cls]}
-            <button class="theme-card" class:on={selectedScheme === val} onclick={() => chooseScheme(val as 'light' | 'dark' | 'system' | 'clay')} type="button">
+          {#each [['dark', '深色磨砂', 'd'], ['light', '浅色磨砂', 'l'], ['clay', '粘土风格', 'c'], ['brutal', '粗野主义', 'b'], ['glass', '玻璃拟态', 'g'], ['aqua', '水凝糖果', 'a'], ['system', '跟随系统', 's']] as [val, label, cls]}
+            <button class="theme-card" class:on={selectedScheme === val} onclick={() => chooseScheme(val as 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua')} type="button">
               <div class="pv {cls}"></div>
               <div class="tn">{label}</div>
             </button>

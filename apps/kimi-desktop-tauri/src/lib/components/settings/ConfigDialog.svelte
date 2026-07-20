@@ -266,7 +266,7 @@
     }
   }
 
-  async function setColorScheme(scheme: 'light' | 'dark' | 'system' | 'clay') {
+  async function setColorScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua') {
     client.client.setColorScheme(scheme);
   }
 
@@ -549,13 +549,13 @@
       <div class="setting-row">
         <span>主题</span>
         <div class="segmented">
-          {#each ['light', 'dark', 'clay', 'system'] as scheme}
+          {#each ['light', 'dark', 'clay', 'brutal', 'glass', 'aqua', 'system'] as scheme}
             <button
               class="seg-btn"
               class:active={client.colorScheme() === scheme}
-              onclick={() => setColorScheme(scheme as 'light' | 'dark' | 'system' | 'clay')}
+              onclick={() => setColorScheme(scheme as 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua')}
             >
-              {scheme === 'light' ? '浅色' : scheme === 'dark' ? '深色' : scheme === 'clay' ? '粘土' : '跟随系统'}
+              {scheme === 'light' ? '浅色' : scheme === 'dark' ? '深色' : scheme === 'clay' ? '粘土' : scheme === 'brutal' ? '粗野' : scheme === 'glass' ? '玻璃' : scheme === 'aqua' ? '水凝' : '跟随系统'}
             </button>
           {/each}
         </div>
