@@ -1,93 +1,50 @@
-// sea_path.rs — resolve the bundled Kimi SEA backend executable path.
+// sea_path.rs — resolve the bundled Kimi agent (main.cjs) + Node runtime paths.
 //
-// Translated from apps/kimi-desktop/src/main/sea-path.ts.
-// The bundled backend targets the same 6 platform/arch pairs the kimi-code
-// native SEA build supports (apps/kimi-code/scripts/native/native-deps.mjs).
+// Architecture: instead of injecting kimi-code into a Node binary via SEA
+// (postject), we bundle the tsdown-produced main.cjs as a Tauri resource and
+// spawn it with a Node runtime. This skips the slow + fragile SEA injection
+// step (sea-config → blob → postject → sign), making kimi-code updates a
+// 30-second `tsdown` + copy instead of a 5–10 minute full SEA rebuild.
+//
+// Two files are needed at runtime:
+//   1. main.cjs  — kimi-code JS bundle (tsdown native config output)
+//   2. node      — Node.js runtime (>= 24.15)
+//
+// Resolution order:
+//   - Dev: apps/kimi-code/dist-native/intermediates/main.cjs + system node
+//   - Packaged: <resource_dir>/main.cjs + <resource_dir>/node[.exe]
 
 use std::path::PathBuf;
 use tauri::Manager;
 
-/// The 6 supported platform-arch targets.
-const SUPPORTED_TARGETS: &[&str] = &[
-    "darwin-arm64",
-    "darwin-x64",
-    "linux-arm64",
-    "linux-x64",
-    "win32-arm64",
-    "win32-x64",
-];
-
-/// Current platform-arch triple, e.g. "darwin-arm64" or "win32-x64".
+/// Resolve the main.cjs path (the kimi-code JS bundle).
 ///
-/// Maps Rust's `std::env::consts` (OS, ARCH) to the kimi-code target naming
-/// convention. Returns an error if the running target is not in the supported set.
-pub fn current_target() -> Result<String, String> {
-    let os = match std::env::consts::OS {
-        "macos" => "darwin",
-        "windows" => "win32",
-        "linux" => "linux",
-        other => return Err(format!("Unsupported OS: {other}")),
-    };
-    let arch = match std::env::consts::ARCH {
-        "x86_64" => "x64",
-        "aarch64" => "arm64",
-        other => return Err(format!("Unsupported arch: {other}")),
-    };
-    let target = format!("{os}-{arch}");
-    if !SUPPORTED_TARGETS.contains(&target.as_str()) {
-        return Err(format!("No bundled Kimi server for this platform: {target}"));
-    }
-    Ok(target)
-}
-
-/// The SEA executable name for the current platform (`kimi.exe` on Windows, `kimi` elsewhere).
-fn executable_name() -> &'static str {
-    if cfg!(windows) { "kimi.exe" } else { "kimi" }
-}
-
-/// Absolute path to the bundled SEA backend executable.
-///
-/// - **Packaged**: `<resources>/bin/<target>/kimi[.exe]` — placed there by the
-///   Tauri `beforeBundleCommand` / resource bundling.
-/// - **Dev**: `apps/kimi-code/dist-native/bin/<target>/kimi[.exe]` — produced by
-///   `pnpm -C apps/kimi-code build:native:sea`. In dev the app path is
-///   `apps/kimi-desktop-tauri`, so the sibling app is two levels up.
-pub fn resolve_sea_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let target = current_target()?;
-    let exe = executable_name();
-
+/// - **Dev**: `apps/kimi-code/dist-native/intermediates/main.cjs` — produced
+///   by `tsdown --config tsdown.native.config.ts` (skipping the SEA injection
+///   steps). Falls back to `~/.kimi-code/bin/main.cjs` if the dev build is
+///   missing.
+/// - **Packaged**: `<resource_dir>/main.cjs` — placed there by the Tauri
+///   `beforeBundleCommand` / resource bundling.
+pub fn resolve_agent_script(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     if cfg!(debug_assertions) {
-        // Dev mode: try multiple paths in order:
-        // 1. apps/kimi-code/dist-native/bin/<target>/kimi (built from source)
-        // 2. ~/.kimi-code/bin/kimi (installed via kimi install/update)
-        // 3. src-tauri/bin/<target>/kimi (manually placed for testing)
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let apps_dir = manifest_dir
             .ancestors()
             .nth(2)
             .ok_or("Cannot determine apps directory")?;
 
-        // Path 1: built from source
+        // Path 1: tsdown native output (the fast dev path — no SEA needed)
         let dev_path = apps_dir
             .join("kimi-code")
             .join("dist-native")
-            .join("bin")
-            .join(&target)
-            .join(exe);
+            .join("intermediates")
+            .join("main.cjs");
         if dev_path.exists() {
             return Ok(dev_path);
         }
 
-        // Path 2: installed kimi CLI
-        if let Some(home) = dirs::home_dir() {
-            let installed_path = home.join(".kimi-code").join("bin").join("kimi");
-            if installed_path.exists() {
-                return Ok(installed_path);
-            }
-        }
-
-        // Path 3: manually placed in src-tauri/bin
-        let local_path = manifest_dir.join("bin").join(&target).join(exe);
+        // Path 2: manually placed in src-tauri/resources
+        let local_path = manifest_dir.join("resources").join("main.cjs");
         if local_path.exists() {
             return Ok(local_path);
         }
@@ -96,10 +53,52 @@ pub fn resolve_sea_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         return Ok(dev_path);
     }
 
-    // Packaged: <resource_dir>/bin/<target>/kimi[.exe]
+    // Packaged: <resource_dir>/main.cjs
     let resource_dir = app
         .path()
         .resource_dir()
         .map_err(|e| format!("Cannot resolve resource dir: {e}"))?;
-    Ok(resource_dir.join("bin").join(&target).join(exe))
+    Ok(resource_dir.join("main.cjs"))
+}
+
+/// Resolve the Node.js runtime path.
+///
+/// - **Dev**: system `node` (must be >= 24.15 — the caller's responsibility to
+///   verify, e.g. via build-run.sh's fnm/mise/nvm auto-switch).
+/// - **Packaged**: `<resource_dir>/node[.exe]` — bundled alongside main.cjs so
+///   the app is self-contained without requiring users to install Node.
+pub fn resolve_node_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    if cfg!(debug_assertions) {
+        // Dev: use system node
+        which_node()
+    } else {
+        // Packaged: <resource_dir>/node[.exe]
+        let resource_dir = app
+            .path()
+            .resource_dir()
+            .map_err(|e| format!("Cannot resolve resource dir: {e}"))?;
+        let node_name = if cfg!(windows) { "node.exe" } else { "node" };
+        let node_path = resource_dir.join(node_name);
+        if node_path.exists() {
+            Ok(node_path)
+        } else {
+            // Fallback to system node if bundled node is missing
+            which_node()
+        }
+    }
+}
+
+/// Find system `node` on PATH. Errors if not found.
+fn which_node() -> Result<PathBuf, String> {
+    let node_name = if cfg!(windows) { "node.exe" } else { "node" };
+    let path_env = std::env::var("PATH").unwrap_or_default();
+    for dir in std::env::split_paths(&path_env) {
+        let candidate = dir.join(node_name);
+        if candidate.exists() {
+            return Ok(candidate);
+        }
+    }
+    Err(format!(
+        "Node.js runtime not found on PATH. Install Node >= 24.15 or bundle it as a Tauri resource."
+    ))
 }

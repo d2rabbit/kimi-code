@@ -1,11 +1,16 @@
 // agent.rs — app-owned embedded Kimi agent (private server process).
 //
-// Spawns the bundled SEA (`kimi web --no-open`) as a long-lived
-// child process bound to the app lifecycle. Uses an ISOLATED KIMI_CODE_HOME
-// (~/.kimi-code/desktop) so it never contends with the shared CLI daemon for
-// the server lock / token / sessions, and an ephemeral loopback port instead
-// of the well-known 58627. The desktop client must never attach to a foreign
-// daemon: the agent starts with the app and dies with it.
+// Spawns the kimi-code JS bundle (main.cjs) via the Node runtime as a
+// long-lived child process: `node main.cjs web --no-open --port <eph>`.
+// No SEA injection (postject) is needed — the tsdown-produced main.cjs is
+// executed directly, so kimi-code updates are a fast `tsdown + copy` instead
+// of a full SEA rebuild.
+//
+// Uses an ISOLATED KIMI_CODE_HOME (~/.kimi-code/desktop) so it never contends
+// with the shared CLI daemon for the server lock / token / sessions, and an
+// ephemeral loopback port instead of the well-known 58627. The desktop client
+// must never attach to a foreign daemon: the agent starts with the app and
+// dies with it.
 
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
@@ -15,7 +20,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
 
-use crate::sea_path::resolve_sea_path;
+use crate::sea_path::{resolve_agent_script, resolve_node_path};
 
 const HEALTH_TIMEOUT: Duration = Duration::from_secs(20);
 const HEALTH_POLL: Duration = Duration::from_millis(200);
@@ -299,7 +304,8 @@ pub async fn start_embedded_agent(
         }
     }
 
-    let sea = resolve_sea_path(app)?;
+    let agent_script = resolve_agent_script(app)?;
+    let node_bin = resolve_node_path(app)?;
     let port = pick_port()?;
     let home = agent_home();
     seed_agent_home_if_needed(&home)?;
@@ -309,7 +315,11 @@ pub async fn start_embedded_agent(
         "http://tauri.localhost,tauri://localhost"
     };
 
-    let mut cmd = tokio::process::Command::new(&sea);
+    // Spawn: node main.cjs web --no-open --port <eph> --log-level <level>
+    // The agent is the kimi-code JS bundle (tsdown output), executed by the
+    // Node runtime. No SEA injection needed — just node + main.cjs.
+    let mut cmd = tokio::process::Command::new(&node_bin);
+    cmd.arg(&agent_script);
     cmd.args([
         "web",
         "--no-open",
@@ -334,7 +344,7 @@ pub async fn start_embedded_agent(
         .stderr(Stdio::inherit())
         .kill_on_drop(true)
         .spawn()
-        .map_err(|e| format!("spawn embedded agent {}: {e}", sea.display()))?;
+        .map_err(|e| format!("spawn embedded agent ({} {}): {e}", node_bin.display(), agent_script.display()))?;
 
     let origin = format!("http://127.0.0.1:{port}");
     let deadline = Instant::now() + HEALTH_TIMEOUT;

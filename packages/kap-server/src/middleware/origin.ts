@@ -29,7 +29,7 @@ const CORS_ALLOW_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
 // shells send these on every REST call, so the whitelist must cover them or
 // the browser blocks the request at preflight with a generic network error.
 const CORS_ALLOW_HEADERS =
-  'Content-Type, Authorization, X-Request-Id, X-Kimi-Client-Id, X-Kimi-Client-Name, X-Kimi-Client-Version, X-Kimi-Client-Ui-Mode';packages/kap-server/src/middleware/origin.ts
+  'Content-Type, Authorization, X-Request-Id, X-Kimi-Client-Id, X-Kimi-Client-Name, X-Kimi-Client-Version, X-Kimi-Client-Ui-Mode';
 
 export interface OriginHookOptions {
   /** Explicit cross-origin allowlist (full origin strings, scheme + host). */

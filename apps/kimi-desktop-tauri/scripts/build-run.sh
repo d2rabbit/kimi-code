@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # build-run.sh — 构建 Kimi Code 桌面客户端（Tauri + 内嵌 kimi-code agent）。
 #
-# 客户端的所有能力都来自 kimi-code 核心（内嵌 SEA = 单文件可执行 agent）。
-# 本脚本负责把 kimi-code 源码构建成 SEA，再内嵌进 Tauri 客户端，产出：
+# 客户端的所有能力都来自 kimi-code 核心（tsdown 打包为 main.cjs，用 Node 执行）。
+# 本脚本负责把 kimi-code 源码构建成 main.cjs，再配备进 Tauri 客户端，产出：
 #   - 默认 / --no-run / --foreground：可执行的 release 二进制（开发期使用）
 #   - --dist：可分发的安装包（.deb/.dmg/.msi/.AppImage，由 Tauri bundler 产出）
 #
@@ -11,7 +11,7 @@
 #   bash scripts/build-run.sh --foreground  # 完整构建 + 前台运行（Ctrl+C 退出）
 #   bash scripts/build-run.sh --no-run      # 只构建，不启动
 #   bash scripts/build-run.sh --dist        # 构建并打包成安装包（产出 bundle/）
-#   bash scripts/build-run.sh --dist --skip-sea   # 打包，但复用已有 SEA（不重编 kimi-code）
+#   bash scripts/build-run.sh --dist --skip-sea   # 打包，但复用已有 main.cjs（不重编 kimi-code）
 #   bash scripts/build-run.sh --log-level debug   # 诊断模式：daemon 写 debug 级日志
 #   bash scripts/build-run.sh --debug-endpoints   # 挂载 /api/v1/debug/* 内省路由
 #   bash scripts/build-run.sh --help
@@ -79,51 +79,45 @@ log() { printf '\033[1;36m▸ %s\033[0m\n' "$*"; }
 warn() { printf '\033[1;33m⚠ %s\033[0m\n' "$*" >&2; }
 err()  { printf '\033[1;31m✖ %s\033[0m\n' "$*" >&2; }
 
-# ---- 1. 构建内嵌 agent（SEA，始终从 kimi-code 源码构建） ----
-# SEA = Single Executable Application。客户端运行时自起私有 agent（独立 home +
-# 随机端口），无需任何外部 daemon。SEA 的构建链路：
-#   kimi-web 构建 → copy-web-assets → kimi-code SEA 打包（bundle/blob/inject/sign）
-# 缺少前置的 dist-web/ 会让 02-sea-blob.mjs 报错，因此每次都重新拷贝。
-SEA_SRC="$REPO_ROOT/apps/kimi-code/dist-native/bin/$TARGET/$EXE"
+# ---- 1. 构建内嵌 agent（tsdown 产出 main.cjs，跳过 SEA 注入） ----
+# 新架构：不再用 SEA（postject 注入 Node 二进制），而是直接用 tsdown 打包
+# kimi-code 源码为 main.cjs，运行时用 Node 执行。这样：
+#   - 更新 kimi-code 只需 tsdown（~30 秒），不用重新注入 SEA（5-10 分钟）
+#   - 跳过 sea-config / blob / postject / sign 整个链路
+#   - 调试迭代速度提升 10 倍
+AGENT_SCRIPT="$REPO_ROOT/apps/kimi-code/dist-native/intermediates/main.cjs"
 
 if [[ "$SKIP_SEA" == "1" ]]; then
-  if [[ ! -x "$SEA_SRC" ]]; then
-    err "SEA binary not found at $SEA_SRC (--skip-sea requires an existing build)"
+  if [[ ! -f "$AGENT_SCRIPT" ]]; then
+    err "main.cjs not found at $AGENT_SCRIPT (--skip-sea requires an existing build)"
     exit 1
   fi
-  log "复用已有 SEA（--skip-sea）: $SEA_SRC"
+  log "复用已有 main.cjs（--skip-sea）: $AGENT_SCRIPT"
 else
-  log "构建 kimi-web 前端（SEA 内嵌用）…"
+  log "构建 kimi-web 前端（agent 内嵌用）…"
   pnpm --filter "$WEB_PKG" run build
 
   log "拷贝 kimi-web 资源到 kimi-code/dist-web …"
   node "$REPO_ROOT/apps/kimi-code/scripts/copy-web-assets.mjs"
 
-  # ---- 清理可能占用 SEA 文件的残留进程 + 软链 ----
-  # SEA 构建会用 copyFile 覆盖 dist-native/bin/<target>/kimi。如果这个路径
-  # 是指向 ~/.kimi-code/bin/kimi 的软链，且有正在运行的 kimi 进程占用它，
-  # copyFile 会报 ETXTBSY。构建前先杀残留进程、删软链。
-  local sea_dir; sea_dir="$REPO_ROOT/apps/kimi-code/dist-native/bin/$TARGET"
-  if [[ -L "$sea_dir/$EXE" ]]; then
-    warn "SEA 路径是指向 $(readlink -f "$sea_dir/$EXE") 的软链，删除以避免 ETXTBSY"
-    rm -f "$sea_dir/$EXE"
-  fi
-  # 杀掉可能占用 SEA 文件的残留 kimi-code 进程（不影响用户在终端跑的 kimi）。
-  local stale_pids; stale_pids=$(pgrep -f "dist-native/bin/.*/kimi" 2>/dev/null || true)
-  if [[ -n "$stale_pids" ]]; then
-    warn "发现占用 SEA 的残留进程: $stale_pids，正在清理…"
-    echo "$stale_pids" | xargs -r kill 2>/dev/null || true
-    sleep 1
+  log "构建内嵌 agent（tsdown，约 30 秒）…"
+  # 只跑 bundle 步骤（tsdown native config），跳过 SEA 注入步骤。
+  # 先构建 vis asset（native 构建的前置依赖），再 tsdown。
+  local build_vis; build_vis="$REPO_ROOT/apps/kimi-code/scripts/build-vis-asset.mjs"
+  [[ -f "$build_vis" ]] && node "$build_vis" || true
+  local tsdown_cli; tsdown_cli=$(node -e "console.log(require.resolve('tsdown/run'))" 2>/dev/null || echo "")
+  if [[ -z "$tsdown_cli" ]]; then
+    # fallback: 用 pnpm 在 kimi-code 目录跑 tsdown
+    ( cd "$REPO_ROOT/apps/kimi-code" && npx tsdown --config tsdown.native.config.ts )
+  else
+    ( cd "$REPO_ROOT/apps/kimi-code" && node "$tsdown_cli" --config tsdown.native.config.ts )
   fi
 
-  log "构建内嵌 agent（SEA，首次约需 5–10 分钟）…"
-  pnpm --filter "$CLI_PKG" run build:native:sea
-
-  if [[ ! -x "$SEA_SRC" ]]; then
-    err "SEA build finished but binary not found at $SEA_SRC"
+  if [[ ! -f "$AGENT_SCRIPT" ]]; then
+    err "tsdown finished but main.cjs not found at $AGENT_SCRIPT"
     exit 1
   fi
-  log "内嵌 agent: $SEA_SRC"
+  log "内嵌 agent: $AGENT_SCRIPT ($(du -h "$AGENT_SCRIPT" | cut -f1))"
 fi
 
 # ---- 2. 前端完整检查（Svelte diagnostics） ----
@@ -201,13 +195,13 @@ log "构建客户端（cargo --release --features custom-protocol）…"
 cargo build --release --features custom-protocol --manifest-path "$APP_DIR/src-tauri/Cargo.toml"
 
 # ---- 6. 为直接运行的二进制配备内嵌 agent ----
-# release 二进制在解析 SEA 时走 <exe_dir>/bin/<target>/kimi（resource_dir），
-# 因此把 SEA 放到 target/release/bin/<target>/ 下，客户端开箱即用。
-DEST="$APP_DIR/src-tauri/target/release/bin/$TARGET"
+# 新架构：main.cjs 作为 resource 被 Tauri 打包。dev 模式下 release 二进制
+# 通过 sea_path.rs 的 dev 路径直接找 dist-native/intermediates/main.cjs，
+# 不需要手动 staging。但为了离线/打包场景，复制到 target/release/resources/。
+DEST="$APP_DIR/src-tauri/target/release/resources"
 mkdir -p "$DEST"
-cp -f "$SEA_SRC" "$DEST/$EXE"
-chmod +x "$DEST/$EXE" 2>/dev/null || true
-log "agent 已配备: $DEST/$EXE"
+cp -f "$AGENT_SCRIPT" "$DEST/main.cjs"
+log "agent 已配备: $DEST/main.cjs"
 
 if [[ "$NO_RUN" == "1" ]]; then
   log "构建完成（--no-run）。二进制: $APP_DIR/src-tauri/target/release/kimi-desktop-tauri"
