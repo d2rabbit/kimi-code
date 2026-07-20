@@ -32,6 +32,7 @@ export type {
   Catalog,
   CatalogModel,
   CatalogProviderEntry,
+  FetchCatalogOptions,
 } from '#/catalog';
 
 export {
@@ -51,6 +52,7 @@ export {
 // RootLogger / getRootLogger / LoggingConfig stay inside agent-core.
 export {
   flushDiagnosticLogs,
+  flushDiagnosticLogsSync,
   log,
   redact,
   resolveGlobalLogPath,
@@ -75,8 +77,13 @@ export { installGlobalProxyDispatcher } from '@moonshot-ai/agent-core';
 // pre-compression bytes readable (ReadMediaFile + region) for detail.
 export {
   buildImageCompressionCaption,
+  buildUnsupportedImageNotice,
   compressImageForModel,
   compressBase64ForModel,
+  gateImageFormatParts,
+  isModelAcceptedImageMime,
+  normalizeImageMime,
+  parseImageDataUrl,
   persistOriginalImage,
   sessionMediaOriginalsDir,
   IMAGE_BYTE_BUDGET,

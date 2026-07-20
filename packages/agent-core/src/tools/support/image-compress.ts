@@ -12,12 +12,16 @@
  *    only paid for when an image actually needs work; startup and the fast
  *    path stay cheap.
  *  - Best effort: any decode/encode failure returns the original bytes
- *    unchanged (`changed: false`), so a compression problem never blocks a
- *    prompt. Callers simply send the original instead.
+ *    unchanged (`changed: false`). Callers must verify that this unchanged
+ *    result satisfies their delivery limits before forwarding it.
  *  - PNG, JPEG, and (non-animated) WebP are re-encoded; WebP re-encodes
  *    through the PNG/JPEG ladder, so only its decoder wasm ships. GIF and
- *    animated WebP are passed through to preserve animation. Unknown formats
- *    are passed through.
+ *    animated WebP are passed through to preserve animation. Formats outside
+ *    the provider-accepted set (see ./image-format-policy) are never
+ *    forwarded by the part-level helpers — they are replaced with a text
+ *    notice; the byte-level helpers still pass anything they cannot
+ *    re-encode through unchanged, so callers must gate on
+ *    `isModelAcceptedImageMime` first.
  *  - Compression must never be silent to the model: results carry the
  *    original dimensions, {@link buildImageCompressionCaption} renders the
  *    shared "what was compressed, where is the original" note every ingestion
@@ -33,6 +37,17 @@ import type { ContentPart } from '@moonshot-ai/kosong';
 import type { TelemetryClient } from '#/telemetry';
 
 import { sniffImageDimensions } from './file-type';
+import {
+  buildMalformedImageNotice,
+  buildUnsupportedImageNotice,
+  decodeBase64Prefix,
+  isDataUrl,
+  isModelAcceptedImageMime,
+  normalizeImageMime,
+  parseImageDataUrl,
+  resolveEffectiveImageMime,
+  unsupportedImageMimeFromUrl,
+} from './image-format-policy';
 import { decodeWebp, isAnimatedWebp } from './webp-decode';
 
 /**
@@ -165,7 +180,7 @@ const MAX_DECODE_PIXELS = 100_000_000;
  * This bounds that input allocation. Set well above legitimate
  * screenshots/photos; larger images pass through uncompressed.
  */
-const MAX_DECODE_BYTES = 64 * 1024 * 1024;
+export const MAX_IMAGE_DECODE_BYTES = 64 * 1024 * 1024;
 
 /** Formats we can decode and re-encode. WebP decodes via the bundled wasm
  * codec and re-encodes through the PNG/JPEG ladder (animated WebP is gated
@@ -251,8 +266,8 @@ export async function compressImageForModel(
   const startedAt = Date.now();
   const maxEdge = options.maxEdge ?? resolveMaxImageEdgePx();
   const byteBudget = options.byteBudget ?? IMAGE_BYTE_BUDGET;
-  const maxDecodeBytes = options.maxDecodeBytes ?? MAX_DECODE_BYTES;
-  const normalizedMime = normalizeMime(mimeType);
+  const maxDecodeBytes = options.maxDecodeBytes ?? MAX_IMAGE_DECODE_BYTES;
+  const normalizedMime = normalizeImageMime(mimeType);
   const dims = sniffImageDimensions(bytes);
 
   const passthrough = (): CompressImageResult => ({
@@ -329,7 +344,7 @@ export async function compressImageForModel(
     // Keep the result when it actually helps: fewer bytes, or fewer pixels
     // (a smaller image costs fewer vision tokens even if the byte count is
     // flat, as with near-solid graphics). Otherwise the re-encode bought us
-    // nothing — send the original.
+    // nothing — return the original.
     const originalPixels = decodedWidth * decodedHeight;
     const finalPixels = encoded.width * encoded.height;
     const shrankBytes = encoded.data.length < bytes.length;
@@ -376,7 +391,10 @@ export interface CompressBase64Result {
 /**
  * Convenience wrapper for call sites that already hold base64 (MCP results,
  * data URLs). Decodes, compresses, and re-encodes to base64. Best effort:
- * returns the original base64 unchanged on any failure.
+ * returns the original base64 unchanged on any failure — including formats it
+ * cannot re-encode, so callers must refuse MIME types outside the
+ * provider-accepted set (`isModelAcceptedImageMime`) before building an
+ * image part from the result.
  */
 export async function compressBase64ForModel(
   base64: string,
@@ -387,7 +405,7 @@ export async function compressBase64ForModel(
   // length, so a payload whose decoded size would exceed the cap is passed
   // through without the Buffer.from allocation (and without touching Jimp).
   const startedAt = Date.now();
-  const maxDecodeBytes = options.maxDecodeBytes ?? MAX_DECODE_BYTES;
+  const maxDecodeBytes = options.maxDecodeBytes ?? MAX_IMAGE_DECODE_BYTES;
   const approxBytes = Math.floor((base64.length * 3) / 4);
   if (approxBytes > maxDecodeBytes) {
     const result: CompressBase64Result = {
@@ -404,7 +422,7 @@ export async function compressBase64ForModel(
     reportCompressEvent(options.telemetry, {
       outcome: 'passthrough_guard',
       startedAt,
-      inputMime: normalizeMime(mimeType),
+      inputMime: normalizeImageMime(mimeType),
       exifTransposed: false,
       result,
     });
@@ -428,7 +446,7 @@ export async function compressBase64ForModel(
     reportCompressEvent(options.telemetry, {
       outcome: 'passthrough_error',
       startedAt,
-      inputMime: normalizeMime(mimeType),
+      inputMime: normalizeImageMime(mimeType),
       exifTransposed: false,
       result,
     });
@@ -476,12 +494,91 @@ export interface CompressedContentParts {
 }
 
 /**
+ * Enforce the provider-accepted image format set (see ./image-format-policy)
+ * on a content-part list. Inline `data:` image parts whose MIME is outside
+ * the accepted set are dropped and replaced with a text notice, so one
+ * unsupported image cannot poison the session history. Accepted images are
+ * forwarded only as the byte-exact canonical data URL: an alias
+ * (`image/jpg`), case/whitespace variants, or MIME parameters
+ * (`image/jpeg;charset=utf-8`) all rebuild to the bare canonical form,
+ * because strict provider whitelists exact-match the full header. Remote
+ * (non-data) image URLs and non-image parts pass through — a URL carries no
+ * bytes to inspect.
+ *
+ * The BYTES are authoritative, not the declared MIME: the header of each
+ * inline image is sniffed, and a mismatch (e.g. AVIF bytes an MCP image
+ * search tool labels `image/png`) is gated on what the image IS — the
+ * provider decodes bytes, not labels. When the sniffer doesn't recognize
+ * the bytes (corrupt image, exotic container), the declared MIME stands
+ * and the 400-recovery path remains the backstop.
+ *
+ * This is the format gate shared by every ingestion point; run it BEFORE
+ * compression so unsupported bytes are never decoded.
+ */
+export function gateImageFormatParts(parts: readonly ContentPart[]): ContentPart[] {
+  const out: ContentPart[] = [];
+  for (const part of parts) {
+    if (part.type === 'image_url') {
+      const parsed = parseImageDataUrl(part.imageUrl.url);
+      if (parsed === null) {
+        // A `data:` URL that failed to parse (missing `;base64,` separator,
+        // empty MIME, …) is guaranteed to fail at the provider — Anthropic
+        // throws on it, OpenAI-compat servers 400. Drop it for a notice at
+        // ingestion instead of leaving it to poison the session and trigger
+        // the media-stripped resend on every later turn.
+        if (isDataUrl(part.imageUrl.url)) {
+          out.push({ type: 'text', text: buildMalformedImageNotice(part.imageUrl.url) });
+          continue;
+        }
+        // Remote image URL (no bytes to sniff): reject when its path
+        // extension names a format providers reject (e.g. a search-tool
+        // link ending in `.avif`) — the notice keeps the URL so the model
+        // can still fetch and convert the image. Extensionless / unknown
+        // URLs pass through to the provider — and to the 400 recovery.
+        const extMime = unsupportedImageMimeFromUrl(part.imageUrl.url);
+        if (extMime !== null) {
+          out.push({
+            type: 'text',
+            text: buildUnsupportedImageNotice(extMime, part.imageUrl.url),
+          });
+          continue;
+        }
+        out.push(part);
+        continue;
+      }
+      const effectiveMime = resolveEffectiveImageMime(
+        parsed.mimeType,
+        decodeBase64Prefix(parsed.base64),
+      );
+      if (!isModelAcceptedImageMime(effectiveMime)) {
+        out.push({ type: 'text', text: buildUnsupportedImageNotice(effectiveMime) });
+        continue;
+      }
+      const canonicalUrl = `data:${normalizeImageMime(effectiveMime)};base64,${parsed.base64}`;
+      if (part.imageUrl.url !== canonicalUrl) {
+        out.push({ type: 'image_url', imageUrl: { ...part.imageUrl, url: canonicalUrl } });
+        continue;
+      }
+    }
+    out.push(part);
+  }
+  return out;
+}
+
+/**
  * Compress any inline base64 image parts in a content-part list — used by
  * the MCP tool-result path (prompt ingestion compresses per image with
  * {@link compressBase64ForModel} while constructing the part). Image parts
  * whose URL is not a `data:` URL (e.g. a remote http(s) image) are passed
  * through, as are non-image parts. Best effort: a part that fails to
  * compress is left unchanged.
+ *
+ * The format gate ({@link gateImageFormatParts}) runs first: parts whose
+ * MIME is outside the provider-accepted set are never forwarded — the part
+ * is dropped and a text notice stands in, so one unsupported image cannot
+ * poison the session history. This is the MCP funnel's enforcement point —
+ * MCP servers can return any `image/*` MIME (e.g. AVIF from an image search
+ * tool).
  *
  * With `annotate` set, every image that was actually re-encoded gets a
  * caption in {@link CompressedContentParts.captions} so the model knows it
@@ -497,7 +594,7 @@ export async function compressImageContentParts(
   const { annotate, ...compressOptions } = options;
   const out: ContentPart[] = [];
   const captions: string[] = [];
-  for (const part of parts) {
+  for (const part of gateImageFormatParts(parts)) {
     if (part.type === 'image_url') {
       const parsed = parseImageDataUrl(part.imageUrl.url);
       if (parsed !== null) {
@@ -623,8 +720,8 @@ export async function cropImageForModel(
   const startedAt = Date.now();
   const maxEdge = options.maxEdge ?? resolveMaxImageEdgePx();
   const byteBudget = options.byteBudget ?? IMAGE_BYTE_BUDGET;
-  const maxDecodeBytes = options.maxDecodeBytes ?? MAX_DECODE_BYTES;
-  const normalizedMime = normalizeMime(mimeType);
+  const maxDecodeBytes = options.maxDecodeBytes ?? MAX_IMAGE_DECODE_BYTES;
+  const normalizedMime = normalizeImageMime(mimeType);
 
   const fail = (errorKind: CropErrorKind, error: string): CropImageFailure => {
     reportCropEvent(options.telemetry, { startedAt, ok: false, errorKind });
@@ -857,12 +954,6 @@ export function formatByteSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function parseImageDataUrl(url: string): { mimeType: string; base64: string } | null {
-  const match = /^data:([^;,]+);base64,(.*)$/s.exec(url);
-  if (match === null) return null;
-  return { mimeType: match[1]!, base64: match[2]! };
-}
-
 // ── internals ────────────────────────────────────────────────────────
 
 /** The concrete jimp image instance type, derived from the lazily-loaded module. */
@@ -1006,11 +1097,6 @@ function fitWithinEdge(image: JimpImage, edge: number): boolean {
   return true;
 }
 
-function normalizeMime(mimeType: string): string {
-  const lower = mimeType.trim().toLowerCase();
-  return lower === 'image/jpg' ? 'image/jpeg' : lower;
-}
-
 // ── telemetry ────────────────────────────────────────────────────────
 
 /** Failure classification carried by the `image_crop` event. */
@@ -1055,7 +1141,7 @@ function reportCompressEvent(
       source: telemetry.source,
       outcome: input.outcome,
       input_mime: input.inputMime,
-      output_mime: normalizeMime(input.result.mimeType),
+      output_mime: normalizeImageMime(input.result.mimeType),
       original_bytes: input.result.originalByteLength,
       final_bytes: input.result.finalByteLength,
       original_width: input.result.originalWidth,

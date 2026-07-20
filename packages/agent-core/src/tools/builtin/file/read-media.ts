@@ -42,12 +42,17 @@ import { resolvePathAccessPath } from '../../policies/path-access';
 import { MEDIA_SNIFF_BYTES, detectFileType, sniffImageDimensions } from '../../support/file-type';
 import {
   IMAGE_BYTE_BUDGET,
+  MAX_IMAGE_DECODE_BYTES,
   compressImageForModel,
   cropImageForModel,
   formatByteSize,
   type ImageCompressionTelemetry,
   type ImageCropRegion,
 } from '../../support/image-compress';
+import {
+  buildImageConversionGuidance,
+  isModelAcceptedImageMime,
+} from '../../support/image-format-policy';
 import { ImageLimits } from '../../support/image-limits';
 import { toInputJsonSchema } from '../../support/input-schema';
 import { literalRulePattern, matchesPathRuleSubject } from '../../support/rule-match';
@@ -58,6 +63,39 @@ import readMediaDescriptionHead from './read-media.md?raw';
 
 const MAX_MEDIA_MEGABYTES = 100;
 const MAX_MEDIA_BYTES = MAX_MEDIA_MEGABYTES * 1024 * 1024;
+
+function buildImageDeliveryLimitError(input: {
+  readonly finalBytes: number;
+  readonly readByteBudget: number;
+  readonly maxEdge: number;
+}): string {
+  return (
+    `Image is too large to send safely after compression (${String(input.finalBytes)} bytes; ` +
+    `limit ${String(input.readByteBudget)} bytes and ${String(input.maxEdge)}px on the longest edge). ` +
+    'The original image was not sent to the model. Do not retry the same file unchanged. ' +
+    'Use Bash or an available image-processing tool to create a smaller copy within both limits, ' +
+    'then call ReadMediaFile on the smaller copy.'
+  );
+}
+
+function buildImageDecodeLimitError(finalBytes: number): string {
+  return (
+    `Image is too large to process safely for region or full_resolution (${String(finalBytes)} bytes; ` +
+    `safe decode limit ${String(MAX_IMAGE_DECODE_BYTES)} bytes). ` +
+    'The original image was not sent to the model. Do not retry the same file unchanged. ' +
+    'Use Bash or an available image-processing tool to create a smaller copy or crop the needed ' +
+    'region into a separate image, then call ReadMediaFile on the resulting file.'
+  );
+}
+
+function buildFullResolutionLimitError(path: string, finalBytes: number): string {
+  return (
+    `"${path}" is ${String(finalBytes)} bytes (${formatByteSize(finalBytes)}), ` +
+    `over the ${String(IMAGE_BYTE_BUDGET)}-byte (${formatByteSize(IMAGE_BYTE_BUDGET)}) ` +
+    'per-image limit, so full_resolution cannot be honored. ' +
+    'Use region to view a crop at full fidelity instead.'
+  );
+}
 
 export type VideoUploadInput = ProviderVideoUploadInput;
 
@@ -214,45 +252,6 @@ function buildMediaNote(input: {
 
 // ── Implementation ───────────────────────────────────────────────────
 
-/**
- * Refusal message for HEIC/HEIF with a conversion command matching the
- * execution environment (`kaos.osEnv.osKind` — where Bash actually runs, so
- * SSH/container sessions get the right command too). macOS converts with the
- * built-in `sips`; Linux and Windows have no built-in HEIC decoder, so the
- * guidance names the common tools and how to get them.
- */
-function buildHeicConversionGuidance(path: string, mimeType: string, osKind: string): string {
-  const converted = path.replace(/\.[^./\\]+$/, '') + '.jpg';
-  return (
-    `"${path}" is a ${mimeType} image, which the provider does not accept. ` +
-    'Convert it to JPEG first, then read the converted file. ' +
-    heicConversionCommand(path, converted, osKind)
-  );
-}
-
-function heicConversionCommand(path: string, converted: string, osKind: string): string {
-  switch (osKind) {
-    case 'macOS':
-      return `On macOS: sips -s format jpeg "${path}" --out "${converted}"`;
-    case 'Linux':
-      return (
-        `On Linux: heif-convert "${path}" "${converted}" (package libheif-examples), ` +
-        `or with ImageMagick: magick "${path}" "${converted}"`
-      );
-    case 'Windows':
-      return (
-        `On Windows, with ImageMagick: magick "${path}" "${converted}" ` +
-        '(install it first if missing: winget install ImageMagick.ImageMagick)'
-      );
-    default:
-      return (
-        `Options: sips -s format jpeg "${path}" --out "${converted}" (macOS), ` +
-        `heif-convert "${path}" "${converted}" (Linux, package libheif-examples), ` +
-        `or magick "${path}" "${converted}" (ImageMagick)`
-      );
-  }
-}
-
 export class ReadMediaFileTool implements BuiltinTool<ReadMediaFileInput> {
   readonly name = 'ReadMediaFile' as const;
   readonly description: string;
@@ -336,15 +335,22 @@ export class ReadMediaFileTool implements BuiltinTool<ReadMediaFileInput> {
             'Tell the user to use a model with image input capability.',
         };
       }
-      // HEIC/HEIF must never reach the provider: no provider accepts them,
-      // and once the image_url lands in the history every subsequent request
-      // in the session is rejected. Refuse with a conversion command for the
-      // execution environment instead — the model can run it through Bash
-      // (under the normal permission flow) and read the converted file.
-      if (fileType.mimeType === 'image/heic' || fileType.mimeType === 'image/heif') {
+      // Formats outside the provider-accepted set (AVIF, HEIC, BMP, TIFF,
+      // ICO, …) must never reach the model: once the image_url lands in the
+      // history every subsequent request in the session is rejected. Refuse
+      // with a conversion command for the execution environment instead —
+      // the model can run it through Bash (under the normal permission flow)
+      // and read the converted file. The accepted set and guidance live in
+      // support/image-format-policy, the single source of truth every
+      // ingestion point shares.
+      if (fileType.kind === 'image' && !isModelAcceptedImageMime(fileType.mimeType)) {
         return {
           isError: true,
-          output: buildHeicConversionGuidance(args.path, fileType.mimeType, this.kaos.osEnv.osKind),
+          output: buildImageConversionGuidance(
+            args.path,
+            fileType.mimeType,
+            this.kaos.osEnv.osKind,
+          ),
         };
       }
       if (fileType.kind === 'video' && !this.capabilities.video_in) {
@@ -373,6 +379,51 @@ export class ReadMediaFileTool implements BuiltinTool<ReadMediaFileInput> {
         return {
           isError: true,
           output: 'region and full_resolution apply only to image files.',
+        };
+      }
+
+      if (
+        fileType.kind === 'image' &&
+        stat.stSize > MAX_IMAGE_DECODE_BYTES &&
+        (args.region !== undefined || args.full_resolution === true)
+      ) {
+        return {
+          isError: true,
+          output: buildImageDecodeLimitError(stat.stSize),
+        };
+      }
+
+      if (
+        fileType.kind === 'image' &&
+        args.region === undefined &&
+        args.full_resolution === true &&
+        stat.stSize > IMAGE_BYTE_BUDGET
+      ) {
+        return {
+          isError: true,
+          output: buildFullResolutionLimitError(args.path, stat.stSize),
+        };
+      }
+
+      const defaultImageLimits =
+        fileType.kind === 'image' && args.region === undefined && args.full_resolution !== true
+          ? {
+              maxEdge: this.imageLimits.maxEdgePx(),
+              readByteBudget: this.imageLimits.readByteBudget(),
+            }
+          : undefined;
+      if (
+        defaultImageLimits !== undefined &&
+        stat.stSize > MAX_IMAGE_DECODE_BYTES &&
+        stat.stSize > defaultImageLimits.readByteBudget
+      ) {
+        return {
+          isError: true,
+          output: buildImageDeliveryLimitError({
+            finalBytes: stat.stSize,
+            readByteBudget: defaultImageLimits.readByteBudget,
+            maxEdge: defaultImageLimits.maxEdge,
+          }),
         };
       }
 
@@ -422,11 +473,7 @@ export class ReadMediaFileTool implements BuiltinTool<ReadMediaFileInput> {
           if (data.length > IMAGE_BYTE_BUDGET) {
             return {
               isError: true,
-              output:
-                `"${args.path}" is ${String(data.length)} bytes (${formatByteSize(data.length)}), ` +
-                `over the ${String(IMAGE_BYTE_BUDGET)}-byte (${formatByteSize(IMAGE_BYTE_BUDGET)}) ` +
-                'per-image limit, so full_resolution cannot be honored. ' +
-                'Use region to view a crop at full fidelity instead.',
+              output: buildFullResolutionLimitError(args.path, data.length),
             };
           }
           const base64 = Buffer.from(data).toString('base64');
@@ -446,14 +493,29 @@ export class ReadMediaFileTool implements BuiltinTool<ReadMediaFileInput> {
           // tokens nor trips the provider's per-image byte ceiling. Model-read
           // images get the much tighter read budget: they accumulate in the
           // request body on every turn, and detail stays reachable through the
-          // region readback (which ignores the budget). Best effort: on any
-          // failure compressImageForModel returns the original bytes, so the
-          // read still succeeds with the uncompressed image.
+          // region readback (which ignores the budget). The compressor is
+          // best-effort and may return the original bytes after a safety guard
+          // or codec failure, so enforce both delivery limits before creating
+          // any model-visible media part.
+          const { maxEdge, readByteBudget } = defaultImageLimits!;
           const compressed = await compressImageForModel(data, fileType.mimeType, {
-            maxEdge: this.imageLimits.maxEdgePx(),
-            byteBudget: this.imageLimits.readByteBudget(),
+            maxEdge,
+            byteBudget: readByteBudget,
             telemetry: this.compressTelemetry,
           });
+          if (
+            compressed.finalByteLength > readByteBudget ||
+            Math.max(compressed.width, compressed.height) > maxEdge
+          ) {
+            return {
+              isError: true,
+              output: buildImageDeliveryLimitError({
+                finalBytes: compressed.finalByteLength,
+                readByteBudget,
+                maxEdge,
+              }),
+            };
+          }
           const base64 = Buffer.from(compressed.data).toString('base64');
           mediaPart = {
             type: 'image_url',
