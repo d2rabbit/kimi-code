@@ -63,7 +63,30 @@
   });
 
   function navigate(view: View) { currentView = view; }
+
+  // ---- 全局键盘快捷键 ----
+  function handleGlobalKey(e: KeyboardEvent) {
+    const mod = e.metaKey || e.ctrlKey;
+    // ⌘K / Ctrl+K — 命令面板
+    if (mod && e.key === 'k') { e.preventDefault(); showPalette = !showPalette; return; }
+    // ⌘N / Ctrl+N — 新建对话
+    if (mod && e.key === 'n') { e.preventDefault(); client.client.clearActiveSession(); return; }
+    // ⌘P / Ctrl+P — 搜索会话
+    if (mod && e.key === 'p') { e.preventDefault(); showSearch = !showSearch; return; }
+    // ⌘, / Ctrl+, — 设置
+    if (mod && e.key === ',') { e.preventDefault(); navigate(currentView === 'settings' ? 'workspace' : 'settings'); return; }
+    // Escape — 关闭 overlays（但不在 input/textarea 里拦截）
+    if (e.key === 'Escape') {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return; // 让 input 自己处理 Esc
+      if (showPalette) { showPalette = false; return; }
+      if (showSearch) { showSearch = false; return; }
+      if (showOnboarding) { showOnboarding = false; return; }
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleGlobalKey} />
 
 <div class="app-root" data-view={currentView}>
   {#if daemon.state.status === 'connecting'}

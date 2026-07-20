@@ -13,11 +13,23 @@
 
   let text = $state('');
   let scrollEl: HTMLElement | null = $state(null);
+  let stickToBottom = $state(true);
+
+  // Track whether the user is scrolled to the bottom. If they scrolled up
+  // to read history, don't yank them back down on every new delta — only
+  // auto-scroll when they're already at (or near) the bottom.
+  function onScroll() {
+    if (!scrollEl) return;
+    const threshold = 80; // px from bottom considered "at bottom"
+    stickToBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < threshold;
+  }
 
   $effect(() => {
     void client.turns().length;
     void client.turns().at(-1)?.blocks?.length;
-    if (scrollEl) requestAnimationFrame(() => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; });
+    if (scrollEl && stickToBottom) {
+      requestAnimationFrame(() => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; });
+    }
   });
 
   // ---- Conversation TOC (one entry per user turn) ----
@@ -139,7 +151,7 @@
 
   <GoalStrip />
 
-  <div class="msgs" bind:this={scrollEl}>
+  <div class="msgs" bind:this={scrollEl} onscroll={onScroll}>
     <ConversationToc items={tocItems} activeId={activeTurnId} onselect={scrollToTurn} />
     <div class="msgs-inner">
       {#if client.turns().length === 0 && !client.sessionLoading()}
