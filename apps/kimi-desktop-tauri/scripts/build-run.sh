@@ -99,6 +99,23 @@ else
   log "拷贝 kimi-web 资源到 kimi-code/dist-web …"
   node "$REPO_ROOT/apps/kimi-code/scripts/copy-web-assets.mjs"
 
+  # ---- 清理可能占用 SEA 文件的残留进程 + 软链 ----
+  # SEA 构建会用 copyFile 覆盖 dist-native/bin/<target>/kimi。如果这个路径
+  # 是指向 ~/.kimi-code/bin/kimi 的软链，且有正在运行的 kimi 进程占用它，
+  # copyFile 会报 ETXTBSY。构建前先杀残留进程、删软链。
+  local sea_dir; sea_dir="$REPO_ROOT/apps/kimi-code/dist-native/bin/$TARGET"
+  if [[ -L "$sea_dir/$EXE" ]]; then
+    warn "SEA 路径是指向 $(readlink -f "$sea_dir/$EXE") 的软链，删除以避免 ETXTBSY"
+    rm -f "$sea_dir/$EXE"
+  fi
+  # 杀掉可能占用 SEA 文件的残留 kimi-code 进程（不影响用户在终端跑的 kimi）。
+  local stale_pids; stale_pids=$(pgrep -f "dist-native/bin/.*/kimi" 2>/dev/null || true)
+  if [[ -n "$stale_pids" ]]; then
+    warn "发现占用 SEA 的残留进程: $stale_pids，正在清理…"
+    echo "$stale_pids" | xargs -r kill 2>/dev/null || true
+    sleep 1
+  fi
+
   log "构建内嵌 agent（SEA，首次约需 5–10 分钟）…"
   pnpm --filter "$CLI_PKG" run build:native:sea
 
