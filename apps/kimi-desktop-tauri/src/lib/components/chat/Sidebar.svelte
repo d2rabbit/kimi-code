@@ -95,6 +95,7 @@
       {#each client.workspaces() as ws (ws.id)}
         {@const list = wsSessions(ws.id, ws.root)}
         <div class="ws-g" class:closed={collapsed.has(ws.id)} role="button" tabindex="0" onclick={() => toggleWs(ws.id)} onkeydown={(e) => { if (e.key === 'Enter') toggleWs(ws.id); }}>
+          <Icon name={collapsed.has(ws.id) ? 'folder-closed' : 'folder'} size="sm" class="ws-icon" />
           <span class="arrow">▾</span>
           <span class="ws-name" title={ws.name}>{ws.name}</span>
           <span class="cnt">{list.length}</span>
@@ -110,6 +111,8 @@
                 <button class="s-btn" class:active={s.id === client.activeSessionId() && activeModule === 'chat'} onclick={(e) => select(e, s.id)} oncontextmenu={(e) => openMenu(e, s)}>
                   {#if s.status === 'running' || s.status === 'awaitingApproval' || s.status === 'awaitingQuestion'}
                     <span class="s-status-dot" data-status={s.status}></span>
+                  {:else}
+                    <Icon name="message" size="sm" class="s-icon" />
                   {/if}
                   <span class="s-title">{s.title || '新对话'}</span>
                 </button>
@@ -211,6 +214,7 @@
     background: linear-gradient(180deg, transparent 0%, var(--l2) 100%);
   }
   .ws-g:first-child { border-top: none; margin-top: 0; }
+  .ws-g :global(.ws-icon) { color: var(--warn); flex: none; }
   .ws-g .arrow { font-size: 9px; color: var(--tx3); width: 10px; transition: transform var(--duration-fast) var(--ease); }
   .ws-g.closed .arrow { transform: rotate(-90deg); }
   .ws-g .ws-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
@@ -236,6 +240,9 @@
     font-size: 11.5px; font-weight: 400; cursor: pointer; overflow: hidden;
   }
   .s-btn:hover { color: var(--tx); }
+  :global(.s-icon) { color: var(--tx3); flex: none; opacity: 0.6; transition: opacity var(--duration-fast) var(--ease); }
+  .s-btn:hover :global(.s-icon) { opacity: 1; }
+  .s-btn.active :global(.s-icon) { color: var(--ac); opacity: 1; }
   .s-btn.active { color: var(--tx); font-weight: 600; }
   .s-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .s-status-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }

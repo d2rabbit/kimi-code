@@ -79,6 +79,17 @@
       toast.err('复制失败');
     }
   }
+
+  // Diff stats: count added / removed lines for the header chips.
+  const diffStats = $derived.by(() => {
+    if (!diff) return null;
+    let added = 0, removed = 0;
+    for (const line of diff.split('\n')) {
+      if (line.startsWith('+') && !line.startsWith('+++')) added++;
+      if (line.startsWith('-') && !line.startsWith('---')) removed++;
+    }
+    return { added, removed };
+  });
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -89,6 +100,10 @@
       <div class="dd-title-wrap">
         <Icon name="file-text" size="sm" />
         <span class="dd-path" title={filePath}>{filePath}</span>
+        {#if diffStats}
+          <span class="dd-stat-chip add">+{diffStats.added}</span>
+          <span class="dd-stat-chip del">−{diffStats.removed}</span>
+        {/if}
       </div>
       <div class="dd-actions">
         <button class="dd-btn" type="button" onclick={copyDiff} title="复制 diff" disabled={!diff}>
@@ -148,6 +163,14 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     font-family: var(--font-mono, monospace);
   }
+  .dd-stat-chip {
+    flex: none;
+    font-size: 10px; font-weight: 700;
+    padding: 1px 7px; border-radius: 999px;
+    font-family: var(--font-mono, monospace);
+  }
+  .dd-stat-chip.add { background: var(--ok-soft); color: var(--ok); }
+  .dd-stat-chip.del { background: var(--err-soft); color: var(--err); }
   .dd-actions { display: flex; gap: 4px; }
   .dd-btn {
     border: none; background: transparent; color: var(--tx3);

@@ -77,6 +77,23 @@
     showForm = true;
   }
 
+  // Quick-add codegraph as an MCP server with the right stdio config.
+  // The codegraph CLI supports `codegraph serve --mcp` for stdio transport.
+  function addCodegraphMcp() {
+    editingId = null;
+    formData = {
+      name: 'codegraph',
+      command: 'codegraph',
+      args: 'serve --mcp',
+      env: '',
+      cwd: '',
+      transport: 'stdio',
+      url: '',
+      headers: '',
+    };
+    showForm = true;
+  }
+
   async function saveMcpServer() {
     const path = await getConfigPath();
     let config = '';
@@ -176,6 +193,10 @@
       <button class="refresh-btn" onclick={openAddForm} style="color: var(--color-accent); border-color: var(--color-accent-bd);">
         <Icon name="plus" size="sm" />
         添加
+      </button>
+      <button class="refresh-btn" onclick={addCodegraphMcp} title="快速添加 CodeGraph MCP 服务器" style="color: var(--ok); border-color: var(--color-success-bd, rgba(74,124,89,0.26));">
+        <Icon name="globe" size="sm" />
+        + CodeGraph
       </button>
     </div>
   </div>

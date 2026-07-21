@@ -60,8 +60,33 @@
   };
 
   // Group plugins by type for the 4-bucket UI.
+  // Built-in plugins that ship with the desktop app (not installed via CLI).
+  // codegraph is bundled as both a skill (auto-index hook) and an MCP server
+  // (the codegraph serve --mcp command is auto-configured in McpPanel).
+  const BUILTIN_PLUGINS: PluginInfo[] = [
+    {
+      id: '__builtin_codegraph__',
+      root: '',
+      source: 'builtin',
+      enabled: true,
+      installedAt: '',
+      originalSource: 'https://github.com/colbymchenry/codegraph',
+      displayName: 'CodeGraph',
+      version: '内置',
+      description: '代码知识图谱索引引擎。任务完成时自动同步索引，支持符号搜索、调用图、文件结构分析。',
+      developer: 'colbymchenry',
+      hasMcp: true,
+      skillCount: 1,
+      commandCount: 0,
+    },
+  ];
+
   const grouped = $derived.by(() => {
     const g: Record<PluginType, PluginInfo[]> = { skill: [], mcp: [], kimi: [], claude: [] };
+    // Inject builtins first so they appear at the top of their categories.
+    for (const b of BUILTIN_PLUGINS) {
+      g[pluginType(b)].push(b);
+    }
     for (const p of plugins) {
       g[pluginType(p)].push(p);
     }
