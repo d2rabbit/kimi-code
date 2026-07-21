@@ -4,6 +4,7 @@
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
   import FilePreview from '../chat/FilePreview.svelte';
+  import DiffDrawer from './DiffDrawer.svelte';
   import * as client from '../../stores/client.svelte';
   import { getKimiWebApi } from '../../api';
 
@@ -55,9 +56,10 @@
   let expandedCommit = $state<string | null>(null);
   let expandedFile = $state<string | null>(null);
   let commitFilesLoading = $state<string | null>(null);
-  let expandedWdFile = $state<string | null>(null);
-  let wdDiffs = $state<Record<string, string>>({});
-  let wdDiffsLoading = $state<string | null>(null);
+  // Second-level DiffDrawer state — opens when a working-directory file is
+  // clicked. The drawer is mounted at the end of this component's template.
+  let drawerOpen = $state(false);
+  let drawerFile = $state('');
 
   async function loadGitStatus() {
     if (!activeSessionId) return;
@@ -290,42 +292,22 @@
                 {#each Object.entries(gitData.entries) as [path, status] (path)}
                   <button
                     class="wd-file"
-                    class:expanded={expandedWdFile === path}
-                    onclick={async () => {
-                      if (expandedWdFile === path) { expandedWdFile = null; return; }
-                      expandedWdFile = path;
-                      if (!wdDiffs[path]) {
-                        wdDiffsLoading = path;
-                        try {
-                          const api = getKimiWebApi();
-                          const result = await api.getFileDiff(activeSessionId, path);
-                          wdDiffs = { ...wdDiffs, [path]: result.diff };
-                        } catch { wdDiffs = { ...wdDiffs, [path]: '' }; }
-                        finally { wdDiffsLoading = null; }
-                      }
+                    onclick={() => {
+                      // Open the second-level DiffDrawer (slides out from the
+                      // right edge). Inline expansion is gone per UX request —
+                      // keeps the file list compact and gives diffs a real
+                      // reading surface.
+                      drawerFile = path;
+                      drawerOpen = true;
                     }}
                     type="button"
+                    title="点击查看 diff"
                   >
                     <span class="wd-status" style="color: {statusColor[status[0] ?? ''] ?? 'var(--tx3)'}">{status[0] ?? '?'}</span>
                     <span class="wd-path">{path.split('/').pop()}</span>
                     <span class="wd-dir">{path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : ''}</span>
-                    <Icon name="chevron-down" size="sm" class="wd-chevron" />
+                    <Icon name="chevron-right" size="sm" class="wd-chevron" />
                   </button>
-                  {#if expandedWdFile === path}
-                    <div class="wd-diff">
-                      {#if wdDiffsLoading === path}
-                        <p class="empty-note">加载 diff…</p>
-                      {:else if wdDiffs[path]}
-                        {#each diffPreview(wdDiffs[path]) as line, i (`wd-${path}-${i}`)}
-                          <div class="dline" class:add={line.kind === 'add'} class:del={line.kind === 'del'} class:meta={line.kind === 'meta'}>
-                            <span class="dtx">{line.text}</span>
-                          </div>
-                        {/each}
-                      {:else}
-                        <p class="empty-note">无 diff 内容</p>
-                      {/if}
-                    </div>
-                  {/if}
                 {/each}
               </div>
             {/if}
@@ -400,6 +382,9 @@
     <Icon name="panel-expand" size="sm" />
   </button>
 {/if}
+
+<!-- Second-level drawer for working-directory diffs (slides out from right) -->
+<DiffDrawer bind:open={drawerOpen} bind:filePath={drawerFile} />
 
 <style>
   .rail {

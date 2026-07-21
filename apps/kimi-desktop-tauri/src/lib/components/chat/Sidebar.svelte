@@ -198,18 +198,45 @@
 
   /* ---- Workspace groups + session rows ---- */
   .sess-list { flex: 1; overflow-y: auto; padding-bottom: 8px; }
-  .ws-g { display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 12px; font-size: 11.5px; font-weight: 600; letter-spacing: -0.01em; cursor: pointer; user-select: none; color: var(--tx); }
+  /* Workspace header — bigger and more prominent than the session rows
+     underneath, so the workspace → session hierarchy is visually obvious. */
+  .ws-g {
+    display: flex; align-items: center; gap: 6px;
+    height: 30px; padding: 0 14px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.01em;
+    text-transform: none;
+    cursor: pointer; user-select: none; color: var(--tx);
+    margin: 8px 0 2px;
+    border-top: 1px solid var(--bd);
+    background: linear-gradient(180deg, transparent 0%, var(--l2) 100%);
+  }
+  .ws-g:first-child { border-top: none; margin-top: 0; }
   .ws-g .arrow { font-size: 9px; color: var(--tx3); width: 10px; transition: transform var(--duration-fast) var(--ease); }
   .ws-g.closed .arrow { transform: rotate(-90deg); }
-  .ws-g .ws-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ws-g .cnt { margin-left: auto; font-size: 10px; color: var(--tx3); font-weight: 400; }
+  .ws-g .ws-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .ws-g .cnt {
+    margin-left: auto; font-size: 10px; color: var(--tx3); font-weight: 500;
+    background: var(--l3); padding: 1px 7px; border-radius: 999px;
+    min-width: 18px; text-align: center;
+  }
 
-  .s-row { position: relative; display: flex; align-items: center; border-radius: var(--r-sm); margin: 1px 6px; }
+  /* Session row — indented under the workspace header, smaller font,
+     lighter weight: clear subordinate in the hierarchy. */
+  .s-row {
+    position: relative; display: flex; align-items: center;
+    border-radius: var(--r-sm); margin: 1px 6px 1px 20px;  /* ← left indent */
+  }
   .s-row:hover { background: var(--ac-soft); }
   .s-row.active { background: var(--ac-soft); }
-  .s-btn { flex: 1; display: flex; align-items: center; gap: 7px; text-align: left; height: 29px; padding: 0 22px 0 16px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; overflow: hidden; }
+  .s-btn {
+    flex: 1; display: flex; align-items: center; gap: 7px; text-align: left;
+    height: 28px; padding: 0 22px 0 14px;
+    border: none; border-radius: var(--r-sm);
+    background: transparent; color: var(--tx2);
+    font-size: 11.5px; font-weight: 400; cursor: pointer; overflow: hidden;
+  }
   .s-btn:hover { color: var(--tx); }
-  .s-btn.active { color: var(--tx); font-weight: 500; }
+  .s-btn.active { color: var(--tx); font-weight: 600; }
   .s-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .s-status-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
   .s-status-dot[data-status="running"] { background: var(--ok); box-shadow: 0 0 6px var(--ok); animation: kimi-pulse 1.5s infinite; }

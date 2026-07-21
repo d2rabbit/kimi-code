@@ -502,12 +502,12 @@
           </div>
         {/if}
       </span>
-    </div>
-  </div>
 
-  <!-- Compact FAB (composer 右下角外部) -->
-  <div class="fab-row">
-    <button class="fab" type="button" onclick={() => client.client.compact()}>⧉ 压缩对话</button>
+      <!-- Compact (in the same row as mode/model/thinking per UX request) -->
+      <button class="cpill compact-pill" type="button" onclick={() => client.client.compact()} title="压缩对话历史以释放上下文">
+        <span class="sep"></span><b>压缩</b>
+      </button>
+    </div>
   </div>
 </div>
 

@@ -471,6 +471,57 @@ pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
 // Dock badge / taskbar overlay (unread session count)
 // ---------------------------------------------------------------------------
 
+/// Enable or disable an installed plugin by flipping the `enabled` field in
+/// `~/.kimi-code/plugins/installed.json`. This replaces the previous
+/// `Command.sidecar('kimi', ['plugin', 'enable|disable', ...])` flow which
+/// required the `shell:allow-execute` ACL permission and failed with
+/// "Command plugin:shell|execute not allowed by ACL" when called from the
+/// webview. Direct filesystem write is both faster and ACL-safe.
+#[tauri::command]
+pub fn toggle_plugin(plugin_id: String, enabled: bool) -> Result<(), String> {
+    if plugin_id.trim().is_empty() {
+        return Err("plugin id is required".to_string());
+    }
+    let installed_path = kimi_home().join("plugins").join("installed.json");
+    if !installed_path.exists() {
+        return Err(format!(
+            "installed.json not found at {} — no plugins installed",
+            installed_path.display()
+        ));
+    }
+    let content = stdfs::read_to_string(&installed_path)
+        .map_err(|e| format!("Cannot read installed.json: {e}"))?;
+    let mut root: serde_json::Value =
+        serde_json::from_str(&content).map_err(|e| format!("Cannot parse installed.json: {e}"))?;
+
+    // Walk plugins[] and flip the matching id's `enabled` field.
+    let plugins = root
+        .get_mut("plugins")
+        .and_then(|v| v.as_array_mut())
+        .ok_or_else(|| "installed.json: missing plugins[] array".to_string())?;
+    let mut found = false;
+    for plugin in plugins.iter_mut() {
+        if plugin.get("id").and_then(|v| v.as_str()) == Some(&plugin_id) {
+            plugin["enabled"] = serde_json::Value::Bool(enabled);
+            found = true;
+            break;
+        }
+    }
+    if !found {
+        return Err(format!("plugin {plugin_id} not found in installed.json"));
+    }
+
+    // Atomic write: serialize to a string then replace the file.
+    let new_content = serde_json::to_string_pretty(&root)
+        .map_err(|e| format!("Cannot serialize installed.json: {e}"))?;
+    let tmp = installed_path.with_extension("json.tmp");
+    stdfs::write(&tmp, new_content + "\n")
+        .map_err(|e| format!("Cannot write installed.json.tmp: {e}"))?;
+    stdfs::rename(&tmp, &installed_path)
+        .map_err(|e| format!("Cannot replace installed.json: {e}"))?;
+    Ok(())
+}
+
 /// Set the macOS Dock badge (or Windows taskbar overlay) to show the number
 /// of unread sessions. Pass 0 to clear.
 #[tauri::command]

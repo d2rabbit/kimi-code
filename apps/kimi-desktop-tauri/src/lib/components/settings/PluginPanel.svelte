@@ -139,10 +139,12 @@
 
   async function togglePlugin(pluginId: string, currentEnabled: boolean) {
     try {
-      const { Command } = await import('@tauri-apps/plugin-shell');
-      const action = currentEnabled ? 'disable' : 'enable';
-      const cmd = Command.sidecar('kimi', ['plugin', action, pluginId]);
-      await cmd.execute();
+      // Direct filesystem write via the Rust `toggle_plugin` command.
+      // Avoids the previous Command.sidecar('kimi', ['plugin', ...]) flow
+      // which required the shell:allow-execute ACL and failed with
+      // "Command plugin:shell|execute not allowed by ACL".
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('toggle_plugin', { pluginId, enabled: !currentEnabled });
       await loadPlugins();
     } catch (e) {
       error = `操作失败: ${e instanceof Error ? e.message : String(e)}`;

@@ -122,8 +122,16 @@
   :global(html, body) { height: 100%; margin: 0; }
   :global(body) {
     color: var(--color-text, rgba(255,255,255,0.92));
-    font: 13px/1.5 "Inter Variable","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    overflow: hidden; -webkit-font-smoothing: antialiased;
+    /* NOTE: do NOT use `font:` shorthand here — it resets font-size and
+       wins over the global.css `body { font-size: var(--ui-font-size) }`
+       rule because both are body-specificity and this one comes later in
+       the cascade. Use individual properties so setUiFontSize() can
+       actually adjust the size via the --base-ui-font-size variable. */
+    font-family: "Inter Variable","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size: var(--ui-font-size);
+    line-height: 1.5;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
   }
   :global(*::-webkit-scrollbar) { width: 4px; height: 4px; }
   :global(*::-webkit-scrollbar-track) { background: transparent; }
