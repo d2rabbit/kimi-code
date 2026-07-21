@@ -5,6 +5,7 @@
 <script lang="ts">
   import Icon from '../components/ui/Icon.svelte';
   import type { IconName } from '../lib/icon-types';
+  import { shortcut } from '../lib/desktopFlag';
   import PluginsSection from '../components/settings/PluginsSection.svelte';
   import LoginDialog from '../components/settings/LoginDialog.svelte';
   import ProviderModelDialog from '../components/settings/ProviderModelDialog.svelte';
@@ -405,7 +406,7 @@
           <button class="btn ghost-acc sm" onclick={() => { client.client.setOnboarded(false); onnavigate(); }} type="button">重新打开 →</button>
         </div>
         <h3>快捷键</h3>
-        {#each [['⌘K', '命令面板'], ['⌘N', '新建对话'], ['⌘B', '切换侧栏'], ['⌘J', '切换右栏'], ['⌘S', 'Steer (注入运行中)'], ['⌘.', '中断当前'], ['Esc', '返回 / 关闭']] as [key, desc]}
+        {#each [[shortcut('K'), '命令面板'], [shortcut('N'), '新建对话'], [shortcut('P'), '搜索会话'], [shortcut(','), '打开设置'], [shortcut('S'), 'Steer (注入运行中的回合)'], ['Esc', '返回 / 关闭 overlay']] as [key, desc]}
           <div class="key-row">
             <span class="key-desc">{desc}</span>
             <kbd class="keycap">{key}</kbd>

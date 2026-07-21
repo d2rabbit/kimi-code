@@ -15,6 +15,7 @@ import {
   planMode,
 } from '../stores/client.svelte';
 import { toast } from '../stores/toast.svelte';
+import { shortcut } from './desktopFlag';
 
 export type Client = typeof client;
 
@@ -77,13 +78,13 @@ export async function dispatchSlash(
 
       case '/theme':
         // No GUI theme picker pops from composer — surface a hint.
-        return { handled: true, message: '使用 ⌘, 打开设置 → 主题切换' };
+        return { handled: true, message: `使用 ${shortcut(',')} 打开设置 → 主题切换` };
 
       case '/permission':
-        return { handled: true, message: '使用 ⌘, 打开设置 → 权限模式' };
+        return { handled: true, message: `使用 ${shortcut(',')} 打开设置 → 权限模式` };
 
       case '/settings':
-        return { handled: true, message: '使用 ⌘, 打开设置面板' };
+        return { handled: true, message: `使用 ${shortcut(',')} 打开设置面板` };
 
       case '/title': {
         const t = arg.trim();

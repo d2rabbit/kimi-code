@@ -5,6 +5,7 @@
   import Empty from '../ui/Empty.svelte';
   import { tooltip } from '../../actions/tooltip';
   import FolderPicker from '../shell/FolderPicker.svelte';
+  import { shortcut } from '../../lib/desktopFlag';
 
   let {
     onnavigate = () => {},
@@ -73,7 +74,7 @@
 
 <aside class="sidebar">
   <!-- New task -->
-  <button class="newtask" onclick={newChat}>＋ 新建任务 <span>⌘N</span></button>
+  <button class="newtask" onclick={newChat}>＋ 新建任务 <span>{shortcut('N')}</span></button>
 
   <!-- Module nav -->
   <nav class="mods">

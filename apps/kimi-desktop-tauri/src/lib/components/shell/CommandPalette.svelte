@@ -1,8 +1,9 @@
-<!-- CommandPalette.svelte — ⌘K global command palette overlay. -->
+<!-- CommandPalette.svelte — Cmd/Ctrl+K global command palette overlay. -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
   import type { IconName } from '../../lib/icon-types';
   import * as client from '../../stores/client.svelte';
+  import { shortcut } from '../../lib/desktopFlag';
 
   let {
     open = $bindable(false),
@@ -30,7 +31,7 @@
   // Build command list reactively
   const commands = $derived<CommandItem[]>([
     // 会话操作
-    { id: 'new', title: '新建对话', category: 'action', icon: 'chat-new', shortcut: '⌘N', action: () => client.client.clearActiveSession() },
+    { id: 'new', title: '新建对话', category: 'action', icon: 'chat-new', shortcut: shortcut('N'), action: () => client.client.clearActiveSession() },
     { id: 'search', title: '搜索会话', category: 'action', icon: 'search', keywords: 'sessions find', action: () => {} },
     { id: 'fork', title: 'Fork 当前会话', category: 'action', icon: 'git-branch', action: () => client.client.forkSession() },
     { id: 'compact', title: '压缩对话', category: 'action', icon: 'contract', keywords: 'compress', action: () => client.client.compact() },
