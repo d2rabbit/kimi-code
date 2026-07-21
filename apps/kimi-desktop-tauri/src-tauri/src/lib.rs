@@ -21,7 +21,10 @@ use tauri::{
 };
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
-/// The window title.
+/// The window title — only used by the macOS startup block below (the
+/// title-bar overlay window carries no title on its own). Gated so the
+/// constant isn't flagged dead_code on Linux/Windows.
+#[cfg(target_os = "macos")]
 const WINDOW_TITLE: &str = "Kimi Code Desktop";
 /// Path to the window state file (under KIMI_CODE_HOME).
 const WINDOW_STATE_FILE: &str = "window-state.json";
