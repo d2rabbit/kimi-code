@@ -1282,9 +1282,9 @@ html[data-color-scheme="aqua"] {
 
   --overlay: rgba(0, 30, 90, 0.35);
 
-  /* 条纹背景：repeating-linear-gradient ~2px 条纹 */
+  /* 条纹背景：repeating-linear-gradient ~2px 条纹 (strong contrast for visibility) */
   --haze:
-    repeating-linear-gradient(180deg, #f2f4f7 0 2px, #e7eaef 2px 4px);
+    repeating-linear-gradient(180deg, #f4f6fa 0 2px, #c8cfdb 2px 4px);
   --grain-op: 0;
 
   /* 代码高亮（Aqua 蓝） */
@@ -1716,9 +1716,13 @@ html[data-color-scheme="brutal"] .plugin-card,
 html[data-color-scheme="brutal"] .item-row,
 html[data-color-scheme="brutal"] .task-item,
 html[data-color-scheme="brutal"] .scard,
+html[data-color-scheme="brutal"] .card,
 html[data-color-scheme="brutal"] .composer-card,
 html[data-color-scheme="brutal"] .glass-panel,
 html[data-color-scheme="brutal"] .approval-card,
+html[data-color-scheme="brutal"] .modal-content,
+html[data-color-scheme="brutal"] .panel,
+html[data-color-scheme="brutal"] .theme-card,
 html[data-color-scheme="brutal"] .empty {
   border: 2px solid #1a1a1a !important;
   box-shadow: 4px 4px 0 #1a1a1a !important;
@@ -1727,9 +1731,31 @@ html[data-color-scheme="brutal"] .empty {
 }
 html[data-color-scheme="brutal"] .tool-card:hover,
 html[data-color-scheme="brutal"] .plugin-card:hover,
-html[data-color-scheme="brutal"] .item-row:hover {
+html[data-color-scheme="brutal"] .item-row:hover,
+html[data-color-scheme="brutal"] .card:hover,
+html[data-color-scheme="brutal"] .scard:hover {
   box-shadow: 6px 6px 0 #1a1a1a !important;
   transform: translate(-2px, -2px);
+}
+/* Primary CTA buttons: saturated hot-pink fill + black border + hard shadow */
+html[data-color-scheme="brutal"] .btn.primary,
+html[data-color-scheme="brutal"] .newtask,
+html[data-color-scheme="brutal"] .seg-btn.on,
+html[data-color-scheme="brutal"] .gs-btn.primary,
+html[data-color-scheme="brutal"] .action-btn.approve,
+html[data-color-scheme="brutal"] .stop-btn {
+  background: var(--brutal-pink) !important;
+  color: #fff !important;
+}
+/* Input fields: cream fill + thick black border */
+html[data-color-scheme="brutal"] input,
+html[data-color-scheme="brutal"] textarea,
+html[data-color-scheme="brutal"] .input,
+html[data-color-scheme="brutal"] .input-row {
+  border: 2px solid #1a1a1a !important;
+  box-shadow: 3px 3px 0 #1a1a1a !important;
+  background: var(--l3) !important;
+  border-radius: 4px !important;
 }
 html[data-color-scheme="brutal"] .btn,
 html[data-color-scheme="brutal"] .seg-btn,
@@ -1815,18 +1841,84 @@ html[data-color-scheme="glass"] .plugin-card,
 html[data-color-scheme="glass"] .item-row,
 html[data-color-scheme="glass"] .task-item,
 html[data-color-scheme="glass"] .scard,
+html[data-color-scheme="glass"] .card,
 html[data-color-scheme="glass"] .composer-card,
 html[data-color-scheme="glass"] .glass-panel,
 html[data-color-scheme="glass"] .approval-card,
+html[data-color-scheme="glass"] .modal-content,
+html[data-color-scheme="glass"] .panel,
+html[data-color-scheme="glass"] .theme-card,
 html[data-color-scheme="glass"] .goal-strip,
 html[data-color-scheme="glass"] .empty {
-  background: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(20px) saturate(1.8) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.8) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(24px) saturate(2.2) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(2.2) !important;
+  /* MAX contrast border — 2px solid white, near-opaque */
+  border: 2px solid rgba(255, 255, 255, 0.95) !important;
+  /* Sharp top + bottom rim with strong contrast = unmistakable glass thickness */
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.25),
-    inset 0 1px 1px rgba(255, 255, 255, 0.20) !important;
+    0 8px 32px rgba(0, 0, 0, 0.50),
+    inset 0 2px 0 rgba(255, 255, 255, 1),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.45) !important;
+}
+/* Extra-bright top crescent via pseudo-element overlay — the specular highlight
+   that makes glass unmistakable even without content behind to blur. */
+html[data-color-scheme="glass"] .tool-card::before,
+html[data-color-scheme="glass"] .plugin-card::before,
+html[data-color-scheme="glass"] .item-row::before,
+html[data-color-scheme="glass"] .task-item::before,
+html[data-color-scheme="glass"] .scard::before,
+html[data-color-scheme="glass"] .card::before,
+html[data-color-scheme="glass"] .composer-card::before,
+html[data-color-scheme="glass"] .glass-panel::before,
+html[data-color-scheme="glass"] .approval-card::before,
+html[data-color-scheme="glass"] .modal-content::before,
+html[data-color-scheme="glass"] .panel::before,
+html[data-color-scheme="glass"] .theme-card::before,
+html[data-color-scheme="glass"] .goal-strip::before,
+html[data-color-scheme="glass"] .empty::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 6%;
+  right: 6%;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 1) 50%,
+    transparent 100%);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 1;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+}
+/* Ensure positioned context for ::before */
+html[data-color-scheme="glass"] .tool-card,
+html[data-color-scheme="glass"] .plugin-card,
+html[data-color-scheme="glass"] .scard,
+html[data-color-scheme="glass"] .card,
+html[data-color-scheme="glass"] .glass-panel,
+html[data-color-scheme="glass"] .modal-content,
+html[data-color-scheme="glass"] .panel,
+html[data-color-scheme="glass"] .theme-card,
+html[data-color-scheme="glass"] .composer-card,
+html[data-color-scheme="glass"] .approval-card {
+  position: relative;
+}
+/* Glass inputs: frosted translucency */
+html[data-color-scheme="glass"] input,
+html[data-color-scheme="glass"] textarea,
+html[data-color-scheme="glass"] .input,
+html[data-color-scheme="glass"] .input-row {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: var(--tx) !important;
+}
+html[data-color-scheme="glass"] input::placeholder,
+html[data-color-scheme="glass"] textarea::placeholder {
+  color: rgba(240, 240, 255, 0.45) !important;
 }
 html[data-color-scheme="glass"] .sidebar,
 html[data-color-scheme="glass"] .rail {
@@ -1882,17 +1974,29 @@ html[data-color-scheme="aqua"] .newtask,
 html[data-color-scheme="aqua"] .btn.primary,
 html[data-color-scheme="aqua"] .seg-btn.on {
   background:
-    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 50%),
-    linear-gradient(180deg, #6aa6f8 0%, #1862d8 55%, #0c4cc0 100%) !important;
+    radial-gradient(150% 80% at 50% -15%, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, #7ab4f9 0%, #1862d8 55%, #0a3fa8 100%) !important;
   box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.60),
-    inset 0 -3px 6px rgba(255, 255, 255, 0.35),
-    0 2px 6px rgba(0, 30, 90, 0.35) !important;
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.85),
+    inset 0 -4px 8px rgba(0, 30, 90, 0.30),
+    0 2px 6px rgba(0, 30, 90, 0.40),
+    0 4px 12px rgba(24, 98, 216, 0.25) !important;
   color: #fff !important;
   font-weight: 600;
   text-shadow: 0 1px 1px rgba(0, 30, 90, 0.30);
-  border: none !important;
-  animation: none !important;
+  border: 1px solid rgba(0, 30, 90, 0.25) !important;
+  border-radius: 10px !important;
+}
+/* Only .newtask gets the signature aqua-pulse (kept here, after the gradient
+   rule, so it wins without !important wars). The .btn.primary / .seg-btn.on
+   are steady gel. */
+html[data-color-scheme="aqua"] .newtask {
+  animation: aqua-pulse 2.4s ease-in-out infinite !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-color-scheme="aqua"] .newtask {
+    animation: none !important;
+  }
 }
 html[data-color-scheme="aqua"] .btn,
 html[data-color-scheme="aqua"] .seg-btn,
@@ -1913,8 +2017,13 @@ html[data-color-scheme="aqua"] .tool-card,
 html[data-color-scheme="aqua"] .plugin-card,
 html[data-color-scheme="aqua"] .item-row,
 html[data-color-scheme="aqua"] .scard,
+html[data-color-scheme="aqua"] .card,
 html[data-color-scheme="aqua"] .glass-panel,
-html[data-color-scheme="aqua"] .approval-card {
+html[data-color-scheme="aqua"] .approval-card,
+html[data-color-scheme="aqua"] .modal-content,
+html[data-color-scheme="aqua"] .panel,
+html[data-color-scheme="aqua"] .theme-card,
+html[data-color-scheme="aqua"] .empty {
   background:
     radial-gradient(100% 60% at 50% 0%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 40%),
     linear-gradient(180deg, #ffffff 0%, #eef1f5 100%) !important;
@@ -1922,10 +2031,26 @@ html[data-color-scheme="aqua"] .approval-card {
     inset 0 1px 1px rgba(255, 255, 255, 0.70),
     0 4px 12px rgba(0, 30, 90, 0.12) !important;
   border: 1px solid rgba(0, 30, 90, 0.10) !important;
+  border-radius: 10px !important;
+}
+/* Aqua inputs: gel pill */
+html[data-color-scheme="aqua"] input,
+html[data-color-scheme="aqua"] textarea,
+html[data-color-scheme="aqua"] .input,
+html[data-color-scheme="aqua"] .input-row {
+  background:
+    radial-gradient(100% 60% at 50% 0%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 50%),
+    linear-gradient(180deg, #ffffff 0%, #e8edf4 100%) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.80),
+    inset 0 -2px 4px rgba(0, 30, 90, 0.06),
+    0 1px 3px rgba(0, 30, 90, 0.10) !important;
+  border: 1px solid rgba(0, 30, 90, 0.15) !important;
+  border-radius: 8px !important;
 }
 html[data-color-scheme="aqua"] .sidebar,
 html[data-color-scheme="aqua"] .rail {
-  background: repeating-linear-gradient(180deg, #f2f4f7 0 2px, #e7eaef 2px 4px) !important;
+  background: repeating-linear-gradient(180deg, #f4f6fa 0 2px, #c8cfdb 2px 4px) !important;
 }
 html[data-color-scheme="aqua"] .header {
   background:
@@ -1981,15 +2106,34 @@ html[data-color-scheme="clay"] .plugin-card,
 html[data-color-scheme="clay"] .item-row,
 html[data-color-scheme="clay"] .task-item,
 html[data-color-scheme="clay"] .scard,
+html[data-color-scheme="clay"] .card,
 html[data-color-scheme="clay"] .glass-panel,
 html[data-color-scheme="clay"] .approval-card,
+html[data-color-scheme="clay"] .modal-content,
+html[data-color-scheme="clay"] .panel,
+html[data-color-scheme="clay"] .theme-card,
 html[data-color-scheme="clay"] .empty {
-  border-radius: 14px !important;
-  border: 1px solid rgba(55, 28, 10, 0.10) !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(55, 28, 10, 0.15) !important;
+  /* Visible puffy clay: bright top rim + dark bottom rim + outer drop */
   box-shadow:
-    0 6px 16px rgba(55, 28, 10, 0.10),
-    inset 0 -3px 8px rgba(55, 28, 10, 0.06),
-    inset 0 3px 8px rgba(255, 255, 255, 0.45) !important;
+    0 2px 4px rgba(55, 28, 10, 0.12),
+    0 14px 32px rgba(55, 28, 10, 0.20),
+    inset 0 -5px 12px rgba(55, 28, 10, 0.18),
+    inset 0 4px 8px rgba(255, 255, 255, 0.95) !important;
+  background: linear-gradient(180deg, var(--l1) 0%, var(--bg) 100%) !important;
+}
+/* Clay inputs: pillowy rounded + soft inset */
+html[data-color-scheme="clay"] input,
+html[data-color-scheme="clay"] textarea,
+html[data-color-scheme="clay"] .input,
+html[data-color-scheme="clay"] .input-row {
+  border-radius: 12px !important;
+  border: 1px solid rgba(55, 28, 10, 0.12) !important;
+  background: var(--bg) !important;
+  box-shadow:
+    inset 0 2px 4px rgba(55, 28, 10, 0.08),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.35) !important;
 }
 html[data-color-scheme="clay"] .composer-card {
   border-radius: 16px !important;
