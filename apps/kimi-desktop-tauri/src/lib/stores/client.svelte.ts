@@ -770,8 +770,30 @@ function toggleSwarmMode(): void {
 
 /** Toggle goal mode. Persists to daemon via updateSession. */
 function toggleGoalMode(): void {
+  // NOTE: the backend has no `goalMode` boolean — goals are started by
+  // submitting a `goalObjective` text. This toggle is a local UI hint only
+  // (e.g. used by the Composer mini-toggle to surface the goal flow).
+  // The actual goal lifecycle goes through `setGoalObjective(text)` and
+  // `setGoalControl(pause|resume|cancel)` below; both call updateSession
+  // with the proper backend-recognized fields.
   ui.goalMode = !ui.goalMode;
-  void persistRuntimeControl({ planMode: ui.goalMode });
+}
+
+/**
+ * Submit a new goal objective to the backend. Equivalent to the CLI's
+ * `/goal <objective>` — starts (or replaces) the active goal for the
+ * current session. Empty string cancels the active goal.
+ */
+async function setGoalObjective(objective: string): Promise<void> {
+  const sid = rawState.activeSessionId;
+  if (!sid) return;
+  try {
+    const a = getApi();
+    await a.updateSession(sid, { goalObjective: objective });
+    ui.goalMode = objective.trim().length > 0;
+  } catch (e) {
+    throw e;
+  }
 }
 
 /** Fire-and-forget runtime control persistence to the daemon. */
@@ -1125,6 +1147,7 @@ export const client = {
   dismissQuestion,
   cancelTask,
   setGoalControl,
+  setGoalObjective,
   renameSession,
   archiveSession,
   forkSession,

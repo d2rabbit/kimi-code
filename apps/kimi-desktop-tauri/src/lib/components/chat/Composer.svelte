@@ -5,6 +5,8 @@
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import SlashMenu from './SlashMenu.svelte';
+  import GoalDialog from './GoalDialog.svelte';
+  import SwarmDialog from './SwarmDialog.svelte';
   import * as client from '../../stores/client.svelte';
   import { getKimiWebApi } from '../../api';
 
@@ -309,6 +311,10 @@
   }
   function closeMenus() { openMenu = null; }
 
+  // --- Goal / Swarm dialogs (need text input, can't be pure toggles) ---
+  let showGoal = $state(false);
+  let showSwarm = $state(false);
+
   function setMode(m: 'manual' | 'auto' | 'yolo' | 'plan') {
     if (m === 'plan') {
       if (!client.planMode()) client.client.togglePlanMode();
@@ -444,9 +450,9 @@
           </div>
         {/if}
       </span>
-      <!-- Goal / Swarm 并列开关 -->
-      <button class="mini-toggle" class:on={client.goalMode()} onclick={() => client.client.toggleGoalMode()} type="button">Goal</button>
-      <button class="mini-toggle" class:on={client.swarmMode()} onclick={() => client.client.toggleSwarmMode()} type="button">Swarm</button>
+      <!-- Goal / Swarm — open dialogs (need text input, not pure toggles) -->
+      <button class="mini-toggle" class:on={client.goalMode()} onclick={() => showGoal = true} type="button" title={client.goal() ? '更新或取消当前目标' : '设置目标'}>Goal</button>
+      <button class="mini-toggle" class:on={client.swarmMode()} onclick={() => showSwarm = true} type="button" title="派发 Swarm 子智能体任务">Swarm</button>
 
       <span style="flex:1"></span>
 
@@ -504,6 +510,9 @@
     <button class="fab" type="button" onclick={() => client.client.compact()}>⧉ 压缩对话</button>
   </div>
 </div>
+
+<GoalDialog bind:open={showGoal} />
+<SwarmDialog bind:open={showSwarm} />
 
 <style>
   .composer {

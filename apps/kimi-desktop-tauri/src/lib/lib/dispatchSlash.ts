@@ -28,6 +28,11 @@ const LOCAL_COMMANDS = new Set([
   '/init', '/theme', '/permission', '/settings',
   '/title', '/export-md', '/plan', '/auto', '/yolo',
   '/logout',
+  // /goal and /swarm have GUI dialogs (text required, not pure toggles);
+  // they surface a hint pointing the user at the Goal/Swarm buttons instead
+  // of falling through to sendPrompt (which would just send the literal
+  // text as a chat message).
+  '/goal', '/swarm',
 ]);
 
 /** Quick guard: does this input string look like a local slash command? */
@@ -116,6 +121,16 @@ export async function dispatchSlash(
       case '/logout':
         await c.logout();
         return { handled: true, message: '已退出登录' };
+
+      case '/goal':
+        // GUI surfaces this through the Goal mini-toggle → GoalDialog.
+        // Sub-commands like /goal pause /goal resume /goal cancel are
+        // handled by the GoalStrip banner's controls.
+        return { handled: true, message: '点击底部 Goal 按钮设置或管理目标' };
+
+      case '/swarm':
+        // GUI surfaces this through the Swarm mini-toggle → SwarmDialog.
+        return { handled: true, message: '点击底部 Swarm 按钮派发子智能体任务' };
 
       default:
         return { handled: false };
