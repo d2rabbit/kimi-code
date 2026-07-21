@@ -14,6 +14,7 @@ import type { KimiWebApi } from '../api/types';
 import type {
   AppConfig,
   AppEvent,
+  AppMessage,
   AppMessageContent,
   AppWorkspace,
   AppModel,
@@ -25,6 +26,7 @@ import type { KimiEventHandlers, KimiEventConnection } from '../api/types';
 import {
   createInitialState,
   reduceAppEvent,
+  OPTIMISTIC_USER_MESSAGE_METADATA_KEY_EXPORT,
   type KimiClientState,
 } from '../api/daemon/eventReducer';
 import { messagesToTurns } from '../lib/messagesToTurns';
@@ -508,13 +510,47 @@ async function sendPrompt(
   ui.isSending = true;
   ui.activity = 'running';
 
+  // ---- Optimistic insert: place a placeholder user message into the local
+  // cache NOW so the user sees their text immediately. The reducer's
+  // findOptimisticUserEchoIndex will reconcile the daemon's messageCreated
+  // echo back into this slot (matched by promptId / content) so we don't
+  // double up. Without this, the user message only appears after the WS
+  // event round-trips, which can feel like 'my prompt vanished' or 'only
+  // AI output shows up' when the daemon is slow / events are delayed.
+  const content: AppMessageContent[] = [{ type: 'text', text }];
+  for (const att of attachments ?? []) {
+    content.push({ type: att.kind, source: { fileId: att.fileId } } as AppMessageContent);
+  }
+  const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const optimisticMsg: AppMessage = {
+    id: optimisticId,
+    sessionId: sid,
+    role: 'user',
+    content,
+    createdAt: new Date().toISOString(),
+    metadata: { [OPTIMISTIC_USER_MESSAGE_METADATA_KEY_EXPORT]: true },
+  };
+  rawState.messagesBySession[sid] = [
+    ...(rawState.messagesBySession[sid] ?? []),
+    optimisticMsg,
+  ];
+
   try {
-    const content: AppMessageContent[] = [{ type: 'text', text }];
-    for (const att of attachments ?? []) {
-      content.push({ type: att.kind, source: { fileId: att.fileId } } as AppMessageContent);
-    }
-    await a.submitPrompt(sid, { content });
+    const result = await a.submitPrompt(sid, { content });
+    // Stamp the promptId onto the optimistic message so the reducer's
+    // promptId-based reconciliation can find it immediately when the echo
+    // arrives (faster than content matching).
+    const msgs = rawState.messagesBySession[sid] ?? [];
+    rawState.messagesBySession[sid] = msgs.map((m) =>
+      m.id === optimisticId && result.promptId
+        ? { ...m, promptId: result.promptId }
+        : m,
+    );
   } catch (e) {
+    // Drop the optimistic message on failure — better than leaving a stale
+    // bubble the user thinks was sent.
+    const msgs = rawState.messagesBySession[sid] ?? [];
+    rawState.messagesBySession[sid] = msgs.filter((m) => m.id !== optimisticId);
     ui.activity = 'idle';
     ui.isSending = false;
     throw e;
@@ -548,7 +584,30 @@ async function startSessionAndSendPrompt(
     for (const att of attachments ?? []) {
       content.push({ type: att.kind, source: { fileId: att.fileId } } as AppMessageContent);
     }
-    await a.submitPrompt(session.id, { content });
+    // Optimistic insert — same rationale as sendPrompt above: show the
+    // user's first message immediately, let the reducer reconcile the
+    // eventual WS echo.
+    const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    rawState.messagesBySession[session.id] = [
+      {
+        id: optimisticId,
+        sessionId: session.id,
+        role: 'user',
+        content,
+        createdAt: new Date().toISOString(),
+        metadata: { [OPTIMISTIC_USER_MESSAGE_METADATA_KEY_EXPORT]: true },
+      },
+    ];
+
+    try {
+      const result = await a.submitPrompt(session.id, { content });
+      rawState.messagesBySession[session.id] = rawState.messagesBySession[session.id]!.map((m) =>
+        m.id === optimisticId && result.promptId ? { ...m, promptId: result.promptId } : m,
+      );
+    } catch (e) {
+      rawState.messagesBySession[session.id] = [];
+      throw e;
+    }
   } finally {
     ui.isSending = false;
     ui.isStartingFirstPrompt = false;

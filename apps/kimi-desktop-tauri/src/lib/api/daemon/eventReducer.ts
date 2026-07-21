@@ -26,6 +26,19 @@ import { i18n } from '../../i18n';
 
 const OPTIMISTIC_USER_MESSAGE_METADATA_KEY = 'kimiWeb.optimisticUserMessage';
 
+/**
+ * Metadata key marking an AppMessage as a client-side optimistic placeholder
+ * inserted at submitPrompt time so the user's text shows up instantly while
+ * the daemon processes and echoes back via WS messageCreated. The reducer's
+ * `findOptimisticUserEchoIndex` reconciles the daemon echo into this slot
+ * (matching by promptId, exact content, or loose content) so we don't end
+ * up with two copies.
+ *
+ * Exported so client.svelte.ts can build optimistic messages without
+ * hardcoding the metadata key string.
+ */
+export const OPTIMISTIC_USER_MESSAGE_METADATA_KEY_EXPORT = OPTIMISTIC_USER_MESSAGE_METADATA_KEY;
+
 /** Tail cap for accumulated output of non-subagent (bash / background tool)
  *  tasks, whose stdout can be noisy and unbounded. Subagent progress is kept
  *  in full (small synthesized lines). */
