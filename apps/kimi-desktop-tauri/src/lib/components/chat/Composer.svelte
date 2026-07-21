@@ -11,10 +11,12 @@
   import { getKimiWebApi } from '../../api';
 
   // --- File mention (@) ---
-  interface FileResult { path: string; name: string; }
+  interface FileResult { path: string; name: string; kind?: string; }
   let mentionQuery = $state('');
   let mentionResults = $state<FileResult[]>([]);
   let mentionIndex = $state(0);
+  // Track the in-flight search so older async results don't overwrite newer.
+  let mentionSearchSeq = 0;
 
   async function searchMention(query: string) {
     let sid = client.activeSessionId();
@@ -23,13 +25,29 @@
       const pool = wsId ? client.sessions().filter((x) => x.workspaceId === wsId) : client.sessions();
       sid = pool[0]?.id ?? client.sessions()[0]?.id ?? '';
     }
-    if (!sid || !query) { mentionResults = []; return; }
+    if (!sid) { mentionResults = []; return; }
+    // Note: query can be '' (just typed @ alone) — we still surface a few
+    // recent / popular files so the menu isn't empty. searchFiles with an
+    // empty query returns the daemon's default ranking.
+    const seq = ++mentionSearchSeq;
     try {
       const api = getKimiWebApi();
       const result = await api.searchFiles(sid, { query, limit: 10 });
-      mentionResults = result.items.map((i) => ({ path: i.path, name: i.name }));
-    } catch { mentionResults = []; }
+      // Drop stale results.
+      if (seq !== mentionSearchSeq) return;
+      mentionResults = result.items.map((i) => ({ path: i.path, name: i.name, kind: (i as { kind?: string }).kind }));
+    } catch {
+      if (seq !== mentionSearchSeq) return;
+      mentionResults = [];
+    }
   }
+
+  // Reset the highlight whenever the result set changes (so keyboard nav
+  // never points past the end of a fresh list).
+  $effect(() => {
+    void mentionResults;
+    mentionIndex = 0;
+  });
 
   function kFmt(n: number): string {
     if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -227,6 +245,10 @@
     historyBrowsing = false;
     const cursorPos = textareaEl?.selectionStart ?? 0;
     const beforeCursor = text.slice(0, cursorPos);
+    // Match '@' followed by non-whitespace, non-'@' chars up to the cursor.
+    // Captures the empty string when the user has just typed '@' alone —
+    // that triggers searchMention('') which surfaces the daemon's default
+    // file ranking (a few recent / popular files), so the menu isn't empty.
     const atMatch = beforeCursor.match(/@([^\s@]*)$/);
     if (atMatch) {
       mentionQuery = atMatch[1] ?? '';
@@ -239,12 +261,33 @@
 
   function insertMention(path: string) {
     const cursorPos = textareaEl?.selectionStart ?? 0;
-    const beforeAt = text.slice(0, cursorPos).lastIndexOf('@');
-    if (beforeAt >= 0) {
-      text = text.slice(0, beforeAt) + `@${path} ` + text.slice(cursorPos);
+    // Find the '@' that opened the mention — it's the last '@' before the
+    // cursor, but we must also ensure it's the one currently being typed
+    // (i.e. between it and the cursor there are no spaces — meaning the
+    // user hasn't moved on to another word).
+    const beforeCursor = text.slice(0, cursorPos);
+    const atIdx = beforeCursor.lastIndexOf('@');
+    if (atIdx < 0) return;
+    const token = beforeCursor.slice(atIdx + 1);
+    // If there's whitespace between @ and cursor, the mention token was
+    // already broken — bail without inserting (better than corrupting text).
+    if (/\s/.test(token)) {
+      mentionQuery = ''; mentionResults = [];
+      return;
     }
+    // Replace @<token> with @<path> + trailing space, keep everything after
+    // the cursor intact.
+    const before = text.slice(0, atIdx);
+    const after = text.slice(cursorPos);
+    text = `${before}@${path} ${after}`;
+    // Move caret to just after the inserted space.
+    const newCursor = atIdx + path.length + 2; // +1 for @, +1 for trailing space
     mentionQuery = ''; mentionResults = [];
-    textareaEl?.focus();
+    // Defer focus + caret to next tick so Svelte 5 has flushed the bind:value.
+    queueMicrotask(() => {
+      textareaEl?.focus();
+      textareaEl?.setSelectionRange(newCursor, newCursor);
+    });
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -398,11 +441,19 @@
         <SlashMenu query={slashQuery} skills={client.skills()} activeIndex={slashIndex} onselect={handleSlashSelect} />
       {/if}
       {#if showMention && mentionResults.length > 0}
-        <div class="mention-menu glass-menu animate-spring-in">
+        <div class="mention-menu glass-menu animate-spring-in" role="listbox" aria-label="文件引用">
           {#each mentionResults as item, i (item.path)}
-            <button class="mention-item glass-menu-item" class:selected={i === mentionIndex}
-              onclick={() => insertMention(item.path)} type="button">
-              <Icon name="file-text" size="sm" />
+            <button
+              class="mention-item glass-menu-item"
+              class:selected={i === mentionIndex}
+              onclick={() => insertMention(item.path)}
+              onmouseenter={() => { mentionIndex = i; }}
+              type="button"
+              role="option"
+              aria-selected={i === mentionIndex}
+              data-mention-idx={i}
+            >
+              <Icon name={item.kind === 'dir' || item.path.endsWith('/') ? 'folder' : 'file-text'} size="sm" />
               <span class="mention-path">{item.path}</span>
             </button>
           {/each}
