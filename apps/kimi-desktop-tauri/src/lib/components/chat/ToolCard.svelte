@@ -1,11 +1,14 @@
 <!-- ToolCard.svelte — tool call rendering with expand/collapse.
      Replaces kimi-web's ToolCall + ToolGroup + toolRegistry chain.
-     Shows status, name, arg summary, timing, and expandable output. -->
+     Shows status, name, arg summary, timing, and expandable output.
+     Enhanced: copy output button, JSON output pretty-render, status badge
+     in header (not just the dot). -->
 <script lang="ts">
   import type { ToolCall } from '../../types';
   import StatusDot from '../ui/StatusDot.svelte';
   import Icon from '../ui/Icon.svelte';
   import { toolLabel, toolSummary } from '../../lib/toolMeta';
+  import { toast } from '../../stores/toast.svelte';
   import * as client from '../../stores/client.svelte';
   import SwarmCard from './SwarmCard.svelte';
 
@@ -15,15 +18,57 @@
     tool: ToolCall;
   } = $props();
 
-  // Auto-expand running tools, collapse completed ones.
-  let expanded = $derived(tool.status === 'running');
+  // Expand state: running tools auto-expand; once completed, collapse by
+  // default. User can still toggle.
+  let expanded = $state(tool.status === 'running');
+
+  // Re-open automatically if the tool transitions back to running.
+  $effect(() => {
+    if (tool.status === 'running') expanded = true;
+  });
+
+  function toggle() {
+    expanded = !expanded;
+  }
+
+  function copyOutput() {
+    const text = tool.output?.join('\n') ?? '';
+    if (!text) {
+      toast.info('无输出可复制');
+      return;
+    }
+    void navigator.clipboard.writeText(text).then(() => toast.ok('输出已复制'));
+  }
+
+  function copyCommand() {
+    const text = bashCmd || tool.arg || '';
+    if (!text) return;
+    void navigator.clipboard.writeText(text).then(() => toast.ok('命令已复制'));
+  }
+
+  // Detect JSON output (first non-empty line starts with { or [).
+  const isJsonOutput = $derived.by(() => {
+    if (!tool.output || tool.output.length === 0) return false;
+    const first = tool.output.find((l) => l.trim()) ?? '';
+    const trimmed = first.trim();
+    return trimmed.startsWith('{') || trimmed.startsWith('[');
+  });
+
+  // Pretty-printed JSON (only if isJsonOutput).
+  const prettyJson = $derived.by(() => {
+    if (!isJsonOutput) return null;
+    const raw = tool.output?.join('\n') ?? '';
+    try {
+      return JSON.stringify(JSON.parse(raw), null, 2);
+    } catch {
+      return null;
+    }
+  });
 
   // Extract file path from arg for click-to-preview.
   const filePath = $derived.by(() => {
     if (!tool.arg) return null;
-    // tool.arg is typically JSON or a path string like "· src/foo.ts".
     const trimmed = tool.arg.replace(/^[·\s]+/, '').trim();
-    // Try parsing as JSON (edit tools use {file_path: "..."}).
     try {
       const parsed = JSON.parse(trimmed);
       if (parsed && typeof parsed === 'object') {
@@ -32,7 +77,6 @@
     } catch {
       // Not JSON — treat as path string.
     }
-    // Check if it looks like a file path.
     if (/^[\w./-]+\.\w+$/.test(trimmed) || trimmed.startsWith('/') || trimmed.startsWith('./')) {
       return trimmed.split(/\s+/)[0];
     }
@@ -51,11 +95,7 @@
     return added || removed ? { added, removed } : null;
   });
 
-  function toggle() {
-    expanded = !expanded;
-  }
-
-  // ---- 富渲染分类 ----
+  // ---- Rich classification ----
   const kind = $derived.by(() => {
     const n = tool.name.toLowerCase();
     if (['bash', 'shell', 'execute', 'run', 'exec'].includes(n)) return 'bash';
@@ -65,7 +105,6 @@
     return 'generic';
   });
 
-  // Bash: $ 命令行 + 输出（exit code 由 status/输出推断）
   const bashCmd = $derived.by(() => {
     if (kind !== 'bash') return '';
     const raw = (tool.arg ?? '').replace(/^[·\s]+/, '').trim();
@@ -75,7 +114,7 @@
     } catch { return raw; }
   });
 
-  // Edit/Read: 带行号的行序列（diff 行着色的增强版）
+  // Edit/Read: numbered line sequence (enhanced diff-line coloring).
   const numberedLines = $derived.by(() => {
     if (!tool.output) return [];
     let ln = 0;
@@ -86,6 +125,16 @@
       if (!isAdd) ln++;
       return { n: isAdd ? ln : ln, text: line, add: isAdd, del: isDel, meta: isMeta };
     });
+  });
+
+  // Status badge label (alongside the colored dot).
+  const statusLabel = $derived.by(() => {
+    switch (tool.status) {
+      case 'running': return '运行中';
+      case 'ok': return '完成';
+      case 'error': return '失败';
+      default: return tool.status;
+    }
   });
 
   // Tool icon by name.
@@ -107,6 +156,7 @@
     <StatusDot status={tool.status} />
     <Icon name={toolIcon(tool.name) as never} size="sm" />
     <span class="tool-name">{toolLabel(tool.name)}</span>
+    <span class="status-badge" data-status={tool.status}>{statusLabel}</span>
     {#if tool.arg}
       {#if filePath}
         <span
@@ -133,8 +183,24 @@
 
   {#if expanded && tool.output && tool.output.length > 0}
     <div class="tool-expand-area">
+    <div class="tool-output-toolbar">
+      {#if kind === 'bash' && bashCmd}
+        <button class="tool-action-btn" onclick={copyCommand} type="button" title="复制命令">
+          <Icon name="copy" size="sm" /> 复制命令
+        </button>
+      {/if}
+      <button class="tool-action-btn" onclick={copyOutput} type="button" title="复制输出">
+        <Icon name="copy" size="sm" /> 复制输出
+      </button>
+    </div>
     {#if kind === 'swarm'}
       <SwarmCard {tool} />
+    {:else if prettyJson}
+      <!-- JSON 输出：pretty-print + 折叠提示 -->
+      <details class="json-output">
+        <summary>JSON 输出（点击折叠/展开）</summary>
+        <pre class="tool-output json-view"><code>{prettyJson}</code></pre>
+      </details>
     {:else if kind === 'bash'}
       <!-- Bash：终端块（$ 命令 + 输出） -->
       <div class="term">
@@ -223,6 +289,73 @@
     font-weight: var(--weight-semibold);
     color: var(--tx);
     flex: none;
+  }
+
+  /* Status badge — small pill next to the tool name, color-coded. */
+  .status-badge {
+    flex: none;
+    font-size: 9.5px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 999px;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+  }
+  .status-badge[data-status="running"] {
+    background: var(--ac-soft); color: var(--ac);
+  }
+  .status-badge[data-status="ok"] {
+    background: var(--ok-soft); color: var(--ok);
+  }
+  .status-badge[data-status="error"] {
+    background: var(--err-soft); color: var(--err);
+  }
+
+  /* Output toolbar — copy buttons, floats above the output panel. */
+  .tool-output-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 5px 10px;
+    background: var(--l2);
+    border-top: 1px solid var(--bd);
+    border-bottom: 1px solid var(--bd);
+  }
+  .tool-action-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px;
+    border: 1px solid var(--bd2);
+    border-radius: var(--r-sm);
+    background: var(--l1);
+    color: var(--tx2);
+    font-size: 10.5px;
+    font-family: var(--font-mono, monospace);
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
+  }
+  .tool-action-btn:hover {
+    color: var(--tx); border-color: var(--ac);
+  }
+
+  /* JSON output pretty-print block. */
+  .json-output > summary {
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 10.5px;
+    color: var(--tx3);
+    font-family: var(--font-mono, monospace);
+    border-top: 1px solid var(--bd);
+    background: var(--l2);
+    user-select: none;
+  }
+  .json-output > summary:hover { color: var(--tx); }
+  .json-view {
+    margin: 0;
+    max-height: 280px;
+    background: var(--l1);
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--tx);
   }
   .tool-arg {
     overflow: hidden;

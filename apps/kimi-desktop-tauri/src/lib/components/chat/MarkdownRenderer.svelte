@@ -47,6 +47,8 @@
 
   // Custom code renderer: during streaming, render plain <pre><code>;
   // after streaming ends, use shiki for highlighting.
+  // For JSON / HTML we add interactive affordances after render (post-HTML
+  // processing) — the renderer just emits the right class hooks.
   const renderer = {
     code({ text: code, lang }: { text: string; lang?: string }) {
       const language = (lang || '').trim().toLowerCase() || 'text';
@@ -58,8 +60,21 @@
         return renderDiff(code);
       }
       const cls = `language-${language}`;
+      // Header bar: language label + copy button.
       const head = `<div class="cb-head"><span class="cb-lang">${language}</span><button class="cb-copy" type="button" data-copy>⧉ 复制</button></div>`;
-      return `<div class="cb-wrap">${head}<pre class="code-block ${cls}"><code class="${cls}">${escaped}</code></pre></div>`;
+      // For HTML blocks, emit an extra "预览" toggle button (handled in
+      // post-processing — see enhanceHtmlBlocks).
+      const previewBtn = language === 'html'
+        ? `<button class="cb-preview" type="button" data-preview>👁 预览</button>`
+        : '';
+      const headWithPreview = language === 'html'
+        ? `<div class="cb-head"><span class="cb-lang">${language}</span><span class="cb-head-actions">${previewBtn}<button class="cb-copy" type="button" data-copy>⧉ 复制</button></span></div>`
+        : head;
+      // Stash the raw code as a data attribute so post-processing can pick
+      // it up (JSON tree fold / HTML preview) without re-parsing.
+      const rawData = encodeURIComponent(code);
+      const extraData = language === 'json' ? ` data-json="${rawData}"` : (language === 'html' ? ` data-html="${rawData}"` : '');
+      return `<div class="cb-wrap cb-${language}"${extraData}>${headWithPreview}<pre class="code-block ${cls}"><code class="${cls}">${escaped}</code></pre></div>`;
     },
   };
 
@@ -149,6 +164,47 @@
     });
   }
 
+  // Preview toggle for HTML blocks — injects/removes a sandboxed iframe
+  // under the code block so the user can see what the snippet renders as.
+  function onBodyPreviewClick(e: MouseEvent) {
+    const btn = (e.target as HTMLElement).closest?.('[data-preview]') as HTMLElement | null;
+    if (!btn) return;
+    const wrap = btn.closest('.cb-wrap') as HTMLElement | null;
+    if (!wrap) return;
+    const existing = wrap.querySelector('.cb-preview-frame');
+    if (existing) {
+      // Toggle off.
+      existing.remove();
+      btn.textContent = '👁 预览';
+      return;
+    }
+    const raw = wrap.getAttribute('data-html');
+    if (!raw) return;
+    const htmlContent = decodeURIComponent(raw);
+    const frame = document.createElement('iframe');
+    frame.className = 'cb-preview-frame';
+    frame.sandbox = 'allow-same-origin'; // No scripts — defensive.
+    frame.srcdoc = htmlContent;
+    wrap.appendChild(frame);
+    btn.textContent = '✕ 关闭预览';
+  }
+
+  // Unified click handler — dispatches by which data-* attribute the click
+  // target carries.
+  function onBodyAnyClick(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    if (target.closest?.('[data-copy]')) { onBodyClick(e); return; }
+    if (target.closest?.('[data-preview]')) { onBodyPreviewClick(e); return; }
+    // Fold/unfold for JSON tree nodes.
+    const fold = target.closest?.('[data-fold]') as HTMLElement | null;
+    if (fold) {
+      const parent = fold.parentElement;
+      if (!parent) return;
+      parent.classList.toggle('folded');
+      e.preventDefault();
+    }
+  }
+
   // Detect dark mode for re-highlighting on theme change.
   $effect(() => {
     // Re-render when color-scheme changes.
@@ -161,13 +217,84 @@
     });
     return () => observer.disconnect();
   });
+
+  // Post-process: convert data-json blocks into collapsible JSON trees.
+  // Rendered after the raw HTML is in the DOM (so we can attach via Svelte
+  // action on the container). For large JSON we keep the plain code view
+  // (tree rendering becomes sluggish past ~5K nodes).
+  const MAX_JSON_TREE_NODES = 5000;
+
+  function renderJsonTree(value: unknown, depth = 0): string {
+    if (depth > 32) return '<span class="jt-ellipsis">…</span>';
+    if (value === null) return '<span class="jt-null">null</span>';
+    if (typeof value === 'boolean') return `<span class="jt-bool">${value}</span>`;
+    if (typeof value === 'number') return `<span class="jt-num">${value}</span>`;
+    if (typeof value === 'string') return `<span class="jt-str">"${escapeHtml(value)}"</span>`;
+    const entries = Array.isArray(value)
+      ? value.map((v, i) => [i, v] as const)
+      : Object.entries(value as Record<string, unknown>);
+    const open = depth < 1 ? '' : ' folded';
+    const bracket = Array.isArray(value) ? ['[', ']'] : ['{', '}'];
+    if (entries.length === 0) return `<span class="jt-brkt">${bracket[0]}${bracket[1]}</span>`;
+    const inner = entries.map(([k, v], idx) => {
+      const comma = idx < entries.length - 1 ? ',' : '';
+      const keyStr = Array.isArray(value)
+        ? `<span class="jt-idx">${k}</span>`
+        : `<span class="jt-key">"${escapeHtml(String(k))}"</span>:`;
+      // Recursively render children; objects/arrays get a fold caret.
+      if (v && typeof v === 'object') {
+        return `<div class="jt-row jt-obj${open}"><span class="jt-fold" data-fold>▾</span>${keyStr} <span class="jt-val">${renderJsonTree(v, depth + 1)}</span>${comma}</div>`;
+      }
+      return `<div class="jt-row jt-leaf"><span class="jt-fold jt-fold-empty">·</span>${keyStr} <span class="jt-val">${renderJsonTree(v, depth + 1)}</span>${comma}</div>`;
+    }).join('');
+    return `<span class="jt-brkt">${bracket[0]}</span><div class="jt-children">${inner}</div><span class="jt-brkt">${bracket[1]}</span>`;
+  }
+
+  let jsonEnhancedHtml = $state('');
+
+  $effect(() => {
+    const src = displayHtml;
+    if (!src || streaming) {
+      jsonEnhancedHtml = '';
+      return;
+    }
+    // Quick exit if no JSON blocks to enhance.
+    if (!src.includes('data-json=')) {
+      jsonEnhancedHtml = '';
+      return;
+    }
+    // Rewrite each data-json block: render the JSON tree into a div, and
+    // keep the original <pre> as a fallback "raw" toggle.
+    const result = src.replace(
+      /<div class="cb-wrap cb-json" data-json="([^"]*)">([\s\S]*?)<\/div>/g,
+      (_m, encoded: string, inner: string) => {
+        let parsed: unknown = null;
+        try {
+          parsed = JSON.parse(decodeURIComponent(encoded));
+        } catch {
+          // Bad JSON — leave the original code block alone.
+          return `<div class="cb-wrap cb-json">${inner}</div>`;
+        }
+        // Size guard — tree rendering is O(n) but the DOM gets heavy fast.
+        const nodeCount = JSON.stringify(parsed).length;
+        if (nodeCount > MAX_JSON_TREE_NODES) {
+          return `<div class="cb-wrap cb-json">${inner}</div>`;
+        }
+        const tree = `<div class="jt-root">${renderJsonTree(parsed)}</div>`;
+        return `<div class="cb-wrap cb-json">${inner}<div class="cb-tree-wrap" data-tree>${tree}</div></div>`;
+      },
+    );
+    jsonEnhancedHtml = result;
+  });
+
+  const finalHtml = $derived(jsonEnhancedHtml || displayHtml);
 </script>
 
-<div class="md-body" onclick={onBodyClick} role="presentation">
+<div class="md-body" onclick={onBodyAnyClick} role="presentation">
   {#if streaming && text}
-    {@html displayHtml}<span class="md-cursor"></span>
+    {@html finalHtml}<span class="md-cursor"></span>
   {:else}
-    {@html displayHtml}
+    {@html finalHtml}
   {/if}
 </div>
 
@@ -257,6 +384,29 @@
     font-size: 10px;
     color: var(--tx3);
   }
+  :global(.md-body .cb-head-actions) {
+    display: inline-flex;
+    gap: 8px;
+  }
+  :global(.md-body .cb-preview) {
+    border: none;
+    background: transparent;
+    color: var(--tx3);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    padding: 0;
+    transition: color var(--duration-fast) var(--ease);
+  }
+  :global(.md-body .cb-preview:hover) { color: var(--ac); }
+  :global(.md-body .cb-preview-frame) {
+    width: 100%;
+    height: 240px;
+    border: none;
+    border-top: 1px solid var(--bd);
+    background: #fff;
+    display: block;
+  }
   :global(.md-body .cb-copy) {
     border: none;
     background: transparent;
@@ -330,4 +480,55 @@
   @media (prefers-reduced-motion: reduce) {
     .md-cursor { animation: none; }
   }
+
+  /* ===== JSON collapsible tree (rendered from data-json blocks) ===== */
+  :global(.md-body .cb-tree-wrap) {
+    border-top: 1px solid var(--bd);
+    padding: 8px 12px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.6;
+    background: var(--l2);
+    overflow-x: auto;
+  }
+  :global(.md-body .jt-root) {
+    color: var(--tx);
+    white-space: pre;
+  }
+  :global(.md-body .jt-row) {
+    display: block;
+    padding-left: 8px;
+    position: relative;
+  }
+  :global(.md-body .jt-fold) {
+    display: inline-block;
+    width: 12px;
+    cursor: pointer;
+    color: var(--tx3);
+    user-select: none;
+    text-align: center;
+    transition: transform var(--duration-fast, 120ms) var(--ease, ease);
+  }
+  :global(.md-body .jt-fold-empty) {
+    cursor: default;
+    color: transparent;
+  }
+  :global(.md-body .jt-obj.folded > .jt-children) {
+    display: none;
+  }
+  :global(.md-body .jt-obj.folded .jt-fold) {
+    transform: rotate(-90deg);
+  }
+  :global(.md-body .jt-children) {
+    margin-left: 14px;
+    border-left: 1px solid var(--bd);
+    padding-left: 4px;
+  }
+  :global(.md-body .jt-key) { color: var(--ac-h); }
+  :global(.md-body .jt-idx) { color: var(--tx3); }
+  :global(.md-body .jt-str) { color: var(--ok); }
+  :global(.md-body .jt-num) { color: var(--warn); }
+  :global(.md-body .jt-bool) { color: var(--ac); }
+  :global(.md-body .jt-null) { color: var(--tx3); font-style: italic; }
+  :global(.md-body .jt-brkt) { color: var(--tx2); font-weight: 600; }
 </style>
