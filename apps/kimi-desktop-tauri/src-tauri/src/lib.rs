@@ -151,6 +151,7 @@ pub fn run() {
             commands::write_text_file,
             commands::list_installed_plugins,
             commands::install_plugin_from_local,
+            commands::update_codegraph_index,
             commands::toggle_plugin,
             commands::set_badge_count,
             commands::list_user_skills,

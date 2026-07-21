@@ -546,6 +546,78 @@ fn resolve_kimi_cli() -> Result<std::path::PathBuf, String> {
     which::which(bin_name).map_err(|e| format!("`{bin_name}` not on PATH: {e}"))
 }
 
+/// Resolve the codegraph CLI binary (https://github.com/colbymchenry/codegraph).
+/// Tries PATH first (the recommended install path); there's no in-repo
+/// fallback because codegraph is an external tool the user installs
+/// separately (one-line curl install script).
+fn resolve_codegraph_cli() -> Result<std::path::PathBuf, String> {
+    let bin_name = if cfg!(windows) { "codegraph.exe" } else { "codegraph" };
+    which::which(bin_name).map_err(|_| {
+        "`codegraph` not on PATH — install it from https://github.com/colbymchenry/codegraph".to_string()
+    })
+}
+
+/// Update the codegraph index for the project at `cwd`. Called automatically
+/// by the frontend whenever a session transitions to idle (task complete),
+/// so the index reflects whatever file changes the agent just made.
+///
+/// Strategy:
+///   1. If `<cwd>/.codegraph/` exists → run `codegraph sync <cwd>` (incremental)
+///   2. Otherwise → run `codegraph init <cwd>` (first-time index build)
+///   3. If `codegraph` is not installed → return Ok(()) silently (the hook
+///      is opt-in; users without codegraph shouldn't see errors)
+///
+/// Runs in a detached child so the agent UI doesn't block on indexing
+/// (which can take seconds on large repos). Returns a status string for
+/// the frontend toast.
+#[tauri::command]
+pub async fn update_codegraph_index(cwd: String) -> Result<String, String> {
+    let project_path = std::path::PathBuf::from(&cwd);
+    if !project_path.is_dir() {
+        return Err(format!("project directory does not exist: {cwd}"));
+    }
+    let codegraph_bin = match resolve_codegraph_cli() {
+        Ok(p) => p,
+        Err(_) => {
+            // codegraph not installed — silent no-op (the hook is opt-in).
+            return Ok("codegraph not installed (skipped)".to_string());
+        }
+    };
+
+    let needs_init = !project_path.join(".codegraph").is_dir();
+    let subcmd = if needs_init { "init" } else { "sync" };
+
+    // Run with --quiet to keep stdout clean (frontend just needs the exit
+    // status). Time out after 5 minutes so a stuck index build doesn't
+    // hold the task pool forever.
+    let output = tokio::time::timeout(
+        std::time::Duration::from_secs(300),
+        tokio::process::Command::new(&codegraph_bin)
+            .arg(subcmd)
+            .arg(&project_path)
+            .arg("--quiet")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .output(),
+    )
+    .await
+    .map_err(|_| format!("codegraph {subcmd} timed out after 5 minutes"))?
+    .map_err(|e| format!("Failed to spawn codegraph {subcmd}: {e}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        // Don't surface codegraph failures as errors — they're often
+        // 'language not supported' or 'already up to date' non-issues.
+        return Ok(format!("codegraph {subcmd}: {stderr}"));
+    }
+    Ok(format!(
+        "codegraph {} done for {}",
+        subcmd,
+        project_path.display()
+    ))
+}
+
 /// Enable or disable an installed plugin by flipping the `enabled` field in
 /// `~/.kimi-code/plugins/installed.json`. This replaces the previous
 /// `Command.sidecar('kimi', ['plugin', 'enable|disable', ...])` flow which

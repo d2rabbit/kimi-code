@@ -34,6 +34,7 @@ import type { ChatTurn } from '../types';
 import { setDaemonOrigin } from '../api/config';
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { daemon } from './daemon.svelte';
+import { toast } from './toast.svelte';
 
 // ---------------------------------------------------------------------------
 // Reactive state (Svelte 5 runes)
@@ -390,6 +391,46 @@ function notifyDesktop(title: string, body: string): void {
   }
 }
 
+/**
+ * Update the codegraph index for a session's project directory. Called
+ * automatically when a session transitions to idle (task complete) so the
+ * graph reflects any file edits the agent made during the run.
+ *
+ * Behavior:
+ *   - No-op (silently) when not running inside the Tauri webview — the
+ *     command isn't registered in pure-browser mode.
+ *   - No-op (silently) when codegraph isn't installed — the Rust side
+ *     detects this and returns a status string rather than an error.
+ *   - Surfaces a toast on success/failure so the user knows indexing ran.
+ *   - Throttled to one in-flight call at a time per session — overlapping
+ *     calls would just re-sync the same changes.
+ */
+const codegraphInFlight = new Set<string>();
+async function maybeUpdateCodegraphIndex(sessionId: string): Promise<void> {
+  if (codegraphInFlight.has(sessionId)) return;
+  if (!('__TAURI_INTERNALS__' in globalThis)) return; // browser mode
+  const session = rawState.sessions.find((s) => s.id === sessionId);
+  const cwd = session?.cwd;
+  if (!cwd) return;
+  codegraphInFlight.add(sessionId);
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const status = await invoke<string>('update_codegraph_index', { cwd });
+    // Surface result as a low-key info toast — codegraph is a power-user
+    // tool, so we don't want to be loud about it. The status string from
+    // Rust already includes 'done' / 'skipped' / 'not installed'.
+    if (status && !status.includes('skipped') && !status.includes('not installed')) {
+      toast.info(`codegraph 索引已更新`);
+    }
+  } catch (e) {
+    // Don't toast errors — they're often 'language not supported' style
+    // noise that would annoy users. Log for debugging instead.
+    console.warn('[codegraph] index update failed:', e);
+  } finally {
+    codegraphInFlight.delete(sessionId);
+  }
+}
+
 /** Connect the WS event stream and wire events into the reducer. */
 function connectEvents(): void {
   if (eventConn) return;
@@ -408,6 +449,11 @@ function connectEvents(): void {
           ui.activity = 'idle';
           ui.isSending = false;
           notifyDesktop('任务完成', `${ui.activeWorkspaceId || 'Kimi Code'} 的任务已完成`);
+          // Fire codegraph index sync in the background — the agent likely
+          // modified project files during the run. No-op if codegraph isn't
+          // installed (the Rust command handles the missing-binary case
+          // silently). Only sync if we know the session's cwd.
+          void maybeUpdateCodegraphIndex(meta.sessionId);
         } else if (event.status === 'running') {
           ui.activity = 'running';
         }
