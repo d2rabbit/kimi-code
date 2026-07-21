@@ -12,7 +12,7 @@
   import SubagentsSection from '../components/settings/SubagentsSection.svelte';
 
   let showLogin = $state(false);
-  let pmdMode = $state<'provider' | 'model' | null>(null);
+  let pmdMode = $state<'unified' | null>(null);
   import * as client from '../stores/client.svelte';
   import { daemon } from '../stores/daemon.svelte';
   import { toast } from '../stores/toast.svelte';
@@ -273,7 +273,7 @@
           </div>
         {/each}
 
-        <button class="dashed-btn" onclick={() => pmdMode = 'provider'} type="button">+ 添加供应商</button>
+        <button class="dashed-btn" onclick={() => pmdMode = 'unified'} type="button">+ 添加供应商</button>
 
         {#if showEditProvider}
           <div class="scard add-model-form">
@@ -295,7 +295,7 @@
         {/if}
 
         <h3>自定义模型</h3>
-        <button class="dashed-btn" onclick={() => pmdMode = 'model'} type="button">+ 添加自定义模型</button>
+        <button class="dashed-btn" onclick={() => pmdMode = 'unified'} type="button">+ 添加自定义模型</button>
 
       {:else if active === 'subagents'}
         <SubagentsSection />
