@@ -174,7 +174,7 @@
           </div>
         </div>
       {:else if client.turns().length === 0}
-        <div class="loading"><div class="spinner"></div></div>
+        <div class="loading"><div class="spinner" role="progressbar" aria-busy="true" aria-label="加载中"></div></div>
       {:else}
         {#each client.turns() as turn (turn.id)}
           {#if turn.role === 'user'}
