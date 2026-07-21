@@ -486,7 +486,6 @@
   .wd-path { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx); }
   .wd-dir { color: var(--tx3); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80px; }
   .wd-chevron { flex: none; color: var(--tx3); transition: transform 160ms var(--ease); }
-  .wd-file.expanded .wd-chevron { transform: rotate(180deg); }
   .wd-diff { max-height: 300px; overflow-y: auto; margin: 0 0 6px 19px; border-radius: 6px; background: var(--l1); font-family: var(--font-mono); font-size: 10px; line-height: 1.5; }
   .timeline-count { min-width: 18px; padding: 2px 5px; border-radius: 999px; background: var(--l3); color: var(--tx3); font-family: var(--font-mono); font-size: 9px; text-align: center; }
   .git-timeline { position: relative; margin: 0 -4px 18px; padding-bottom: 3px; border-bottom: 1px solid var(--bd); }

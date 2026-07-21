@@ -84,7 +84,7 @@
 <svelte:window onkeydown={onKey} />
 
 {#if open && filePath}
-  <div class="diff-drawer" role="dialog" aria-modal="false" aria-label="工作区改动 diff">
+  <div class="diff-drawer" role="dialog" aria-modal="false" aria-label="工作区改动 diff" tabindex="-1">
     <header class="dd-head">
       <div class="dd-title-wrap">
         <Icon name="file-text" size="sm" />

@@ -18,11 +18,12 @@
     tool: ToolCall;
   } = $props();
 
-  // Expand state: running tools auto-expand; once completed, collapse by
-  // default. User can still toggle.
-  let expanded = $state(tool.status === 'running');
+  // Expand state: defaults to expanded when running. The $effect below
+  // keeps it in sync when tool.status changes at runtime.
+  let expanded = $state(false);
 
-  // Re-open automatically if the tool transitions back to running.
+  // Auto-expand running tools; once completed, collapse by default.
+  // Re-opens if the tool transitions back to running.
   $effect(() => {
     if (tool.status === 'running') expanded = true;
   });

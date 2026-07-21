@@ -183,42 +183,50 @@
   {#if showForm}
     <div class="mcp-form">
       <div class="form-row">
-        <label>名称</label>
-        <input bind:value={formData.name} placeholder="my-server" />
+        <label>名称
+          <input bind:value={formData.name} placeholder="my-server" />
+        </label>
       </div>
       <div class="form-row">
-        <label>传输方式</label>
-        <select bind:value={formData.transport}>
-          <option value="stdio">stdio (本地进程)</option>
-          <option value="http">http (远程 API)</option>
-          <option value="sse">sse (Server-Sent Events)</option>
-        </select>
+        <label>传输方式
+          <select bind:value={formData.transport}>
+            <option value="stdio">stdio (本地进程)</option>
+            <option value="http">http (远程 API)</option>
+            <option value="sse">sse (Server-Sent Events)</option>
+          </select>
+        </label>
       </div>
       {#if formData.transport === 'stdio'}
         <div class="form-row">
-          <label>命令</label>
-          <input bind:value={formData.command} placeholder="npx" />
+          <label>命令
+            <input bind:value={formData.command} placeholder="npx" />
+          </label>
         </div>
         <div class="form-row">
-          <label>参数 (空格分隔)</label>
-          <input bind:value={formData.args} placeholder="@modelcontextprotocol/server-filesystem /tmp" />
+          <label>参数 (空格分隔)
+            <input bind:value={formData.args} placeholder="@modelcontextprotocol/server-filesystem /tmp" />
+          </label>
         </div>
         <div class="form-row">
-          <label>环境变量 (每行 KEY=VALUE)</label>
-          <textarea bind:value={formData.env} rows="2" placeholder="API_KEY=xxx"></textarea>
+          <label>环境变量 (每行 KEY=VALUE)
+            <textarea bind:value={formData.env} rows="2" placeholder="API_KEY=xxx"></textarea>
+          </label>
         </div>
         <div class="form-row">
-          <label>工作目录 (可选)</label>
-          <input bind:value={formData.cwd} placeholder="/home/user" />
+          <label>工作目录 (可选)
+            <input bind:value={formData.cwd} placeholder="/home/user" />
+          </label>
         </div>
       {:else}
         <div class="form-row">
-          <label>URL</label>
-          <input bind:value={formData.url} placeholder="https://api.example.com/mcp" />
+          <label>URL
+            <input bind:value={formData.url} placeholder="https://api.example.com/mcp" />
+          </label>
         </div>
         <div class="form-row">
-          <label>Headers (每行 KEY=VALUE)</label>
-          <textarea bind:value={formData.headers} rows="2" placeholder="Authorization=Bearer xxx"></textarea>
+          <label>Headers (每行 KEY=VALUE)
+            <textarea bind:value={formData.headers} rows="2" placeholder="Authorization=Bearer xxx"></textarea>
+          </label>
         </div>
       {/if}
       <div class="form-actions">

@@ -54,7 +54,8 @@
 
 {#if open}
   <div class="term-drawer" style="--term-height: {height}px">
-    <div class="term-resize-handle" onmousedown={onResizeStart} role="separator" aria-label="调整终端高度"></div>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="term-resize-handle" onmousedown={onResizeStart} aria-label="调整终端高度" tabindex="-1" role="presentation"></div>
     <div class="term-content" style="height: {height}px">
       <TerminalPanel />
     </div>
@@ -89,7 +90,6 @@
     background: var(--l2);
   }
   .term-toggle-label { flex: 1; text-align: left; }
-  .term-chevron { opacity: 0.6; }
 
   .term-drawer {
     flex: none;

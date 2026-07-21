@@ -50,13 +50,15 @@
 </script>
 
 {#if open}
-  <div class="mask" onclick={() => { open = false; }} role="presentation">
-    <div class="dialog glass-panel" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="启动 Swarm 任务">
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+  <div class="mask" onclick={() => { open = false; }} onkeydown={(e) => { if (e.key === 'Escape') open = false; }} role="presentation">
+    <div class="dialog glass-panel" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="启动 Swarm 任务" tabindex="-1">
       <header class="head">
         <h3>启动 Swarm 任务</h3>
         <button class="close" onclick={() => { open = false; }} type="button" aria-label="关闭"><Icon name="close" size="sm" /></button>
       </header>
       <p class="hint">输入任务描述，agent 会派发多个子智能体并行处理。当前会话 swarm 模式会自动开启。</p>
+      <!-- svelte-ignore a11y_autofocus -->
       <textarea
         bind:value={text}
         onkeydown={onKey}

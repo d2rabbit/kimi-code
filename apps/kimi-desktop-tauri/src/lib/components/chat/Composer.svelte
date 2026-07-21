@@ -686,15 +686,4 @@
   }
   .mention-item.selected { background: var(--ac-soft); color: var(--tx); }
   .mention-path { font-family: var(--font-mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  /* Compact FAB */
-  .fab-row { display: flex; justify-content: flex-end; padding-top: 8px; }
-  .fab {
-    display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px;
-    border-radius: 999px; background: var(--l3); border: 1px solid var(--bd2);
-    color: var(--tx2); font-size: 11px; font-weight: 600; cursor: pointer;
-    box-shadow: var(--shadow-lg);
-    transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
-  }
-  .fab:hover { color: var(--ac); border-color: var(--ac); transform: translateY(-1px); }
 </style>

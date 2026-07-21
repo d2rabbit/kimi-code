@@ -22,15 +22,12 @@
   import { toast } from '../../stores/toast.svelte';
 
   let {
-    mode: _mode = 'unified',
     onclose = () => {},
   }: {
     /** Kept for backward compatibility — the dialog is now always unified. */
     mode?: 'unified' | 'provider' | 'model';
     onclose?: () => void;
   } = $props();
-  // `_mode` is intentionally unused — the dialog no longer branches on it.
-  void _mode;
 
   // ---- provider presets (same as before) ----
   const PRESETS: Record<string, { label: string; baseUrl?: string; hint: string }> = {
@@ -168,7 +165,7 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="pmd-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) onclose(); }}>
-  <div class="pmd-dialog animate-spring-in" role="dialog" aria-modal="true" aria-label="供应商与模型配置" onkeydown={(e) => { if (e.key === 'Escape') onclose(); }}>
+  <div class="pmd-dialog animate-spring-in" role="dialog" aria-modal="true" aria-label="供应商与模型配置" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') onclose(); }}>
     <div class="pmd-head">
       <span class="pmd-title">供应商与模型配置</span>
       <span class="pmd-sub">一站式配置供应商、模型与思考等级</span>

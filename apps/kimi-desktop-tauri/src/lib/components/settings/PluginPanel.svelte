@@ -266,10 +266,10 @@
 
   {#if showInstallForm}
     <div class="plugin-install-form">
-      <div style="display: flex; flex-direction: column; gap: 3px;">
-        <label style="font-size: 11px; color: var(--color-text-faint);">插件源 (GitHub repo / 名称 / ZIP URL)</label>
+      <label style="display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--color-text-faint);">
+        <span>插件源 (GitHub repo / 名称 / ZIP URL)</span>
         <input bind:value={installSource} placeholder="owner/repo 或 plugin-name" style="padding: 5px 10px; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); color: var(--color-text); font-size: 12px; outline: none;" onkeydown={(e) => { if (e.key === 'Enter') installPlugin(); }} />
-      </div>
+      </label>
       {#if installMsg}<p style="font-size: 11px; color: var(--color-text-faint);">{installMsg}</p>{/if}
       <div style="display: flex; justify-content: flex-end; gap: 6px;">
         <button class="refresh-btn" onclick={() => showInstallForm = false}>取消</button>
