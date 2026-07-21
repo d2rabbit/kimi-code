@@ -546,14 +546,59 @@ fn resolve_kimi_cli() -> Result<std::path::PathBuf, String> {
     which::which(bin_name).map_err(|e| format!("`{bin_name}` not on PATH: {e}"))
 }
 
-/// Resolve the codegraph CLI binary (https://github.com/colbymchenry/codegraph).
-/// Tries PATH first (the recommended install path); there's no in-repo
-/// fallback because codegraph is an external tool the user installs
-/// separately (one-line curl install script).
+/// Resolve the codegraph CLI binary. Priority:
+///   1. Bundled codegraph at <resource_dir>/codegraph/bin/codegraph
+///      (staged by scripts/stage-codegraph.sh — 34MB, ships with the app)
+///   2. System codegraph on PATH (user-installed via curl|bash)
+///   3. Error (caller treats as 'not installed, skip silently')
+///
+/// The bundled launcher script uses the project's Node runtime, so users
+/// don't need to install Node or codegraph separately — it just works.
 fn resolve_codegraph_cli() -> Result<std::path::PathBuf, String> {
     let bin_name = if cfg!(windows) { "codegraph.exe" } else { "codegraph" };
+
+    // 1. Try bundled (Tauri resource dir). In dev mode we use CARGO_MANIFEST_DIR
+    //    to find the unstaged copy under src-tauri/resources/.
+    let is_dev = cfg!(debug_assertions)
+        || std::env::var("KIMI_DESKTOP_DEV").as_deref() == Ok("1");
+
+    if is_dev {
+        let dev_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("resources")
+            .join("codegraph")
+            .join("bin")
+            .join(bin_name);
+        if dev_path.exists() {
+            return Ok(dev_path);
+        }
+    } else {
+        // Packaged: try common resource_dir locations. Tauri bundles
+        // resources/ under the app's resource directory.
+        if let Ok(home) = std::env::var("HOME") {
+            let candidates = [
+                // Linux: /usr/lib/<app>/resources/codegraph/bin/codegraph
+                std::path::PathBuf::from(&home)
+                    .join(".local/share")
+                    .join("ai.moonshot.kimi.desktop.tauri"),
+                // macOS: app bundle Resources/
+                std::path::PathBuf::from(&home)
+                    .join("Library/Application Support/ai.moonshot.kimi.desktop.tauri"),
+            ];
+            for base in &candidates {
+                let codegraph_bin = base
+                    .join("codegraph")
+                    .join("bin")
+                    .join(bin_name);
+                if codegraph_bin.exists() {
+                    return Ok(codegraph_bin);
+                }
+            }
+        }
+    }
+
+    // 2. Fallback: system PATH
     which::which(bin_name).map_err(|_| {
-        "`codegraph` not on PATH — install it from https://github.com/colbymchenry/codegraph".to_string()
+        "codegraph not found (neither bundled nor on PATH)".to_string()
     })
 }
 

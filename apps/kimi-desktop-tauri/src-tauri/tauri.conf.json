@@ -43,7 +43,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["bin"],
+    "resources": ["bin", "resources/codegraph"],
     "copyright": "Copyright © Moonshot AI",
     "category": "DeveloperTool",
     "macOS": {
