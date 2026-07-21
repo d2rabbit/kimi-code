@@ -178,11 +178,15 @@
       {:else}
         {#each client.turns() as turn (turn.id)}
           {#if turn.role === 'user'}
-            <!-- 用户：右侧气泡（QQ 聊天式） -->
+            <!-- 用户：右侧气泡（QQ 聊天式）— markdown 渲染支持代码块/列表/链接 -->
             <div class="msg user" id="turn-{turn.id}" data-turn-id={turn.id}>
               <div class="bubble u-bub">
                 {#if turn.images?.length}<div class="imgs">{#each turn.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}</div>{/if}
-                {#if turn.text}<div class="u-text">{turn.text}</div>{/if}
+                {#if turn.text}
+                  <div class="u-text">
+                    <MarkdownRenderer text={turn.text} streaming={false} />
+                  </div>
+                {/if}
               </div>
               <span class="avatar u">你</span>
             </div>
@@ -196,7 +200,14 @@
                 <div class="a-text">
                   {#each group(turn.blocks ?? []) as item}
                     {#if item.kind === 'thinking'}
-                      <details class="think"><summary>思考过程</summary><div class="think-body">{item.thinking}</div></details>
+                      <details class="think">
+                        <summary>
+                          <span class="think-icon">💭</span>
+                          <span class="think-label">思考过程</span>
+                          <span class="think-line"></span>
+                        </summary>
+                        <div class="think-body">{item.thinking}</div>
+                      </details>
                     {:else if item.kind === 'text'}
                       <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn === client.turns().at(-1)} /></div>
                     {/if}
@@ -206,7 +217,12 @@
                   {#if item.kind === 'tool'}
                     <ToolCard tool={item.tool} />
                   {:else if item.kind === 'tg'}
-                    <button class="tg-toggle" onclick={() => expanded[i] = !(expanded[i] ?? true)}>{expanded[i] ?? true ? '▾' : '▸'} {item.tools.length} 个工具调用</button>
+                    <button class="tg-toggle" onclick={() => expanded[i] = !(expanded[i] ?? true)} type="button">
+                      <span class="tg-chevron">{expanded[i] ?? true ? '▾' : '▸'}</span>
+                      <span class="tg-icon">🔧</span>
+                      <span class="tg-count">{item.tools.length} 个工具调用</span>
+                      <span class="tg-summary">{[...new Set(item.tools.map((t) => t.name))].slice(0, 3).join(' · ')}{item.tools.length > 3 ? ' …' : ''}</span>
+                    </button>
                     {#if expanded[i] ?? true}{#each item.tools as t}<ToolCard tool={t} />{/each}{/if}
                   {/if}
                 {/each}
@@ -263,14 +279,85 @@
   .a-text { max-width: 100%; padding: 2px 0; }
   .imgs { display: flex; gap: 4px; margin-bottom: 4px; }
   .imgs img { max-width: 100px; border-radius: 6px; }
-  .u-text { white-space: pre-wrap; word-break: break-word; }
+  .u-text { word-break: break-word; }
+  /* Compact markdown inside user bubbles — tighter spacing than agent output */
+  .u-text :global(.md-body) { font-size: 12.5px; line-height: 1.55; }
+  .u-text :global(.md-body p:last-child) { margin-bottom: 0; }
+  .u-text :global(.md-body p) { margin: 0 0 6px; }
+  .u-text :global(.md-body ul),
+  .u-text :global(.md-body ol) { margin: 0 0 6px; }
+  .u-text :global(.md-body .cb-wrap) { margin: 0 0 6px; }
   .ai-text { color: var(--tx); line-height: 1.65; }
   .ai-text + .ai-text, .think + .ai-text { margin-top: 6px; }
-  .think { font-size: 12px; color: var(--tx3); }
-  .think summary { cursor: pointer; color: var(--tx3); }
-  .think-body { padding: 6px 10px; font-family: var(--font-mono); white-space: pre-wrap; color: var(--tx3); }
-  .tg-toggle { font-size: 11px; color: var(--tx3); cursor: pointer; background: none; border: none; padding: 2px 0; }
-  .tg-toggle:hover { color: var(--tx2); }
+  .think {
+    margin: 2px 0 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--bd);
+    background: linear-gradient(135deg, var(--ac-soft), transparent 60%);
+    overflow: hidden;
+    transition: border-color var(--duration-fast) var(--ease);
+  }
+  .think[open] { border-color: var(--ac-bd); }
+  .think summary {
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 11.5px; font-weight: 500;
+    color: var(--tx3);
+    user-select: none;
+    list-style: none;
+    transition: color var(--duration-fast) var(--ease);
+  }
+  .think summary::-webkit-details-marker { display: none; }
+  .think summary:hover { color: var(--tx2); }
+  .think[open] summary { color: var(--ac); }
+  .think-icon { font-size: 12px; opacity: 0.7; }
+  .think-label { white-space: nowrap; }
+  .think-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--bd) 0%, transparent 100%);
+    margin-left: 4px;
+  }
+  .think-body {
+    padding: 8px 14px 10px;
+    font-family: var(--font-mono);
+    font-size: 11.5px; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+    color: var(--tx3);
+    border-top: 1px solid var(--bd);
+    max-height: 400px;
+    overflow-y: auto;
+    animation: think-open 180ms var(--ease-out, ease);
+  }
+  @keyframes think-open {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .think-body { animation: none; }
+  }
+  .tg-toggle {
+    display: flex; align-items: center; gap: 5px;
+    width: fit-content;
+    font-size: 11px; color: var(--tx3);
+    cursor: pointer;
+    background: var(--l2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-sm);
+    padding: 4px 10px;
+    transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
+  }
+  .tg-toggle:hover {
+    color: var(--tx); border-color: var(--bd2); background: var(--l3);
+  }
+  .tg-chevron { font-size: 9px; transition: transform var(--duration-fast) var(--ease); width: 8px; }
+  .tg-icon { font-size: 11px; }
+  .tg-count { font-weight: 600; color: var(--tx2); }
+  .tg-summary {
+    color: var(--tx3); font-size: 10px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 280px;
+  }
   .compact { text-align: center; font-size: 11px; color: var(--tx3); padding: 6px; border-top: 1px solid var(--bd); border-bottom: 1px solid var(--bd); }
 
   .loading { display: flex; justify-content: center; padding: 30px; }
