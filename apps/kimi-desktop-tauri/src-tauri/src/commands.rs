@@ -471,6 +471,81 @@ pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
 // Dock badge / taskbar overlay (unread session count)
 // ---------------------------------------------------------------------------
 
+/// Install a plugin from a local zip file or directory path, OR uninstall
+/// an existing plugin. Spawns the `kimi plugin` CLI as a child process
+/// (NOT via the webview shell plugin — that path is blocked by ACL). The
+/// CLI handles unzipping, manifest parsing, and writing to
+/// ~/.kimi-code/plugins/installed.json.
+///
+/// `local_path` can be:
+///   - an absolute path to a .zip file
+///   - an absolute path to an unpacked plugin directory
+///   - a GitHub URL (the CLI supports it natively)
+///   - the sentinel `uninstall:<plugin-id>` to remove a plugin
+///
+/// Returns the combined stdout of the command (useful for surfacing
+/// 'installed foo@1.0.0' / 'removed foo' style summaries in the toast).
+#[tauri::command]
+pub async fn install_plugin_from_local(local_path: String) -> Result<String, String> {
+    let trimmed = local_path.trim();
+    if trimmed.is_empty() {
+        return Err("local plugin path is required".to_string());
+    }
+    let kimi_bin = resolve_kimi_cli()
+        .map_err(|e| format!("Cannot locate kimi CLI: {e}"))?;
+
+    // Route uninstall sentinel through the same plumbing.
+    let (sub, arg) = if let Some(id) = trimmed.strip_prefix("uninstall:") {
+        ("remove", id.to_string())
+    } else {
+        ("install", trimmed.to_string())
+    };
+
+    let output = tokio::process::Command::new(&kimi_bin)
+        .arg("plugin")
+        .arg(sub)
+        .arg(&arg)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()
+        .await
+        .map_err(|e| format!("Failed to spawn kimi plugin {sub}: {e}"))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        return Err(if stderr.is_empty() { stdout } else { stderr });
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+/// Resolve the kimi CLI binary path. Tries (in order):
+///   1. `apps/kimi-code/dist-native/intermediates/bin/kimi` (dev build)
+///   2. `kimi` on PATH (packaged / user-installed)
+fn resolve_kimi_cli() -> Result<std::path::PathBuf, String> {
+    let is_dev = cfg!(debug_assertions)
+        || std::env::var("KIMI_DESKTOP_DEV").as_deref() == Ok("1");
+    if is_dev {
+        let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let apps_dir = manifest_dir
+            .ancestors()
+            .nth(2)
+            .ok_or("Cannot determine apps directory")?;
+        let dev_bin = apps_dir
+            .join("kimi-code")
+            .join("dist-native")
+            .join("intermediates")
+            .join("bin")
+            .join(if cfg!(windows) { "kimi.exe" } else { "kimi" });
+        if dev_bin.exists() {
+            return Ok(dev_bin);
+        }
+    }
+    // PATH fallback
+    let bin_name = if cfg!(windows) { "kimi.exe" } else { "kimi" };
+    which::which(bin_name).map_err(|e| format!("`{bin_name}` not on PATH: {e}"))
+}
+
 /// Enable or disable an installed plugin by flipping the `enabled` field in
 /// `~/.kimi-code/plugins/installed.json`. This replaces the previous
 /// `Command.sidecar('kimi', ['plugin', 'enable|disable', ...])` flow which

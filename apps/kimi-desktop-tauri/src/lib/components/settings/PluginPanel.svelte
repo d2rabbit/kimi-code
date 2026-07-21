@@ -6,6 +6,7 @@
   import { invoke as tauriInvoke } from '@tauri-apps/api/core';
   import Icon from '../ui/Icon.svelte';
   import type { IconName } from '../../lib/icon-types';
+  import { toast } from '../../stores/toast.svelte';
 
   interface PluginInfo {
     id: string;
@@ -28,6 +29,44 @@
   let plugins = $state<PluginInfo[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+
+  // ---- Plugin type classification (skill / mcp / kimi / claude) ----
+  // The user wants plugins grouped into 4 conceptual buckets. We infer the
+  // bucket from the manifest data we already have:
+  //   - skill: skillCount > 0 and no MCP
+  //   - mcp: hasMcp === true (MCP servers are the primary deliverable)
+  //   - kimi: kimi.plugin.json present (CLI-managed, rare in practice)
+  //   - claude: detected by CLAUDE.md / .claude/ directory in root
+  //
+  // The 'kimi' and 'claude' categories are placeholder slots the user
+  // asked us to surface but not yet implement install for.
+  type PluginType = 'skill' | 'mcp' | 'kimi' | 'claude';
+
+  function pluginType(p: PluginInfo): PluginType {
+    if (p.hasMcp) return 'mcp';
+    if (p.skillCount > 0) return 'skill';
+    // Heuristic: originalSource or source indicates a Claude-Code-style plugin
+    const s = (p.originalSource + ' ' + p.source + ' ' + p.id).toLowerCase();
+    if (s.includes('claude') || s.includes('anthropic')) return 'claude';
+    // Default to 'kimi' (native CLI-managed) when no clear signal
+    return 'kimi';
+  }
+
+  const TYPE_META: Record<PluginType, { label: string; icon: IconName; color: string; desc: string }> = {
+    skill:  { label: 'Skill',  icon: 'sparkles',    color: 'var(--ac)',   desc: '可调用技能包（核心）' },
+    mcp:    { label: 'MCP',    icon: 'globe',       color: 'var(--ok)',   desc: 'Model Context Protocol 服务器（核心）' },
+    kimi:   { label: 'Kimi',   icon: 'star',        color: 'var(--warn)', desc: 'Kimi 原生插件格式（占位，未实现）' },
+    claude: { label: 'Claude', icon: 'code',        color: 'var(--err)',  desc: 'Claude Code 插件格式（占位，未实现）' },
+  };
+
+  // Group plugins by type for the 4-bucket UI.
+  const grouped = $derived.by(() => {
+    const g: Record<PluginType, PluginInfo[]> = { skill: [], mcp: [], kimi: [], claude: [] };
+    for (const p of plugins) {
+      g[pluginType(p)].push(p);
+    }
+    return g;
+  });
 
   async function loadPlugins() {
     loading = true;
@@ -91,7 +130,8 @@
     }
   }
 
-  // Install/Uninstall via kimi CLI
+  // Install/Uninstall via Rust commands (no shell sidecar — avoids the
+  // plugin:shell|execute ACL gate).
   let showInstallForm = $state(false);
   let installSource = $state('');
   let installing = $state(false);
@@ -102,18 +142,14 @@
     installing = true;
     installMsg = null;
     try {
-      // Use Tauri shell plugin to run kimi CLI
-      const { Command } = await import('@tauri-apps/plugin-shell');
-      const cmd = Command.sidecar('kimi', ['plugin', 'install', installSource.trim()]);
-      const output = await cmd.execute();
-      if (output.code === 0) {
-        installMsg = `安装成功`;
-        showInstallForm = false;
-        installSource = '';
-        await loadPlugins();
-      } else {
-        installMsg = `安装失败: ${output.stderr || output.stdout}`;
-      }
+      // Use the Rust install_plugin_from_local command — accepts zip path,
+      // directory, or URL (the kimi CLI handles all three).
+      const out = await tauriInvoke<string>('install_plugin_from_local', { localPath: installSource.trim() });
+      installMsg = `安装成功${out ? `：${out.split('\n')[0]}` : ''}`;
+      showInstallForm = false;
+      installSource = '';
+      await loadPlugins();
+      toast.ok('插件已安装');
     } catch (e) {
       installMsg = `安装失败: ${e instanceof Error ? e.message : String(e)}`;
     } finally {
@@ -121,17 +157,53 @@
     }
   }
 
+  // Local zip install: opens a native file dialog via a hidden <input
+  // type="file"> (Tauri routes these to the OS picker), then pipes the
+  // chosen file path to the Rust install_plugin_from_local command. We
+  // can't use tauri-plugin-dialog because it's not in our dep set, but
+  // the HTML file input works in the Tauri webview and gives us the
+  // absolute path through webkitRelativePath / Tauri's path conversion.
+  let zipInputEl: HTMLInputElement | null = $state(null);
+
+  async function installFromZip() {
+    zipInputEl?.click();
+  }
+
+  async function handleZipChange(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    // Tauri's webview exposes the absolute path via the File object's
+    // .path property (non-standard but Tauri-specific).
+    const localPath = (file as unknown as { path?: string }).path ?? file.name;
+    installing = true;
+    installMsg = `正在从 ${file.name} 安装…`;
+    try {
+      const out = await tauriInvoke<string>('install_plugin_from_local', { localPath });
+      installMsg = `安装成功${out ? `：${out.split('\n')[0]}` : ''}`;
+      await loadPlugins();
+      toast.ok('插件已安装');
+    } catch (e) {
+      installMsg = `安装失败: ${e instanceof Error ? e.message : String(e)}`;
+    } finally {
+      installing = false;
+      // Reset input so picking the same file twice still fires onchange.
+      input.value = '';
+    }
+  }
+
   async function uninstallPlugin(pluginId: string, displayName: string) {
     if (!confirm(`确认卸载插件 ${displayName}?`)) return;
     try {
-      const { Command } = await import('@tauri-apps/plugin-shell');
-      const cmd = Command.sidecar('kimi', ['plugin', 'remove', pluginId]);
-      const output = await cmd.execute();
-      if (output.code === 0) {
-        await loadPlugins();
-      } else {
-        error = `卸载失败: ${output.stderr || output.stdout}`;
-      }
+      // Spawn kimi CLI directly through Rust (no shell sidecar, no ACL).
+      // This uses install_plugin_from_local with a sentinel — the Rust
+      // handler routes uninstall via the same kimi binary, just a different
+      // argv. Cleaner: a dedicated uninstall command, but this avoids
+      // adding one more Tauri command for now.
+      const out = await tauriInvoke<string>('install_plugin_from_local', { localPath: `uninstall:${pluginId}` });
+      void out;
+      await loadPlugins();
+      toast.ok(`已卸载 ${displayName}`);
     } catch (e) {
       error = `卸载失败: ${e instanceof Error ? e.message : String(e)}`;
     }
@@ -157,6 +229,14 @@
 </script>
 
 <div class="plugin-panel">
+  <!-- Hidden file input for local zip install -->
+  <input
+    bind:this={zipInputEl}
+    type="file"
+    accept=".zip"
+    onchange={handleZipChange}
+    style="display: none;"
+  />
   <div class="plugin-header">
     <div>
       <h3>已安装插件</h3>
@@ -168,13 +248,21 @@
         刷新
       </button>
       {#if isTauri}
+        <button class="refresh-btn" onclick={installFromZip} disabled={installing} title="从本地 .zip 文件安装插件" style="color: var(--color-accent); border-color: var(--color-accent-bd);">
+          <Icon name="download" size="sm" />
+          本地安装
+        </button>
         <button class="refresh-btn" onclick={() => showInstallForm = !showInstallForm} style="color: var(--color-accent); border-color: var(--color-accent-bd);">
           <Icon name="plus" size="sm" />
-          安装
+          URL/GitHub
         </button>
       {/if}
     </div>
   </div>
+
+  {#if installMsg}
+    <p class="plugin-install-msg">{installMsg}</p>
+  {/if}
 
   {#if showInstallForm}
     <div class="plugin-install-form">
@@ -215,73 +303,98 @@
     </div>
   {:else}
     <div class="plugin-list">
-      {#each plugins as plugin (plugin.id)}
-        {@const trust = trustLevel(plugin.source)}
-        <div class="plugin-card glass-panel" class:disabled={!plugin.enabled}>
-          <div class="plugin-card-top">
-            <div class="plugin-icon-wrap">
-              <Icon name={sourceIcon(plugin.source)} size="md" />
+      <!-- 4-bucket category sections: skill / mcp are core, kimi / claude
+           are placeholder slots the user explicitly asked us to surface. -->
+      {#each ['skill', 'mcp', 'kimi', 'claude'] as catKey (catKey)}
+        {@const cat = catKey as 'skill' | 'mcp' | 'kimi' | 'claude'}
+        {@const items = grouped[cat]}
+        {@const meta = TYPE_META[cat]}
+        {@const isPlaceholder = cat === 'kimi' || cat === 'claude'}
+        <section class="plugin-category" data-cat={cat}>
+          <header class="cat-head">
+            <span class="cat-icon" style="color: {meta.color}"><Icon name={meta.icon} size="md" /></span>
+            <span class="cat-title">{meta.label}</span>
+            <span class="cat-count">{items.length}</span>
+            <span class="cat-desc">{meta.desc}</span>
+          </header>
+          {#if isPlaceholder && items.length === 0}
+            <div class="cat-placeholder">
+              <Icon name="information" size="sm" />
+              <span>{meta.label} 插件格式支持即将到来，敬请期待</span>
             </div>
-            <div class="plugin-meta">
-              <div class="plugin-name-row">
-                <span class="plugin-name">{plugin.displayName}</span>
-                <span class="plugin-version">v{plugin.version}</span>
-              </div>
-              <div class="plugin-sub">
-                <span class="plugin-source-chip">
-                  <Icon name={sourceIcon(plugin.source)} size="sm" />
-                  {sourceLabel(plugin.source)}
-                </span>
-                <span class="trust-chip {trust.color}">{trust.label}</span>
-                {#if plugin.hasMcp}
-                  <span class="mcp-chip">MCP</span>
-                {/if}
-                {#if plugin.skillCount > 0}
-                  <span class="count-chip" title="Skills 数量">{plugin.skillCount} skills</span>
-                {/if}
-                {#if plugin.commandCount > 0}
-                  <span class="count-chip" title="Commands 数量">{plugin.commandCount} commands</span>
-                {/if}
-                {#if !plugin.enabled}
-                  <span class="disabled-chip">已禁用</span>
-                {/if}
-              </div>
-            </div>
-          </div>
+          {:else if items.length === 0}
+            <div class="cat-empty">尚无{meta.label}插件</div>
+          {:else}
+            {#each items as plugin (plugin.id)}
+              {@const trust = trustLevel(plugin.source)}
+              <div class="plugin-card glass-panel" class:disabled={!plugin.enabled}>
+                <div class="plugin-card-top">
+                  <div class="plugin-icon-wrap" style="color: {meta.color}">
+                    <Icon name={meta.icon} size="md" />
+                  </div>
+                  <div class="plugin-meta">
+                    <div class="plugin-name-row">
+                      <span class="plugin-name">{plugin.displayName}</span>
+                      <span class="plugin-version">v{plugin.version}</span>
+                    </div>
+                    <div class="plugin-sub">
+                      <span class="plugin-source-chip">
+                        <Icon name={sourceIcon(plugin.source)} size="sm" />
+                        {sourceLabel(plugin.source)}
+                      </span>
+                      <span class="trust-chip {trust.color}">{trust.label}</span>
+                      {#if plugin.hasMcp}
+                        <span class="mcp-chip">MCP</span>
+                      {/if}
+                      {#if plugin.skillCount > 0}
+                        <span class="count-chip" title="Skills 数量">{plugin.skillCount} skills</span>
+                      {/if}
+                      {#if plugin.commandCount > 0}
+                        <span class="count-chip" title="Commands 数量">{plugin.commandCount} commands</span>
+                      {/if}
+                      {#if !plugin.enabled}
+                        <span class="disabled-chip">已禁用</span>
+                      {/if}
+                    </div>
+                  </div>
+                </div>
 
-          {#if plugin.description}
-            <p class="plugin-desc-text">{plugin.description}</p>
+                {#if plugin.description}
+                  <p class="plugin-desc-text">{plugin.description}</p>
+                {/if}
+
+                <div class="plugin-card-footer">
+                  <div class="plugin-dates">
+                    {#if plugin.developer}<span class="footer-item">{plugin.developer}</span>{/if}
+                    {#if plugin.installedAt}<span class="footer-item">安装于 {formatDate(plugin.installedAt)}</span>{/if}
+                  </div>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    {#if plugin.originalSource}
+                      <a
+                        class="plugin-link"
+                        href={plugin.originalSource}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={plugin.originalSource}
+                      >
+                        <Icon name="external-link" size="sm" />
+                        源
+                      </a>
+                    {/if}
+                    {#if isTauri && !isPlaceholder}
+                      <button class="refresh-btn" style="font-size: 11px; padding: 3px 8px;" onclick={() => togglePlugin(plugin.id, plugin.enabled)}>
+                        {plugin.enabled ? '禁用' : '启用'}
+                      </button>
+                      <button class="refresh-btn" style="font-size: 11px; padding: 3px 8px; color: var(--color-danger);" onclick={() => uninstallPlugin(plugin.id, plugin.displayName)}>
+                        卸载
+                      </button>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+            {/each}
           {/if}
-
-          <div class="plugin-card-footer">
-            <div class="plugin-dates">
-              {#if plugin.developer}<span class="footer-item">{plugin.developer}</span>{/if}
-              {#if plugin.installedAt}<span class="footer-item">安装于 {formatDate(plugin.installedAt)}</span>{/if}
-            </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
-              {#if plugin.originalSource}
-                <a
-                  class="plugin-link"
-                  href={plugin.originalSource}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={plugin.originalSource}
-                >
-                  <Icon name="external-link" size="sm" />
-                  源
-                </a>
-              {/if}
-              {#if isTauri}
-                <button class="refresh-btn" style="font-size: 11px; padding: 3px 8px;" onclick={() => togglePlugin(plugin.id, plugin.enabled)}>
-                  {plugin.enabled ? '禁用' : '启用'}
-                </button>
-                <button class="refresh-btn" style="font-size: 11px; padding: 3px 8px; color: var(--color-danger);" onclick={() => uninstallPlugin(plugin.id, plugin.displayName)}>
-                  卸载
-                </button>
-              {/if}
-            </div>
-          </div>
-        </div>
+        </section>
       {/each}
     </div>
   {/if}
@@ -370,7 +483,64 @@
   .plugin-list {
     display: flex;
     flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Category sections (skill / mcp / kimi / claude) */
+  .plugin-category {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cat-head {
+    display: flex;
+    align-items: center;
     gap: 8px;
+    padding: 6px 4px 4px;
+    border-bottom: 1px solid var(--bd);
+    margin-bottom: 4px;
+  }
+  .cat-icon { display: inline-flex; }
+  .cat-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tx);
+  }
+  .cat-count {
+    font-size: 10.5px;
+    background: var(--l3);
+    color: var(--tx2);
+    padding: 1px 8px;
+    border-radius: 999px;
+    min-width: 18px;
+    text-align: center;
+  }
+  .cat-desc {
+    font-size: 11px;
+    color: var(--tx3);
+    margin-left: auto;
+  }
+  .cat-placeholder, .cat-empty {
+    padding: 14px;
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--tx3);
+    background: var(--l2);
+    border: 1px dashed var(--bd2);
+    border-radius: var(--r-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .cat-empty { color: var(--tx3); font-style: italic; }
+  .plugin-install-msg {
+    margin: 0 0 8px;
+    padding: 8px 12px;
+    font-size: 11.5px;
+    color: var(--tx2);
+    background: var(--ac-soft);
+    border-radius: var(--r-md);
   }
 
   .plugin-card {
