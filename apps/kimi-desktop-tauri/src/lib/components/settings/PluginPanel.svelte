@@ -73,7 +73,7 @@
       originalSource: 'https://github.com/colbymchenry/codegraph',
       displayName: 'CodeGraph',
       version: '内置',
-      description: '代码知识图谱索引引擎。任务完成时自动同步索引，支持符号搜索、调用图、文件结构分析。',
+      description: '代码知识图谱索引引擎。已内置激活 — 任务完成时自动同步索引，MCP 服务器自动注册，无需手动配置。',
       developer: 'colbymchenry',
       hasMcp: true,
       skillCount: 1,

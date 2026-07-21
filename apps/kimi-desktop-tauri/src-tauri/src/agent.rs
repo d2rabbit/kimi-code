@@ -86,6 +86,8 @@ fn seed_agent_home_if_needed(home: &Path) -> Result<(), String> {
     // Config + MCP are re-merged every launch (CLI base + desktop overlay).
     merge_config_toml(&shared, home)?;
     merge_mcp_json(&shared, home)?;
+    // Inject builtin codegraph MCP server if the CLI is on PATH.
+    inject_builtin_codegraph_mcp(home);
     seed_session_index(&shared, home)?;
     Ok(())
 }
@@ -184,8 +186,39 @@ fn merge_mcp_json(shared: &Path, home: &Path) -> Result<(), String> {
 /// - index entries record ABSOLUTE sessionDir paths; the daemon drops any
 ///   entry outside <home>/sessions, so a plain copy surfaces zero sessions;
 /// - the daemon's boot-time reindex() cannot recover old sessions whose
-///   state.json predates the workDir field (recoverWorkDir returns undefined),
-///   so without the index these sessions are invisible.
+/// Inject the builtin codegraph MCP server into `<home>/mcp.json` if the
+/// `codegraph` CLI is on PATH. This makes codegraph available to the agent
+/// as an MCP tool (symbol search, call graph, file structure) without the
+/// user having to manually configure it.
+///
+/// No-op when codegraph isn't installed — the hook and MCP entry simply
+/// don't appear, matching the 'opt-in via install' behavior.
+fn inject_builtin_codegraph_mcp(home: &Path) {
+    let bin_name = if cfg!(windows) { "codegraph.exe" } else { "codegraph" };
+    if which::which(bin_name).is_err() {
+        return; // codegraph not installed — skip silently.
+    }
+    let mcp_path = home.join("mcp.json");
+    let text = std::fs::read_to_string(&mcp_path).unwrap_or_else(|_| "{}".to_string());
+    let mut val: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
+    let servers = val
+        .as_object_mut()
+        .and_then(|o| o.entry("mcpServers".to_string()).or_insert_with(|| serde_json::json!({})).as_object_mut());
+    if let Some(servers) = servers {
+        // Only inject if not already configured by the user.
+        servers.entry("codegraph".to_string()).or_insert_with(|| {
+            serde_json::json!({
+                "command": "codegraph",
+                "args": ["serve", "--mcp"],
+                "transport": "stdio"
+            })
+        });
+    }
+    if let Ok(merged) = serde_json::to_string_pretty(&val) {
+        let _ = std::fs::write(&mcp_path, merged);
+    }
+}
+
 /// Entries are appended only when missing (by sessionId) and only if the
 /// rewritten sessionDir actually exists on disk.
 fn seed_session_index(shared: &Path, home: &Path) -> Result<(), String> {
