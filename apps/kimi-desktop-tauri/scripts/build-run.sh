@@ -12,6 +12,9 @@
 #   bash scripts/build-run.sh --no-run      # 只构建，不启动
 #   bash scripts/build-run.sh --dist        # 构建并打包成安装包（产出 bundle/）
 #   bash scripts/build-run.sh --dist --skip-sea   # 打包，但复用已有 main.cjs（不重编 kimi-code）
+#   bash scripts/build-run.sh --skip-agent  # 跳过 kimi-code 构建（前端/Rust 调试用）
+#   bash scripts/build-run.sh --no-typecheck # 跳过 svelte-check / cargo check（更快）
+#   bash scripts/build-run.sh --clean       # 清空 target/release 后重编（诊断奇怪编译错误）
 #   bash scripts/build-run.sh --log-level debug   # 诊断模式：daemon 写 debug 级日志
 #   bash scripts/build-run.sh --debug-endpoints   # 挂载 /api/v1/debug/* 内省路由
 #   bash scripts/build-run.sh --help
@@ -27,6 +30,9 @@ NO_RUN=0
 FOREGROUND=0
 DIST=0
 SKIP_SEA=0
+SKIP_AGENT=0
+NO_TYPECHECK=0
+CLEAN=0
 # Daemon log level (fatal|error|warn|info|debug|trace|silent). Default `info`
 # records turn processing / model calls / MCP connections to server.log so
 # prompt failures are diagnosable. Override with --log-level when reproducing.
@@ -34,7 +40,7 @@ LOG_LEVEL="${KIMI_DESKTOP_LOG_LEVEL:-info}"
 DEBUG_ENDPOINTS=0
 
 usage() {
-  sed -n '5,17p' "$0"
+  sed -n '5,18p' "$0"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -44,6 +50,9 @@ while [[ $# -gt 0 ]]; do
     --foreground) FOREGROUND=1; shift ;;
     --dist) DIST=1; shift ;;
     --skip-sea) SKIP_SEA=1; shift ;;
+    --skip-agent) SKIP_AGENT=1; shift ;;
+    --no-typecheck) NO_TYPECHECK=1; shift ;;
+    --clean) CLEAN=1; shift ;;
     --log-level)
       [[ $# -ge 2 ]] || { echo "error: --log-level requires a value" >&2; exit 2; }
       LOG_LEVEL="$2"; shift 2 ;;
@@ -59,9 +68,22 @@ if [[ "$DIST" == "1" && ("$FOREGROUND" == "1" || "$NO_RUN" == "1") ]]; then
   usage >&2
   exit 2
 fi
+# --skip-sea 与 --skip-agent 互斥（前者要求已有 main.cjs，后者根本不构建）
+if [[ "$SKIP_SEA" == "1" && "$SKIP_AGENT" == "1" ]]; then
+  echo "error: --skip-sea and --skip-agent are mutually exclusive" >&2
+  exit 2
+fi
 
 command -v pnpm >/dev/null 2>&1 || { echo "error: pnpm is required" >&2; exit 1; }
 command -v cargo >/dev/null 2>&1 || { echo "error: cargo is required" >&2; exit 1; }
+command -v node  >/dev/null 2>&1 || { echo "error: node is required" >&2; exit 1; }
+
+# Node 版本检查（kimi-code 要求 >= 24.15）
+NODE_VERSION=$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0)
+if [[ "$NODE_VERSION" -lt 24 ]]; then
+  printf '\033[1;33m⚠ Node %s 检测到，kimi-code 要求 >= 24.15。可用 fnm/mise/nvm 切换：\033[0m\n' "$NODE_VERSION" >&2
+  printf '    fnm use 24.15.0  ||  mise use node@24.15.0  ||  nvm use 24.15.0\n' >&2
+fi
 
 # ---- 平台目标（与 sea_path.rs 的命名一致） ----
 case "$(uname -s)-$(uname -m)" in
@@ -87,7 +109,14 @@ err()  { printf '\033[1;31m✖ %s\033[0m\n' "$*" >&2; }
 #   - 调试迭代速度提升 10 倍
 AGENT_SCRIPT="$REPO_ROOT/apps/kimi-code/dist-native/intermediates/main.cjs"
 
-if [[ "$SKIP_SEA" == "1" ]]; then
+if [[ "$SKIP_AGENT" == "1" ]]; then
+  if [[ ! -f "$AGENT_SCRIPT" ]]; then
+    err "main.cjs not found at $AGENT_SCRIPT (--skip-agent requires an existing build)"
+    err "请先不带 --skip-agent 跑一次完整构建"
+    exit 1
+  fi
+  log "跳过 kimi-code 构建（--skip-agent），复用: $AGENT_SCRIPT"
+elif [[ "$SKIP_SEA" == "1" ]]; then
   if [[ ! -f "$AGENT_SCRIPT" ]]; then
     err "main.cjs not found at $AGENT_SCRIPT (--skip-sea requires an existing build)"
     exit 1
@@ -103,14 +132,15 @@ else
   log "构建内嵌 agent（tsdown，约 30 秒）…"
   # 只跑 bundle 步骤（tsdown native config），跳过 SEA 注入步骤。
   # 先构建 vis asset（native 构建的前置依赖），再 tsdown。
-  local build_vis; build_vis="$REPO_ROOT/apps/kimi-code/scripts/build-vis-asset.mjs"
-  [[ -f "$build_vis" ]] && node "$build_vis" || true
-  local tsdown_cli; tsdown_cli=$(node -e "console.log(require.resolve('tsdown/run'))" 2>/dev/null || echo "")
-  if [[ -z "$tsdown_cli" ]]; then
+  BUILD_VIS="$REPO_ROOT/apps/kimi-code/scripts/build-vis-asset.mjs"
+  [[ -f "$BUILD_VIS" ]] && node "$BUILD_VIS" || true
+  # 优先用仓库内 tsdown CLI（避免每次 npx 触发 pnpm 重新解析）
+  TSDOWN_CLI=$(node -e "console.log(require.resolve('tsdown/run'))" 2>/dev/null || echo "")
+  if [[ -z "$TSDOWN_CLI" ]]; then
     # fallback: 用 pnpm 在 kimi-code 目录跑 tsdown
     ( cd "$REPO_ROOT/apps/kimi-code" && npx tsdown --config tsdown.native.config.ts )
   else
-    ( cd "$REPO_ROOT/apps/kimi-code" && node "$tsdown_cli" --config tsdown.native.config.ts )
+    ( cd "$REPO_ROOT/apps/kimi-code" && node "$TSDOWN_CLI" --config tsdown.native.config.ts )
   fi
 
   if [[ ! -f "$AGENT_SCRIPT" ]]; then
@@ -120,13 +150,23 @@ else
   log "内嵌 agent: $AGENT_SCRIPT ($(du -h "$AGENT_SCRIPT" | cut -f1))"
 fi
 
-# ---- 2. 前端完整检查（Svelte diagnostics） ----
-log "检查前端类型（svelte-check）…"
-pnpm --filter "$PKG" run typecheck
+# ---- 1b. --clean：清空 target/release，避免增量编译的诡异错误 ----
+if [[ "$CLEAN" == "1" ]]; then
+  log "清空 target/release（--clean）…"
+  cargo clean --release --manifest-path "$APP_DIR/src-tauri/Cargo.toml"
+fi
 
-# ---- 3. Rust 完整检查 ----
-log "检查客户端 Rust 代码（cargo check）…"
-cargo check --manifest-path "$APP_DIR/src-tauri/Cargo.toml" --no-default-features
+# ---- 2. 前端 + Rust 检查（可跳过）----
+if [[ "$NO_TYPECHECK" == "1" ]]; then
+  warn "跳过 svelte-check / cargo check（--no-typecheck）"
+else
+  log "检查前端类型（svelte-check）…"
+  pnpm --filter "$PKG" run typecheck
+
+  # ---- 3. Rust 完整检查 ----
+  log "检查客户端 Rust 代码（cargo check）…"
+  cargo check --manifest-path "$APP_DIR/src-tauri/Cargo.toml" --no-default-features
+fi
 
 # =====================================================================
 # 路径 A：打包模式（--dist）—— 走 Tauri bundler，产出安装包
