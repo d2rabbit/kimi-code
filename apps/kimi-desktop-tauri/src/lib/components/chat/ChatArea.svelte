@@ -9,6 +9,7 @@
   import QuestionCard from './QuestionCard.svelte';
   import GoalStrip from './GoalStrip.svelte';
   import ConversationToc, { type TocItem } from './ConversationToc.svelte';
+  import { tryDispatchSlash } from '../../lib/dispatchSlash';
   import type { ToolCall, TurnBlock } from '../../types';
 
   let text = $state('');
@@ -115,6 +116,13 @@
   async function submit(attachments?: { fileId: string; kind: 'image' | 'video' }[]) {
     const t = text.trim();
     if (!t && !attachments?.length) return;
+    // Local slash commands (e.g. /clear /new /fork /compact /undo /title ...)
+    // are dispatched client-side; only fall through to sendPrompt for normal
+    // messages and daemon-side slash commands (/init /goal /export-md ...).
+    if (!attachments?.length && await tryDispatchSlash(t)) {
+      text = '';
+      return;
+    }
     text = '';
     try { await client.client.sendPrompt(t || ' ', attachments); } catch { text = t; }
   }
