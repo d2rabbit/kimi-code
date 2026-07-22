@@ -88,6 +88,8 @@ fn seed_agent_home_if_needed(home: &Path) -> Result<(), String> {
     merge_mcp_json(&shared, home)?;
     // Inject builtin codegraph MCP server if the CLI is on PATH.
     inject_builtin_codegraph_mcp(home);
+    // Inject builtin BrowserSkill skill if bsk CLI is on PATH.
+    inject_builtin_browser_skill(home);
     seed_session_index(&shared, home)?;
     Ok(())
 }
@@ -218,6 +220,133 @@ fn inject_builtin_codegraph_mcp(home: &Path) {
         let _ = std::fs::write(&mcp_path, merged);
     }
 }
+
+/// Inject the builtin BrowserSkill skill into `<home>/skills/browser-skill/`
+/// if the `bsk` CLI is on PATH. This makes browser automation (open pages,
+/// fill forms, scrape data, click flows) available to the agent as a skill
+/// without the user having to manually run `bsk install-skill`.
+///
+/// No-op when bsk isn't installed — the skill simply doesn't appear, matching
+/// the 'opt-in via install' behavior.
+fn inject_builtin_browser_skill(home: &Path) {
+    let bin_name = if cfg!(windows) { "bsk.exe" } else { "bsk" };
+    if which::which(bin_name).is_err() {
+        return; // bsk not installed — skip silently.
+    }
+    let skill_dir = home.join("skills").join("browser-skill");
+    let skill_path = skill_dir.join("SKILL.md");
+
+    // Don't overwrite a user-customized or newer skill.
+    if skill_path.exists() {
+        return;
+    }
+
+    let _ = std::fs::create_dir_all(&skill_dir);
+    let _ = std::fs::write(&skill_path, BROWSER_SKILL_MD);
+}
+
+/// Embedded BrowserSkill SKILL.md — teaches the agent how to drive the user's
+/// real Chromium browser through the `bsk` CLI. Sourced from
+/// https://github.com/Tencent/BrowserSkill/blob/main/skill/SKILL.md
+const BROWSER_SKILL_MD: &str = r#"---
+name: browser-skill
+description: |
+  Use when the user asks to perform browser automation tasks against their
+  logged-in browser: visit and read pages, fill forms, scrape data, click
+  through a flow, regression-test a PR's UI, validate a deployed page.
+  Requires the bsk CLI installed and the browser-skill extension loaded.
+---
+
+# browser-skill
+
+Drive the user's **real Chromium browser** (with their logins and cookies) through the `bsk` CLI. The extension opens an isolated **Agent Window** for automation; the user's normal windows stay protected unless you explicitly borrow a tab.
+
+## When to use
+
+- Open pages, read titles/text, scrape structured data from sites the user can already access
+- Fill forms, click through multi-step flows, smoke-test a UI change
+- Understand pages with `bsk snapshot` first; use `bsk get-html` or `bsk screenshot` only when the snapshot is insufficient
+- Operate on a specific user tab they point you at (after `bsk tab borrow`)
+
+## When NOT to use
+
+- Tasks with **no browser** involved (files, APIs, databases only)
+- Installing or configuring the extension (point the user to setup docs instead)
+- **Credential harvesting** — never run `bsk evaluate` on banking, SSO, or password-manager pages to extract tokens, cookies, or secrets
+- Long-lived control of a user's personal login window — borrow only for the immediate step, then `bsk tab return` or end the session
+- Replacing the user's manual browsing when they only wanted an explanation
+
+## Prerequisites
+
+1. `bsk` on `PATH` (Rust CLI from browser-skill)
+2. browser-skill **extension** loaded in Chromium and connected (popup shows green)
+3. Any `bsk` command auto-starts background services as needed; use `bsk doctor` if anything fails
+
+## Mandatory workflow
+
+Every automation task **must** follow this lifecycle. Do **not** rely on idle timeouts (default session idle is 5 minutes).
+
+```
+1. bsk session start              → capture the session id printed on stdout
+2. … every tool command …        → always pass --session <id>
+3. bsk session stop <id>          → REQUIRED when done (even on error paths)
+```
+
+## Core interaction loop
+
+```
+bsk navigate <url> --session <id>
+bsk snapshot --session <id>          → aria tree with @e1, @e2, … refs
+bsk click @e3 --session <id>          → or bsk fill, bsk select, bsk press
+bsk snapshot --session <id>            → again after navigation / DOM change
+```
+
+Refs invalidate after navigation — always re-snapshot before clicking on a new page.
+
+## Observation priority
+
+1. `bsk snapshot` — default for page understanding and interaction planning
+2. `bsk get-html` — when hidden DOM, metadata, or markup details are required
+3. `bsk screenshot` — when visual layout, canvas/image content, or styling cannot be inferred from the snapshot
+
+## CLI command reference
+
+### Diagnostics
+- `bsk status` — connection health, connected browsers, active sessions
+- `bsk doctor` — deep diagnostics and repair hints
+- `bsk browsers` — list connected browser instances
+
+### Session lifecycle
+- `bsk session start [--browser <id>]` — begin a browser automation session
+- `bsk session stop <id>` — end session (REQUIRED)
+- `bsk session stop --all` — emergency cleanup
+
+### Navigation & tabs
+- `bsk navigate <url>` — navigate the active agent tab
+- `bsk tab create` — open a new tab in the Agent Window
+- `bsk tab list --scope user` — list the user's tabs (read-only)
+- `bsk tab borrow <tab-id>` — borrow a user tab into the Agent Window
+- `bsk tab return <tab-id>` — return a borrowed tab
+
+### Interaction
+- `bsk click @eN | <selector>` — click an element
+- `bsk fill @eN <text>` — type into an input
+- `bsk select @eN <value>` — select a dropdown option
+- `bsk press <key>` — press a keyboard key
+
+### Observation
+- `bsk snapshot` — accessibility tree with element refs
+- `bsk get-html [@eN]` — get DOM HTML
+- `bsk screenshot [@eN]` — capture a screenshot
+
+### Human-in-the-loop
+- `bsk request-help` — pause and ask the user to take over (captcha, login, payment)
+
+## Global flags
+- `--json` — machine-readable JSON output
+- `--quiet` — suppress informational stderr
+- `-v` / `-vv` — verbose logging
+"#;
 
 /// Entries are appended only when missing (by sessionId) and only if the
 /// rewritten sessionDir actually exists on disk.
