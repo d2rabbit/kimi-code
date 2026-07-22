@@ -29,14 +29,39 @@ const WINDOW_TITLE: &str = "Kimi Code Desktop";
 /// Path to the window state file (under KIMI_CODE_HOME).
 const WINDOW_STATE_FILE: &str = "window-state.json";
 
+/// Register the MCP debug plugin on the builder in debug builds.
+///
+/// Kept as a separate function so the release path does not introduce a
+/// spurious `mut` binding (which would trigger `unused_mut` since the
+/// conditional reassignment only happens under `#[cfg(debug_assertions)]`).
+#[cfg(debug_assertions)]
+fn install_mcp_debug_plugin(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
+    builder.plugin(tauri_plugin_mcp::init_with_config(
+        tauri_plugin_mcp::PluginConfig::new("Kimi Code Desktop".to_string())
+            .start_socket_server(true)
+            .socket_path(std::path::PathBuf::from("/tmp/tauri-mcp.sock")),
+    ))
+}
+
+#[cfg(not(debug_assertions))]
+fn install_mcp_debug_plugin(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
+    builder // release: no MCP plugin
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_shell::init());
+
+    // MCP debug plugin — debug builds only. Release builds ship without it
+    // (and without the tauri_plugin_mcp dependency in the public Cargo.toml).
+    let builder = install_mcp_debug_plugin(builder);
+
+    builder
         .setup(|app| {
             // App-owned embedded agent state (spawned lazily by ensure_server).
             app.manage(agent::AgentState(tokio::sync::Mutex::new(None)));

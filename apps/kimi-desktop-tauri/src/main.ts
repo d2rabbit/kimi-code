@@ -21,6 +21,13 @@ try {
   document.documentElement.dataset.colorScheme = 'dark';
 }
 
+// MCP debug plugin — local only (not committed). Lets AI agents screenshot,
+// inspect DOM, click, type, and execute JS in the webview.
+// Unconditional init: tauri dev mode may not set import.meta.env.DEV.
+import('tauri-plugin-mcp')
+  .then(({ setupPluginListeners }) => setupPluginListeners())
+  .catch(() => {});
+
 const app = mount(App, {
   target: document.getElementById('app')!,
 });

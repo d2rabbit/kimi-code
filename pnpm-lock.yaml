@@ -201,6 +201,9 @@ importers:
       svelte-i18n:
         specifier: ^4.0.0
         version: 4.0.1(svelte@5.56.6)
+      tauri-plugin-mcp:
+        specifier: ^0.3.1
+        version: 0.3.1
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^4.0.0
@@ -9495,6 +9498,9 @@ packages:
   tar@7.5.13:
     resolution: {integrity: sha512-tOG/7GyXpFevhXVh8jOPJrmtRpOTsYqUIkVdVooZYJS/z8WhfQUX8RJILmeuJNinGAMSu1veBr4asSHFt5/hng==}
     engines: {node: '>=18'}
+
+  tauri-plugin-mcp@0.3.1:
+    resolution: {integrity: sha512-mfzKiDQHR7ZK8coQevazmIOKHP2/jfPk/utZKJFubFSq6W/q7GL7H4cRU0va140OIKEhWEsWrniHfOtVJd0Xtw==}
 
   term-size@2.2.1:
     resolution: {integrity: sha512-wK0Ri4fOGjv/XPy8SBHZChl8CM7uMc5VML7SqiQ0zG7+J5Vr+RMQDoHa2CNT6KHUnTGIXH34UDMkPzAUyapBZg==}
@@ -19746,6 +19752,10 @@ snapshots:
       minipass: 7.1.3
       minizlib: 3.1.0
       yallist: 5.0.0
+
+  tauri-plugin-mcp@0.3.1:
+    dependencies:
+      '@tauri-apps/api': 2.11.1
 
   term-size@2.2.1: {}
 
