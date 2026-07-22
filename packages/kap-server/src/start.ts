@@ -11,8 +11,8 @@ import {
   bootstrap,
   hostRequestHeadersSeed,
   IConfigService,
-  IModelCatalogService,
-  IWorkspaceRegistry,
+  IProviderDiscoveryService,
+  IWorkspaceService,
   logSeed,
   resolveConfigPath,
   resolveKimiHome,
@@ -226,7 +226,7 @@ export async function startServer(opts: ServerStartOptions = {}): Promise<Runnin
     }
   }
   const modelCatalogRefreshScheduler = new ModelCatalogRefreshScheduler(
-    core.accessor.get(IModelCatalogService),
+    core.accessor.get(IProviderDiscoveryService),
     core.accessor.get(IConfigService),
     logger,
   );
@@ -237,11 +237,11 @@ export async function startServer(opts: ServerStartOptions = {}): Promise<Runnin
   // starts accepting traffic (and before embedding hosts tear the homeDir
   // down); best-effort: a failure re-surfaces on first access.
   try {
-    await core.accessor.get(IWorkspaceRegistry).list();
+    await core.accessor.get(IWorkspaceService).list();
   } catch (error) {
     logger.warn(
       { err: error instanceof Error ? error.message : String(error) },
-      'workspace registry startup sync failed',
+      'workspace catalog startup sync failed',
     );
   }
 
