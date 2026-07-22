@@ -56,6 +56,8 @@ const MAIN_AGENT_TRANSCRIPT_FRAMES = new Set<string>([
   'tool.progress',
   'tool.result',
   'agent.status.updated',
+  'agent.created',
+  'agent.disposed',
   'prompt.completed',
 ]);
 
@@ -949,6 +951,15 @@ export function createAgentProjector(): AgentProjector {
       }
 
       // -----------------------------------------------------------------------
+      // agent.created / agent.disposed — upstream lifecycle events (#1997).
+      // These are informational: the session's agent was created or disposed.
+      // We don't emit a UI event for them — they keep lastSeq advancing and
+      // prevent "unknown event" warnings. The session itself is unaffected.
+      case 'agent.created':
+      case 'agent.disposed':
+        break;
+
+      // -----------------------------------------------------------------------
       case 'turn.ended': {
         const msgId = s.currentAssistantMsgId;
         const reason: string = p?.reason ?? 'completed';
@@ -1319,6 +1330,8 @@ const KNOWN_AGENT_CORE_TYPES = new Set([
   'tool.progress',
   'tool.result',
   'agent.status.updated',
+  'agent.created',
+  'agent.disposed',
   'prompt.submitted',
   'prompt.completed',
   'session.meta.updated',

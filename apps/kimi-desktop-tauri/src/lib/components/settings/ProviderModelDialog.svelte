@@ -38,16 +38,46 @@
     openai_responses: { label: 'OpenAI Responses', baseUrl: 'https://api.openai.com/v1', hint: 'OpenAI Responses 兼容服务' },
   };
 
-  // ---- thinking effort levels (mirrors kimi-code config.toml) ----
+  // ---- thinking effort levels ----
   // 'off' is the equivalent of `enabled = false`; the other four are the
   // values kimi-code accepts for `effort` per docs/specs.
-  const EFFORT_LEVELS: { id: 'off' | 'minimal' | 'low' | 'medium' | 'high'; label: string; desc: string }[] = [
+  // When the current session model declares support_efforts (from the models.dev
+  // catalog), the available levels are filtered to what that model supports.
+  const DEFAULT_EFFORT_LEVELS: { id: string; label: string; desc: string }[] = [
     { id: 'off',     label: '关闭', desc: '不启用思考' },
     { id: 'minimal', label: '最低', desc: '快速、几乎不消耗 tokens' },
     { id: 'low',     label: '低',   desc: '浅度推理' },
     { id: 'medium',  label: '中',   desc: '推荐：均衡深度与速度' },
     { id: 'high',    label: '高',   desc: '最深度推理（耗时长）' },
   ];
+
+  // Derive the effective effort levels from the current session model's catalog
+  // metadata (supportEfforts). Falls back to the full default list when the
+  // model is unknown or doesn't declare support_efforts.
+  const EFFORT_LEVELS = $derived.by(() => {
+    const sessionModelId = client.activeSessionModel();
+    const models = client.models();
+    const model = models.find((m) => m.id === sessionModelId || m.model === sessionModelId);
+    if (model?.supportEfforts && model.supportEfforts.length > 0) {
+      // Always include 'off' as the first option; then the model's declared efforts.
+      const supported = model.supportEfforts;
+      const labelMap: Record<string, string> = {
+        off: '关闭', minimal: '最低', low: '低', medium: '中', high: '高',
+        xhigh: '超高', max: '最高',
+      };
+      const descMap: Record<string, string> = {
+        off: '不启用思考', minimal: '快速、几乎不消耗 tokens', low: '浅度推理',
+        medium: '推荐：均衡深度与速度', high: '最深度推理（耗时长）',
+        xhigh: '极深度推理', max: '最大推理深度',
+      };
+      const levels = [
+        { id: 'off', label: '关闭', desc: '不启用思考' },
+        ...supported.map((e) => ({ id: e, label: labelMap[e] ?? e, desc: descMap[e] ?? '' })),
+      ];
+      return levels;
+    }
+    return DEFAULT_EFFORT_LEVELS;
+  });
 
   // ---- provider form state ----
   let pType = $state('openai');
@@ -72,11 +102,12 @@
   // the live state when opened.
   let thinkingEnabled = $state(client.thinking() !== 'off');
   // Track the chosen effort separately so toggling enabled on/off doesn't
-  // lose the user's pick.
-  let effortPick = $state<'minimal' | 'low' | 'medium' | 'high'>(
+  // lose the user's pick. Type widened to string — the catalog may declare
+  // custom effort levels beyond the original four.
+  let effortPick = $state<string>(
     client.thinking() === 'off' || client.thinking() === 'on'
       ? 'medium'
-      : (client.thinking() as 'minimal' | 'low' | 'medium' | 'high')
+      : client.thinking()
   );
 
   let saving = $state(false);

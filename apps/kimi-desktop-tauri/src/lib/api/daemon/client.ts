@@ -490,6 +490,7 @@ export class DaemonKimiWebApi implements KimiWebApi {
             },
       pendingApprovals: data.pending_approvals.map(toAppApprovalRequest),
       pendingQuestions: data.pending_questions.map(toAppQuestionRequest),
+      subagents: data.subagents?.map(toAppTask),
     };
   }
 

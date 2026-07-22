@@ -257,6 +257,7 @@ export function toWirePromptSubmission(input: PromptSubmission): WirePromptSubmi
     content: input.content.map(toWireMessageContent),
     metadata: input.metadata,
     agent_id: input.agentId,
+    profile: input.profile,
     model: input.model,
     thinking: input.thinking,
     permission_mode: input.permissionMode,
@@ -264,6 +265,7 @@ export function toWirePromptSubmission(input: PromptSubmission): WirePromptSubmi
     swarm_mode: input.swarmMode,
     goal_objective: input.goalObjective,
     goal_control: input.goalControl,
+    disabled_tools: input.disabledTools,
   };
 }
 
@@ -519,6 +521,23 @@ export function toAppEvent(wire: WireEvent): AppEvent {
         currentPromptId: w.payload.current_prompt_id,
       };
 
+    case 'event.session.work_changed':
+      return {
+        type: 'sessionWorkChanged',
+        sessionId: w.session_id,
+        busy: w.payload.busy,
+        mainTurnActive: w.payload.main_turn_active,
+        pendingInteraction: w.payload.pending_interaction,
+        lastTurnReason: w.payload.last_turn_reason,
+      };
+
+    case 'event.session.meta.updated':
+      return {
+        type: 'sessionMetaUpdated',
+        sessionId: w.session_id,
+        title: w.payload.title,
+      };
+
     case 'event.session.usage_updated':
       return {
         type: 'sessionUsageUpdated',
@@ -672,6 +691,38 @@ export function toAppEvent(wire: WireEvent): AppEvent {
         status: w.payload.status as AppTaskStatus,
         outputPreview: w.payload.output_preview,
         outputBytes: w.payload.output_bytes,
+      };
+
+    // ----- Prompt lifecycle (durable session events) -----
+    case 'event.prompt.submitted':
+      return {
+        type: 'promptSubmitted',
+        sessionId: w.session_id,
+        promptId: w.payload.prompt_id,
+        status: w.payload.status,
+      };
+
+    case 'event.prompt.completed':
+      return {
+        type: 'promptCompleted',
+        sessionId: w.session_id,
+        promptId: w.payload.prompt_id,
+        reason: w.payload.reason,
+      };
+
+    case 'event.prompt.aborted':
+      return {
+        type: 'promptAborted',
+        sessionId: w.session_id,
+        promptId: w.payload.prompt_id,
+      };
+
+    case 'event.prompt.steered':
+      return {
+        type: 'promptSteered',
+        sessionId: w.session_id,
+        activePromptId: w.payload.active_prompt_id,
+        promptIds: w.payload.prompt_ids,
       };
 
     case 'event.config.changed':

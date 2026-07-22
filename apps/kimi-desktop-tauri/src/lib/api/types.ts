@@ -210,6 +210,8 @@ export interface PromptSubmission {
   metadata?: Record<string, unknown>;
   /** Optional non-main agent id, used by BTW side-channel prompts. */
   agentId?: string;
+  /** Agent profile to bind at the target agent's first bind. */
+  profile?: string;
   /** The daemon requires these on every prompt (per-prompt, not session-level). */
   model?: string;
   thinking?: ThinkingLevel;
@@ -218,14 +220,17 @@ export interface PromptSubmission {
   swarmMode?: boolean;
   goalObjective?: string;
   goalControl?: 'pause' | 'resume' | 'cancel';
+  /** Client-managed session tool denylist: full-replace on every submit. */
+  disabledTools?: string[];
 }
 
 export interface PromptSubmitResult {
   promptId: string;
   userMessageId: string;
   /** 'running' when the prompt started a turn immediately; 'queued' when
-      another prompt is active and the daemon parked it (steerable). */
-  status?: 'running' | 'queued';
+      another prompt is active and the daemon parked it (steerable);
+      'blocked' when rejected before a turn was launched. */
+  status?: 'running' | 'queued' | 'blocked';
 }
 
 // ---------------------------------------------------------------------------
@@ -411,6 +416,7 @@ export type AppEvent =
   | { type: 'sessionUpdated'; session: AppSession; changedFields: string[] }
   | { type: 'sessionDeleted'; sessionId: string }
   | { type: 'sessionStatusChanged'; sessionId: string; status: AppSessionStatus; previousStatus: AppSessionStatus; currentPromptId?: string }
+  | { type: 'sessionWorkChanged'; sessionId: string; busy?: boolean; mainTurnActive?: boolean; pendingInteraction?: boolean; lastTurnReason?: string }
   | { type: 'sessionMetaUpdated'; sessionId: string; title?: string; lastPrompt?: string }
   | { type: 'sessionUsageUpdated'; sessionId: string; usage: AppSessionUsage; model?: string; swarmMode?: boolean; planMode?: boolean }
   | { type: 'historyCompacted'; sessionId: string; beforeSeq: number; reason: string; summaryMessageId?: string }
@@ -447,6 +453,11 @@ export type AppEvent =
       kind?: 'line' | 'text';
     }
   | { type: 'taskCompleted'; sessionId: string; taskId: string; status: AppTaskStatus; outputPreview?: string; outputBytes?: number }
+  // Prompt lifecycle (durable — server-authoritative prompt state machine)
+  | { type: 'promptSubmitted'; sessionId: string; promptId: string; status: 'running' | 'queued' | 'blocked' }
+  | { type: 'promptCompleted'; sessionId: string; promptId: string; reason: 'completed' | 'failed' | 'blocked' }
+  | { type: 'promptAborted'; sessionId: string; promptId: string }
+  | { type: 'promptSteered'; sessionId: string; activePromptId: string; promptIds: string[] }
   | { type: 'goalUpdated'; sessionId: string; goal: AppGoal | null }
   | { type: 'configChanged'; changedFields: string[]; config: AppConfig }
   | {
@@ -498,6 +509,8 @@ export interface AppSessionSnapshot {
   messages: AppMessage[];
   hasMoreMessages: boolean;
   inFlightTurn: AppInFlightTurn | null;
+  /** Roster of live subagent tasks — rebuilds swarm cards on reconnect. */
+  subagents?: AppTask[];
   pendingApprovals: AppApprovalRequest[];
   pendingQuestions: AppQuestionRequest[];
 }

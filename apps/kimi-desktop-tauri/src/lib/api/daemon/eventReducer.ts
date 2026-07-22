@@ -18,6 +18,7 @@ import type {
   AppWarning,
   AppQuestionRequest,
   AppSession,
+  AppSessionStatus,
   AppTask,
   CompactionMarkerMetadata,
 } from '../types';
@@ -298,6 +299,18 @@ export function reduceAppEvent(
           status: event.status,
           currentPromptId: event.currentPromptId,
         };
+      });
+      break;
+    }
+
+    // -------------------------------------------------------------------------
+    case 'sessionWorkChanged': {
+      // Successor to sessionStatusChanged: carries richer work state.
+      // Map busy → running/idle for backward compatibility with UI that reads status.
+      next.sessions = next.sessions.map((s) => {
+        if (s.id !== event.sessionId) return s;
+        const status: AppSessionStatus = event.busy ? 'running' : 'idle';
+        return { ...s, status };
       });
       break;
     }
@@ -620,6 +633,32 @@ export function reduceAppEvent(
           outputBytes: event.outputBytes,
         };
       });
+      break;
+    }
+
+    // -------------------------------------------------------------------------
+    // Prompt lifecycle — server-authoritative state machine.
+    // These update the session's currentPromptId and status so the UI tracks
+    // the real server state, not just optimistic local updates.
+    case 'promptSubmitted': {
+      next.sessions = next.sessions.map((s) =>
+        s.id === event.sessionId
+          ? { ...s, currentPromptId: event.promptId, status: event.status === 'running' ? 'running' : s.status }
+          : s,
+      );
+      break;
+    }
+    case 'promptCompleted':
+    case 'promptAborted': {
+      next.sessions = next.sessions.map((s) =>
+        s.id === event.sessionId ? { ...s, currentPromptId: undefined, status: 'idle' } : s,
+      );
+      break;
+    }
+    case 'promptSteered': {
+      next.sessions = next.sessions.map((s) =>
+        s.id === event.sessionId ? { ...s, currentPromptId: event.activePromptId } : s,
+      );
       break;
     }
 

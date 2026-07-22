@@ -192,6 +192,8 @@ export interface WirePromptSubmission {
   content: WireMessageContent[];
   metadata?: Record<string, unknown>;
   agent_id?: string;
+  /** Agent profile to bind at the target agent's first bind. */
+  profile?: string;
   model?: string;
   thinking?: string;
   permission_mode?: string;
@@ -199,13 +201,15 @@ export interface WirePromptSubmission {
   swarm_mode?: boolean;
   goal_objective?: string;
   goal_control?: 'pause' | 'resume' | 'cancel';
+  /** Client-managed session tool denylist: full-replace on every submit. */
+  disabled_tools?: string[];
 }
 
 export interface WirePromptSubmitResult {
   prompt_id: string;
   user_message_id: string;
-  /** 'running' = started immediately; 'queued' = parked behind the active prompt. */
-  status?: 'running' | 'queued';
+  /** 'running' = started immediately; 'queued' = parked; 'blocked' = rejected before turn. */
+  status?: 'running' | 'queued' | 'blocked';
 }
 
 export interface WirePromptSteerResult {
@@ -537,6 +541,15 @@ export interface WireInFlightTurn {
   current_prompt_id?: string;
 }
 
+/**
+ * A live subagent task as of the snapshot watermark. Extends the base task
+ * wire shape with the swarm identity metadata that otherwise only rides the
+ * (non-replayed) `subagent.spawned` WS event.
+ */
+export interface WireSnapshotSubagent extends WireBackgroundTask {
+  run_in_background?: boolean;
+}
+
 /** `GET /sessions/{sid}/snapshot` — atomic rebuild state at a watermark. */
 export interface WireSessionSnapshot {
   as_of_seq: number;
@@ -544,6 +557,8 @@ export interface WireSessionSnapshot {
   session: WireSession;
   messages: { items: WireMessage[]; has_more: boolean };
   in_flight_turn: WireInFlightTurn | null;
+  /** Roster of live subagent tasks — rebuilds swarm cards on reconnect. */
+  subagents?: WireSnapshotSubagent[];
   pending_approvals: WireApprovalRequest[];
   pending_questions: WireQuestionRequest[];
 }
@@ -635,6 +650,17 @@ type WireEventSessionStatusChanged = WireEventBase<'event.session.status_changed
   status: WireSessionStatus;
   previous_status: WireSessionStatus;
   current_prompt_id?: string;
+}>;
+/** Successor to status_changed — carries richer work state signals. */
+type WireEventSessionWorkChanged = WireEventBase<'event.session.work_changed', {
+  busy?: boolean;
+  main_turn_active?: boolean;
+  pending_interaction?: boolean;
+  last_turn_reason?: string;
+}>;
+/** Session-level metadata patch (title etc.) — upstream durable event. */
+type WireEventSessionMetaUpdated = WireEventBase<'event.session.meta.updated', {
+  title?: string;
 }>;
 type WireEventSessionUsageUpdated = WireEventBase<'event.session.usage_updated', {
   usage: WireSessionUsage;
@@ -753,6 +779,23 @@ type WireEventTaskCompleted = WireEventBase<'event.task.completed', {
   output_bytes?: number;
 }>;
 
+// Prompt lifecycle (durable session events — server-authoritative prompt state)
+type WireEventPromptSubmitted = WireEventBase<'event.prompt.submitted', {
+  prompt_id: string;
+  status: 'running' | 'queued' | 'blocked';
+}>;
+type WireEventPromptCompleted = WireEventBase<'event.prompt.completed', {
+  prompt_id: string;
+  reason: 'completed' | 'failed' | 'blocked';
+}>;
+type WireEventPromptAborted = WireEventBase<'event.prompt.aborted', {
+  prompt_id: string;
+}>;
+type WireEventPromptSteered = WireEventBase<'event.prompt.steered', {
+  active_prompt_id: string;
+  prompt_ids: string[];
+}>;
+
 type WireEventConfigChanged = WireEventBase<'event.config.changed', {
   changed_fields: string[];
   config: WireConfig;
@@ -783,6 +826,8 @@ export type WireEvent =
   | WireEventSessionUpdated
   | WireEventSessionDeleted
   | WireEventSessionStatusChanged
+  | WireEventSessionWorkChanged
+  | WireEventSessionMetaUpdated
   | WireEventSessionUsageUpdated
   | WireEventSessionHistoryCompacted
   // Workspace lifecycle
@@ -815,6 +860,11 @@ export type WireEvent =
   | WireEventTaskCreated
   | WireEventTaskProgress
   | WireEventTaskCompleted
+  // Prompt lifecycle (durable)
+  | WireEventPromptSubmitted
+  | WireEventPromptCompleted
+  | WireEventPromptAborted
+  | WireEventPromptSteered
   // Config
   | WireEventConfigChanged
   | WireEventModelCatalogChanged
