@@ -45,3 +45,9 @@ handover.md
 *-demo.html
 *-demos.html
 .zcode/
+
+# Scratch / index databases
+.codegraph/
+isuess/
+# Throwaway HTML prototypes in public/
+apps/kimi-desktop-tauri/public/*.html

@@ -43,23 +43,36 @@
     gap: var(--space-2, 8px);
     font-family: var(--font-ui, inherit);
     font-weight: var(--weight-medium, 500);
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--r-sm, 4px);
     border: 1px solid transparent;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
     transition:
+      transform var(--duration-fast, 120ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
       background var(--duration-fast, 120ms) var(--ease-out, ease),
       border-color var(--duration-fast, 120ms) var(--ease-out, ease),
+      box-shadow var(--duration-fast, 120ms) var(--ease-out, ease),
       opacity var(--duration-fast, 120ms);
     white-space: nowrap;
     user-select: none;
     -webkit-user-select: none;
+  }
+  /* Aero glass top-light highlight (::before) */
+  .btn::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 0; height: 50%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent);
+    pointer-events: none;
+    border-radius: inherit;
   }
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
   .btn:not(:disabled):active {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
 
   .btn-md {
@@ -72,20 +85,37 @@
   }
 
   .btn-default {
-    background: var(--color-surface-raised, transparent);
-    border-color: var(--color-line, rgba(84,84,88,0.65));
+    background: var(--l2-glass, var(--color-surface-raised, transparent));
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border-color: var(--bd-glass, var(--color-line, rgba(255,255,255,0.14)));
     color: var(--color-text, rgba(255,255,255,0.92));
+    box-shadow: inset 0 1px 0 var(--shine-overlay, rgba(255,255,255,0.08)), 0 2px 8px rgba(0,0,0,0.15);
   }
   .btn-default:not(:disabled):hover {
     background: var(--color-hover, rgba(255, 255, 255, 0.06));
+    border-color: var(--bd2, rgba(255,255,255,0.25));
   }
 
   .btn-primary {
-    background: var(--color-accent, #2dd4bf);
+    background: var(--ac-gradient, var(--color-accent, #4fa8ff));
     color: var(--color-text-on-accent, #fff);
+    border-color: var(--ac-bd, rgba(79,168,255,0.50));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.30), 0 4px 14px var(--ac-soft, rgba(79,168,255,0.30));
   }
   .btn-primary:not(:disabled):hover {
-    background: var(--color-accent-hover, #6b7df0);
+    background: var(--ac-gradient-hover, var(--color-accent-hover, #6fb2ff));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 20px var(--ac-soft, rgba(79,168,255,0.45));
+  }
+
+  /* hover lift 仅在精确指针设备上生效（触屏不在 tap 时错误触发） */
+  @media (hover: hover) and (pointer: fine) {
+    .btn-default:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+    .btn-primary:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
   }
 
   .btn-ghost {
@@ -96,12 +126,21 @@
     background: var(--color-hover, rgba(255, 255, 255, 0.06));
     color: var(--color-text, rgba(255,255,255,0.92));
   }
+  /* Ghost has no glass highlight */
+  .btn-ghost::before { display: none; }
 
   .btn-danger {
-    background: var(--color-danger, #ff453a);
+    background: var(--danger-gradient, linear-gradient(135deg, #ff6b60, #e5484d));
     color: #fff;
+    border-color: rgba(255, 107, 96, 0.50);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(255,107,96,0.30);
   }
   .btn-danger:not(:disabled):hover {
-    opacity: 0.9;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.30), 0 6px 20px rgba(255,107,96,0.40);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-danger:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
   }
 </style>

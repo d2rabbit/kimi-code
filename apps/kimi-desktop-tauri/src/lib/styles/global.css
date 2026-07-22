@@ -1,8 +1,9 @@
 /* ============================================================================
-   Kimi Code Desktop — FROSTED-MATTE DESIGN TOKENS v4
-   朦胧磨砂（不透明）：奶化色值 + 微粒噪点 + 柔雾晕 + 顶光受光边。
-   禁止：backdrop-filter、任何 alpha<1 的表面、径向渐变光晕（body 雾晕除外）。
-   规范：docs/superpowers/specs/2026-07-18-kimi-desktop-tauri-ui-redesign-v2.md
+   Kimi Code Desktop — AURORA TILE DESIGN LANGUAGE v5
+   Frutiger Aero (自然有机) × Win8 Metro (磁贴几何) 逐原语融合。
+   动态极光天空背景 + 三层半透明玻璃磁贴表面（backdrop-filter）+ 磁贴硬角 + Aero 液体动画。
+   dark / light / system 三主题同等精工。clay/brutal/glass/aqua DNA 主题不受影响。
+   规范：docs/superpowers/specs/2026-07-22-aurora-tile-ui-language.md
 ============================================================================ */
 
 /* ---- Minimal reset (replaces Tailwind preflight) ---- */
@@ -125,22 +126,22 @@ textarea::placeholder {
    SCHEME-INDEPENDENT TOKENS — radius / spacing / z / motion / type / layout
 ============================================================================ */
 :root {
-  /* -- short radius scale (canonical) ------------------------------------- */
-  /* Slightly larger than before — softens the previously "straight" UI
-     without going full pill. Components using these tokens automatically
-     pick up the bump (cards, inputs, buttons, modals). */
-  --r-sm: 8px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 18px;
+  /* -- Aurora Tile radius scale (磁贴硬角系) ------------------------------- */
+  /* Win8 Metro geometry: tight rectangular corners. Only the send button
+     and avatars keep full-round (Aero water-drop accent). */
+  --r-xs: 2px;       /* chip / badge */
+  --r-sm: 4px;       /* buttons / inputs / small cards */
+  --r-md: 4px;       /* unified with sm (tile uniformity) */
+  --r-lg: 4px;       /* cards / panels */
+  --r-xl: 6px;       /* modals / large overlays */
 
-  /* -- legacy radius scale (same geometry, kept for existing components) --- */
-  --radius-xs: 8px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
-  --radius-2xl: 28px;
+  /* -- legacy radius scale (aliased to tile geometry, zero component change) - */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
   --radius-full: 999px;
 
   /* -- spacing (4px grid) -------------------------------------------------- */
@@ -183,6 +184,13 @@ textarea::placeholder {
   --duration-fast: 120ms;
   --duration-base: 160ms;
   --duration-slow: 260ms;
+
+  /* -- Aero liquid animation durations -------------------------------------- */
+  --duration-aero-in: 200ms;      /* drop-in entrance (snappy, under 300ms) */
+  --duration-aero-shine: 0.6s;    /* shine sweep on hover */
+  --duration-aero-float: 3s;      /* bubble float for loading/empty */
+  --duration-aero-ripple: 1.8s;   /* ripple for running indicator */
+  --duration-aurora: 40s;         /* aurora background drift */
 
   /* -- type families -------------------------------------------------------- */
   --font-ui: "Inter Variable", "Inter", "Helvetica Neue", Arial,
@@ -236,16 +244,31 @@ textarea::placeholder {
 }
 
 /* ============================================================================
-   DARK — 深色磨砂（默认）
+   DARK — 深色极光玻璃（默认）
 ============================================================================ */
 html[data-color-scheme="dark"] {
   /* -- primitives ----------------------------------------------------------- */
-  --bg: #14161a;
-  --l1: #191c21;
+  --bg: #0a0c10;             /* aurora base (deeper than v4 for sky contrast) */
+  --l1: #14161a;             /* fallback opaque (reduced-transparency) */
   --l2: #1e2228;
   --l3: #262b33;
-  --bd: rgba(255, 255, 255, 0.06);
-  --bd2: rgba(255, 255, 255, 0.11);
+
+  /* -- Aurora Tile glass surfaces (半透明 + backdrop-filter) ---------------- */
+  --l1-glass: rgba(20, 22, 26, 0.55);    /* sidebar / titlebar / workspace floor */
+  --l2-glass: rgba(30, 34, 40, 0.65);    /* cards / composer / message bubbles */
+  --l3-glass: rgba(38, 43, 51, 0.78);    /* modals / dropdowns / tooltips */
+
+  /* -- glass borders (refraction edges) ------------------------------------- */
+  --bd: rgba(255, 255, 255, 0.10);       /* L1 hairline */
+  --bd2: rgba(255, 255, 255, 0.18);      /* L2/L3 stronger */
+  --bd-glass: rgba(255, 255, 255, 0.14); /* default glass border */
+
+  /* -- glass highlights (toplight) ------------------------------------------ */
+  --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --toplight-strong: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --toplight-modal: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --shine-overlay: rgba(255, 255, 255, 0.06);   /* ::before gradient cap */
+
   --tx: #e8eaed;
   --tx2: #9aa0a8;
   --tx3: #62676e;
@@ -261,12 +284,24 @@ html[data-color-scheme="dark"] {
   --err-soft: rgba(255, 107, 96, 0.10);
   --amb: #ffcb6b;
   --amb-soft: rgba(255, 203, 107, 0.12);
-  --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+
+  /* -- Aero brand gradient (蓝→青绿，Aero 装饰渐变) ------------------------- */
+  --ac-gradient: linear-gradient(135deg, #4fa8ff, #5bc0be);
+  --ac-gradient-hover: linear-gradient(135deg, #6fb2ff, #6dd0ce);
+  --danger-gradient: linear-gradient(135deg, #ff6b60, #e5484d);
+
+  /* -- shadows (glass depth) ------------------------------------------------ */
   --sh: 0 12px 40px rgba(0, 0, 0, 0.30);
   --sh-lg: 0 24px 80px rgba(0, 0, 0, 0.45);
   --overlay: rgba(8, 9, 12, 0.55);
-  --haze: radial-gradient(120% 90% at 18% 0%, rgba(120, 160, 255, 0.05), transparent 60%),
-    radial-gradient(100% 80% at 88% 100%, rgba(91, 192, 190, 0.045), transparent 55%);
+
+  /* -- aurora sky background (动态极光天空) --------------------------------- */
+  --aurora-bg:
+    radial-gradient(ellipse 50% 40% at 15% 20%, rgba(72, 209, 204, 0.30), transparent 70%),
+    radial-gradient(ellipse 45% 50% at 85% 30%, rgba(79, 168, 255, 0.25), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 50% 85%, rgba(138, 113, 247, 0.18), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 80% 80%, rgba(48, 209, 88, 0.12), transparent 70%);
+  --haze: var(--aurora-bg);
   --grain-op: 0.045;
   --syn-k: #ff7edb;
   --syn-s: #5bc0be;
@@ -275,8 +310,8 @@ html[data-color-scheme="dark"] {
 
   /* -- semantic layer（组件主用这套别名，与 primitives 同步翻转） -------------- */
   --color-bg: var(--bg);
-  --color-surface: var(--l1);
-  --color-surface-raised: var(--l2);
+  --color-surface: var(--l1-glass);
+  --color-surface-raised: var(--l2-glass);
   --color-surface-sunken: var(--bg);
   --color-sidebar-bg: var(--l1);
   --color-text: var(--tx);
@@ -322,15 +357,28 @@ html[data-color-scheme="dark"] {
 }
 
 /* ============================================================================
-   LIGHT — 浅色磨砂（milky white）
+   LIGHT — 浅色极光玻璃（milky sky）
 ============================================================================ */
 html[data-color-scheme="light"] {
-  --bg: #f2f4f8;
-  --l1: #fafbfd;
+  --bg: #e8eef5;             /* aurora base (sky blue-white) */
+  --l1: #fafbfd;             /* fallback opaque */
   --l2: #ffffff;
   --l3: #ffffff;
-  --bd: rgba(16, 24, 40, 0.07);
-  --bd2: rgba(16, 24, 40, 0.13);
+
+  /* -- Aurora Tile glass surfaces ------------------------------------------- */
+  --l1-glass: rgba(250, 251, 253, 0.55);
+  --l2-glass: rgba(255, 255, 255, 0.65);
+  --l3-glass: rgba(255, 255, 255, 0.78);
+
+  --bd: rgba(16, 24, 40, 0.08);
+  --bd2: rgba(16, 24, 40, 0.15);
+  --bd-glass: rgba(255, 255, 255, 0.90);
+
+  --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.80);
+  --toplight-strong: inset 0 1px 0 rgba(255, 255, 255, 1);
+  --toplight-modal: inset 0 1px 0 rgba(255, 255, 255, 1);
+  --shine-overlay: rgba(255, 255, 255, 0.10);
+
   --tx: #16191d;
   --tx2: #5b626c;
   --tx3: #8a919c;
@@ -346,12 +394,23 @@ html[data-color-scheme="light"] {
   --err-soft: rgba(229, 72, 77, 0.08);
   --amb: #9a4a00;
   --amb-soft: rgba(154, 74, 0, 0.08);
-  --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  /* -- Aero brand gradient -------------------------------------------------- */
+  --ac-gradient: linear-gradient(135deg, #2e7ce6, #0d9488);
+  --ac-gradient-hover: linear-gradient(135deg, #3a8def, #10b094);
+  --danger-gradient: linear-gradient(135deg, #ff6b60, #e5484d);
+
   --sh: 0 12px 32px rgba(16, 24, 40, 0.10);
   --sh-lg: 0 24px 64px rgba(16, 24, 40, 0.16);
   --overlay: rgba(240, 242, 246, 0.55);
-  --haze: radial-gradient(120% 90% at 18% 0%, rgba(255, 255, 255, 0.95), transparent 60%),
-    radial-gradient(100% 80% at 88% 100%, rgba(46, 124, 230, 0.05), transparent 55%);
+
+  /* -- aurora sky background ------------------------------------------------ */
+  --aurora-bg:
+    radial-gradient(ellipse 50% 40% at 15% 20%, rgba(125, 211, 252, 0.45), transparent 70%),
+    radial-gradient(ellipse 45% 50% at 85% 30%, rgba(46, 124, 230, 0.20), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 50% 85%, rgba(196, 181, 253, 0.35), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 80% 80%, rgba(134, 239, 172, 0.30), transparent 70%);
+  --haze: var(--aurora-bg);
   --grain-op: 0.03;
   --syn-k: #c2259c;
   --syn-s: #0d9488;
@@ -359,8 +418,8 @@ html[data-color-scheme="light"] {
   --syn-n: #b7791f;
 
   --color-bg: var(--bg);
-  --color-surface: var(--l1);
-  --color-surface-raised: var(--l2);
+  --color-surface: var(--l1-glass);
+  --color-surface-raised: var(--l2-glass);
   --color-surface-sunken: var(--bg);
   --color-sidebar-bg: var(--l1);
   --color-text: var(--tx);
@@ -408,23 +467,31 @@ html[data-color-scheme="light"] {
 /* ---- system follow：与显式选择完全同值 ---- */
 @media (prefers-color-scheme: dark) {
   html[data-color-scheme="system"] {
-    --bg: #14161a; --l1: #191c21; --l2: #1e2228; --l3: #262b33;
-    --bd: rgba(255, 255, 255, 0.06); --bd2: rgba(255, 255, 255, 0.11);
+    --bg: #0a0c10; --l1: #14161a; --l2: #1e2228; --l3: #262b33;
+    --l1-glass: rgba(20, 22, 26, 0.55); --l2-glass: rgba(30, 34, 40, 0.65); --l3-glass: rgba(38, 43, 51, 0.78);
+    --bd: rgba(255, 255, 255, 0.10); --bd2: rgba(255, 255, 255, 0.18); --bd-glass: rgba(255, 255, 255, 0.14);
+    --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.08); --toplight-strong: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    --toplight-modal: inset 0 1px 0 rgba(255, 255, 255, 0.15); --shine-overlay: rgba(255, 255, 255, 0.06);
     --tx: #e8eaed; --tx2: #9aa0a8; --tx3: #62676e;
     --ac: #4fa8ff; --ac-h: #6fb2ff; --ac-soft: rgba(79, 168, 255, 0.12); --ac-bd: rgba(79, 168, 255, 0.30);
+    --ac-gradient: linear-gradient(135deg, #4fa8ff, #5bc0be); --ac-gradient-hover: linear-gradient(135deg, #6fb2ff, #6dd0ce);
+    --danger-gradient: linear-gradient(135deg, #ff6b60, #e5484d);
     --ok: #30d158; --ok-soft: rgba(48, 209, 88, 0.10);
     --warn: #ffd60a; --warn-soft: rgba(255, 214, 10, 0.10);
     --err: #ff6b60; --err-soft: rgba(255, 107, 96, 0.10);
     --amb: #ffcb6b; --amb-soft: rgba(255, 203, 107, 0.12);
-    --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.035);
     --sh: 0 12px 40px rgba(0, 0, 0, 0.30); --sh-lg: 0 24px 80px rgba(0, 0, 0, 0.45);
     --overlay: rgba(8, 9, 12, 0.55);
-    --haze: radial-gradient(120% 90% at 18% 0%, rgba(120, 160, 255, 0.05), transparent 60%),
-      radial-gradient(100% 80% at 88% 100%, rgba(91, 192, 190, 0.045), transparent 55%);
+    --aurora-bg:
+      radial-gradient(ellipse 50% 40% at 15% 20%, rgba(72, 209, 204, 0.30), transparent 70%),
+      radial-gradient(ellipse 45% 50% at 85% 30%, rgba(79, 168, 255, 0.25), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 50% 85%, rgba(138, 113, 247, 0.18), transparent 70%),
+      radial-gradient(ellipse 40% 35% at 80% 80%, rgba(48, 209, 88, 0.12), transparent 70%);
+    --haze: var(--aurora-bg);
     --grain-op: 0.045;
     --syn-k: #ff7edb; --syn-s: #5bc0be; --syn-f: #4fa8ff; --syn-n: #ffcb6b;
-    --color-bg: var(--bg); --color-surface: var(--l1); --color-surface-raised: var(--l2);
-    --color-surface-sunken: var(--bg); --color-sidebar-bg: var(--l1);
+    --color-bg: var(--bg); --color-surface: var(--l1-glass); --color-surface-raised: var(--l2-glass);
+    --color-surface-sunken: var(--bg); --color-sidebar-bg: var(--l1-glass);
     --color-text: var(--tx); --color-text-muted: var(--tx2); --color-text-faint: var(--tx3);
     --color-text-on-accent: #ffffff; --color-line: var(--bd); --color-line-strong: var(--bd2);
     --color-selected: var(--ac-soft); --color-hover: rgba(255, 255, 255, 0.04);
@@ -448,23 +515,31 @@ html[data-color-scheme="light"] {
 }
 @media (prefers-color-scheme: light) {
   html[data-color-scheme="system"] {
-    --bg: #f2f4f8; --l1: #fafbfd; --l2: #ffffff; --l3: #ffffff;
-    --bd: rgba(16, 24, 40, 0.07); --bd2: rgba(16, 24, 40, 0.13);
+    --bg: #e8eef5; --l1: #fafbfd; --l2: #ffffff; --l3: #ffffff;
+    --l1-glass: rgba(250, 251, 253, 0.55); --l2-glass: rgba(255, 255, 255, 0.65); --l3-glass: rgba(255, 255, 255, 0.78);
+    --bd: rgba(16, 24, 40, 0.08); --bd2: rgba(16, 24, 40, 0.15); --bd-glass: rgba(255, 255, 255, 0.90);
+    --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.80); --toplight-strong: inset 0 1px 0 rgba(255, 255, 255, 1);
+    --toplight-modal: inset 0 1px 0 rgba(255, 255, 255, 1); --shine-overlay: rgba(255, 255, 255, 0.10);
     --tx: #16191d; --tx2: #5b626c; --tx3: #8a919c;
     --ac: #2e7ce6; --ac-h: #1c66c9; --ac-soft: rgba(46, 124, 230, 0.09); --ac-bd: rgba(46, 124, 230, 0.28);
+    --ac-gradient: linear-gradient(135deg, #2e7ce6, #0d9488); --ac-gradient-hover: linear-gradient(135deg, #3a8def, #10b094);
+    --danger-gradient: linear-gradient(135deg, #ff6b60, #e5484d);
     --ok: #1fa84c; --ok-soft: rgba(31, 168, 76, 0.09);
     --warn: #b7791f; --warn-soft: rgba(183, 121, 31, 0.09);
     --err: #e5484d; --err-soft: rgba(229, 72, 77, 0.08);
     --amb: #9a4a00; --amb-soft: rgba(154, 74, 0, 0.08);
-    --toplight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
     --sh: 0 12px 32px rgba(16, 24, 40, 0.10); --sh-lg: 0 24px 64px rgba(16, 24, 40, 0.16);
     --overlay: rgba(240, 242, 246, 0.55);
-    --haze: radial-gradient(120% 90% at 18% 0%, rgba(255, 255, 255, 0.95), transparent 60%),
-      radial-gradient(100% 80% at 88% 100%, rgba(46, 124, 230, 0.05), transparent 55%);
+    --aurora-bg:
+      radial-gradient(ellipse 50% 40% at 15% 20%, rgba(125, 211, 252, 0.45), transparent 70%),
+      radial-gradient(ellipse 45% 50% at 85% 30%, rgba(46, 124, 230, 0.20), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 50% 85%, rgba(196, 181, 253, 0.35), transparent 70%),
+      radial-gradient(ellipse 40% 35% at 80% 80%, rgba(134, 239, 172, 0.30), transparent 70%);
+    --haze: var(--aurora-bg);
     --grain-op: 0.03;
     --syn-k: #c2259c; --syn-s: #0d9488; --syn-f: #1c66c9; --syn-n: #b7791f;
-    --color-bg: var(--bg); --color-surface: var(--l1); --color-surface-raised: var(--l2);
-    --color-surface-sunken: var(--bg); --color-sidebar-bg: var(--l1);
+    --color-bg: var(--bg); --color-surface: var(--l1-glass); --color-surface-raised: var(--l2-glass);
+    --color-surface-sunken: var(--bg); --color-sidebar-bg: var(--l1-glass);
     --color-text: var(--tx); --color-text-muted: var(--tx2); --color-text-faint: var(--tx3);
     --color-text-on-accent: #ffffff; --color-line: var(--bd); --color-line-strong: var(--bd2);
     --color-selected: var(--ac-soft); --color-hover: rgba(16, 24, 40, 0.04);
@@ -488,13 +563,33 @@ html[data-color-scheme="light"] {
 }
 
 /* ============================================================================
-   BODY — 雾晕底（opaque 合成）+ 噪点颗粒层 + 焦点环
+   BODY — 极光天空底（动态漂移）+ 噪点颗粒层 + 焦点环
 ============================================================================ */
-/* 磨砂颗粒并入背景层（无独立合成层、无 blend-mode —— 滚动零额外开销）。
-   噪点 alpha 直接烘进 SVG（rect opacity 0.55 → 视觉≈overlay 4.5%）。 */
+/* Aurora Tile：body 底色 + 极光漂移层（::before 伪元素，GPU 合成零额外开销）。
+   噪点颗粒保留（磨砂颗粒并入背景层）。极光通过 ::before 独立变换层漂移。 */
 body {
-  background: var(--grain-img), var(--haze), var(--bg);
-  background-blend-mode: soft-light, normal, normal;
+  background: var(--grain-img), var(--bg);
+  background-blend-mode: soft-light, normal;
+  position: relative;
+}
+/* 极光漂移层：固定全屏，4 层径向渐变缓慢漂移（40s linear），pointer-events:none */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -20%;
+  background: var(--aurora-bg);
+  z-index: 0;
+  pointer-events: none;
+  animation: aurora-drift var(--duration-aurora, 40s) linear infinite;
+  will-change: transform;
+}
+/* #app 在极光层之上（z-index 在 APP SHELL BASE 的 #app 规则中设置） */
+
+@keyframes aurora-drift {
+  0%   { transform: translate(0%, 0%) rotate(0deg); }
+  33%  { transform: translate(-3%, 2%) rotate(2deg); }
+  66%  { transform: translate(2%, -3%) rotate(-1deg); }
+  100% { transform: translate(0%, 0%) rotate(0deg); }
 }
 
 /* 键盘焦点环（可访问性硬规则） */
@@ -547,10 +642,10 @@ button:active,
   transform-origin: top left;
 }
 
-/* ---- 首屏 stagger：列表/卡片级联出现（纯装饰，不阻塞交互） ---- */
+/* ---- 首屏 stagger：列表/卡片级联出现（Aero entrance，纯装饰不阻塞交互） ---- */
 @keyframes stagger-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scale(0.94) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .sess-list .s-row,
 .sp-col > .scard,
@@ -558,7 +653,7 @@ button:active,
 .sp-col > .key-row,
 .page-body > .card,
 .page-body > .item-row {
-  animation: stagger-in 0.22s var(--ease) backwards;
+  animation: stagger-in var(--duration-aero-in, 200ms) var(--ease-out) backwards;
 }
 .sess-list .s-row:nth-child(n+2), .sp-col > *:nth-child(n+2), .page-body > *:nth-child(n+2) { animation-delay: 30ms; }
 .sess-list .s-row:nth-child(n+3), .sp-col > *:nth-child(n+3), .page-body > *:nth-child(n+3) { animation-delay: 60ms; }
@@ -575,30 +670,56 @@ button:active,
 }
 
 /* ============================================================================
-   SURFACE UTILITIES — 磨砂实心表面（沿用旧类名，零组件改动）
+   SURFACE UTILITIES — Aurora Tile 玻璃磁贴表面（沿用旧类名，零组件改动）
 ============================================================================ */
-/* 卡片/面板：L2 实心 + 发丝边 + 顶光受光边 */
+/* 卡片/面板：L2 半透明玻璃 + backdrop-filter + 磁贴硬角 + 顶光 + 光泽渐隐 */
 .glass-panel {
-  background: var(--l2);
-  border: 1px solid var(--bd);
+  background: var(--l2-glass);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid var(--bd-glass);
   border-radius: var(--r-lg);
-  box-shadow: var(--toplight), var(--shadow-md);
+  box-shadow: var(--toplight-strong), var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0; height: 45%;
+  background: linear-gradient(180deg, var(--shine-overlay), transparent);
+  pointer-events: none;
+  border-radius: inherit;
 }
 
-/* 顶栏条：L1 + 底部发丝线 */
+/* 顶栏条：L1 玻璃 + 底部发丝线 */
 .glass-header {
-  background: var(--l1);
+  background: var(--l1-glass);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
   border-bottom: 1px solid var(--bd);
+  position: relative;
+}
+.glass-header::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0; height: 50%;
+  background: linear-gradient(180deg, var(--shine-overlay), transparent);
+  pointer-events: none;
 }
 
-/* 浮层菜单：L3 + 大投影（无模糊） */
+/* 浮层菜单：L3 玻璃 + 大投影 + 最强模糊 */
 .glass-menu {
-  background: var(--l3);
+  background: var(--l3-glass);
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
   border: 1px solid var(--bd2);
-  border-radius: var(--r-lg);
-  box-shadow: var(--sh-lg);
+  border-radius: var(--r-sm);
+  box-shadow: var(--toplight-modal), var(--sh-lg);
   padding: 4px;
   min-width: 160px;
+  position: relative;
+  overflow: hidden;
 }
 .glass-menu-item {
   display: flex;
@@ -701,10 +822,14 @@ body,
   background: var(--bg);
 }
 
-/* body 的雾晕画在 html 背景之上（见上方 body 规则）；#app 保持不透明。 */
+/* #app 透明以显示 body::before 极光漂移层；html/body 保留底色作为极光底板。 */
+#app { background: transparent; }
+
+/* #app 固定全屏外壳，在极光漂移层（body::before）之上。 */
 #app {
   position: fixed;
   inset: 0;
+  z-index: 1;
 }
 
 /* App 是固定全屏外壳，文档自身永不滚动。 */
@@ -792,29 +917,47 @@ body {
   min-height: 100dvh !important;
 }
 
-/* ---- Shared entrance keyframes ---- */
+/* ---- Shared entrance keyframes (Aero) ---- */
 @keyframes kimi-card-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.995); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes kimi-check-in {
-  from { opacity: 0; transform: scale(0.4); }
-  60% { opacity: 1; transform: scale(1.15); }
+  from { opacity: 0; transform: scale(0.6); }
+  60% { opacity: 1; transform: scale(1.1); }
   to { opacity: 1; transform: scale(1); }
 }
 @keyframes spring-in {
-  from { opacity: 0; transform: scale(0.96) translateY(6px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; transform: scale(0.92) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 .animate-spring-in {
-  animation: spring-in 0.18s var(--ease);
+  animation: spring-in var(--duration-aero-in, 200ms) var(--ease-out);
 }
 .animate-fade-in {
   animation: fade-in 0.16s var(--ease);
+}
+
+/* ---- Aero liquid keyframes (shine / float / ripple) ---- */
+/* 光泽流动（hover 反馈，110° 白色渐变带扫过） */
+@keyframes aero-shine {
+  0%        { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(100%); }
+}
+/* 气泡漂浮（loading / empty 状态） */
+@keyframes aero-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33%      { transform: translateY(-6px) rotate(2deg); }
+  66%      { transform: translateY(3px) rotate(-1deg); }
+}
+/* 涟漪扩散（运行指示器） */
+@keyframes aero-ripple {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
 }
 
 /* ---- Reduced-motion: disable ALL entrance/micro animations ---- */
@@ -1387,15 +1530,15 @@ html[data-color-scheme="aqua"] .newtask {
 }
 
 /* ============================================================================
-   全局交互动画增强（所有主题受益，纯 CSS 增量）
-   汲取 namethatui.com 交互设计最佳实践：
-   - 按钮统一按压反馈（scale 0.97）
-   - 卡片 hover 微 lift（translateY -1px + 阴影加深）
-   - 消息气泡入场（fade + slide-up）
+   全局交互动画增强 — Aurora Tile Aero 液体动画体系
+   全 Aero 液体：弹性回弹、光泽流动、气泡漂浮。磁贴只贡献静态几何。
+   - 按钮按压弹性回弹（scale 0.95 + spring easing）
+   - 卡片 hover 上浮 + 光泽流动（translateY -2px + ::after shine sweep）
+   - 消息/卡片水滴入场（scale + blur + spring overshoot）
    - 列表项 hover 左侧 accent 竖条
 ============================================================================ */
 
-/* ---- 按钮统一按压反馈（推广到所有可点击元素） ---- */
+/* ---- 按钮按压即时反馈（scale 0.97 + ease-out，即时响应） ---- */
 button:not(:disabled):active,
 [role="button"]:not(:disabled):active,
 [role="tab"]:not(:disabled):active,
@@ -1407,34 +1550,54 @@ button:not(:disabled):active,
 .gs-btn:not(:disabled):active {
   transform: scale(0.97);
 }
-
-/* ---- 卡片 hover 微 lift ---- */
-.tool-card:hover,
-.plugin-card:hover,
-.item-row:hover,
-.task-item:hover {
-  transform: translateY(-1px);
+button,
+[role="button"],
+.btn,
+.seg-btn,
+.refresh-btn,
+.term-btn,
+.theme-card,
+.gs-btn {
+  transition: transform var(--duration-fast) var(--ease-out);
 }
+
+/* ---- 卡片 hover 上浮 + 光泽（Aero glass lift） ---- */
+/* @media (hover: hover)：触屏不在 tap 时错误触发 hover 动画 */
 .tool-card,
 .plugin-card,
 .item-row,
 .task-item {
-  transition: transform var(--duration-fast) var(--ease),
+  transition: transform var(--duration-base) var(--ease-out),
     border-color var(--duration-fast) var(--ease),
-    box-shadow var(--duration-fast) var(--ease),
+    box-shadow var(--duration-base) var(--ease),
     background var(--duration-fast) var(--ease);
 }
+@media (hover: hover) and (pointer: fine) {
+  .tool-card:hover,
+  .plugin-card:hover,
+  .item-row:hover,
+  .task-item:hover {
+    transform: translateY(-2px);
+  }
+}
 
-/* ---- 消息气泡入场动画 ---- */
+/* ---- 消息/卡片入场（Aero entrance: subtle scale + opacity, no blur for perf） ---- */
+/* 用 transition 而非 keyframes：消息在流式输出时持续新增，keyframes 会从头重播导致抖动。
+   transition 可中断、可重定向，适合高频动态 UI。 */
+@keyframes aero-drop-in {
+  from { opacity: 0; transform: scale(0.92) translateY(4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+/* 保留旧名兼容 */
 @keyframes msg-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scale(0.92) translateY(4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .msg.user,
 .msg.agent,
 .tool-card,
 .compact {
-  animation: msg-in 0.24s var(--ease) backwards;
+  animation: aero-drop-in var(--duration-aero-in, 200ms) var(--ease-out) backwards;
 }
 
 /* ---- Sidebar 会话项 hover 左侧 accent 竖条 ---- */
@@ -1492,7 +1655,8 @@ button:not(:disabled):active,
   .tool-card:hover,
   .plugin-card:hover,
   .item-row:hover,
-  .task-item:hover {
+  .task-item:hover,
+  .bento-cell:hover {
     transform: none;
   }
   .msg.user, .msg.agent, .tool-card, .compact {
@@ -2223,16 +2387,16 @@ html[data-color-scheme="clay"] .rail {
    micro-animations + hover glow + staggered entry
    ============================================================================ */
 
-/* ---- 卡片 staggered 入场（对话/列表渲染时逐个出现） ---- */
+/* ---- 卡片 staggered 入场（Aero entrance） ---- */
 @keyframes bento-enter {
-  from { opacity: 0; transform: translateY(8px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: scale(0.94) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .bento-cell,
 .tool-card,
 .plugin-card,
 .scard {
-  animation: bento-enter 0.3s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) backwards;
+  animation: bento-enter var(--duration-aero-in, 200ms) var(--ease-out) backwards;
 }
 /* Stagger: each child delays slightly more */
 .bento-grid > .bento-cell:nth-child(1) { animation-delay: 0ms; }
@@ -2273,12 +2437,12 @@ html[data-color-scheme="clay"] .rail {
   transition: color 0.3s var(--ease);
 }
 
-/* ---- 卡片 hover 微浮（全局） ---- */
-.tool-card:hover,
-.plugin-card:hover,
-.bento-cell:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), var(--toplight);
+/* ---- bento-cell hover（Aero glass lift，仅精确指针设备） ---- */
+@media (hover: hover) and (pointer: fine) {
+  .bento-cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), var(--toplight-strong);
+  }
 }
 
 /* ---- 圆润的 scrollbar（namethatui 风格） ---- */
@@ -2399,5 +2563,59 @@ html[data-color-scheme="clay"] .rail {
     background: rgba(30, 30, 40, 0.95) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* ---- Aurora Tile: dark/light/system backdrop-filter fallback ---- */
+/* 没有 backdrop-filter 支持的环境（旧 WebView）降级为近不透明表面 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-color-scheme="dark"] .glass-panel,
+  html[data-color-scheme="dark"] .glass-header,
+  html[data-color-scheme="dark"] .glass-menu,
+  html[data-color-scheme="light"] .glass-panel,
+  html[data-color-scheme="light"] .glass-header,
+  html[data-color-scheme="light"] .glass-menu {
+    background: var(--l2) !important;
+  }
+  html[data-color-scheme="system"] .glass-panel,
+  html[data-color-scheme="system"] .glass-header,
+  html[data-color-scheme="system"] .glass-menu {
+    background: var(--l2) !important;
+  }
+}
+
+/* ---- Aurora Tile: prefers-reduced-transparency (dark/light/system) ---- */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-color-scheme="dark"],
+  html[data-color-scheme="light"],
+  html[data-color-scheme="system"] {
+    --l1-glass: rgba(20, 22, 26, 0.95);
+    --l2-glass: rgba(30, 34, 40, 0.95);
+    --l3-glass: rgba(38, 43, 51, 0.97);
+  }
+  html[data-color-scheme="light"],
+  html[data-color-scheme="system"] {
+    --l1-glass: rgba(250, 251, 253, 0.95);
+    --l2-glass: rgba(255, 255, 255, 0.95);
+    --l3-glass: rgba(255, 255, 255, 0.97);
+  }
+  /* 极光漂移层隐藏（回退到纯色底） */
+  html[data-color-scheme="dark"] body::before,
+  html[data-color-scheme="light"] body::before,
+  html[data-color-scheme="system"] body::before {
+    display: none;
+  }
+  /* backdrop-filter 降级为极轻模糊 */
+  html[data-color-scheme="dark"] .glass-panel,
+  html[data-color-scheme="dark"] .glass-header,
+  html[data-color-scheme="dark"] .glass-menu,
+  html[data-color-scheme="light"] .glass-panel,
+  html[data-color-scheme="light"] .glass-header,
+  html[data-color-scheme="light"] .glass-menu,
+  html[data-color-scheme="system"] .glass-panel,
+  html[data-color-scheme="system"] .glass-header,
+  html[data-color-scheme="system"] .glass-menu {
+    backdrop-filter: blur(4px) saturate(1);
+    -webkit-backdrop-filter: blur(4px) saturate(1);
   }
 }
