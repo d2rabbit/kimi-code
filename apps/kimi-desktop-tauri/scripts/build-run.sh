@@ -15,6 +15,7 @@
 #   bash scripts/build-run.sh --skip-agent  # 跳过 kimi-code 构建（前端/Rust 调试用）
 #   bash scripts/build-run.sh --no-typecheck # 跳过 svelte-check / cargo check（更快）
 #   bash scripts/build-run.sh --clean       # 清空 target/release 后重编（诊断奇怪编译错误）
+#   bash scripts/build-run.sh --build-packages  # 先 pnpm build:packages（上游 merge 后必须）
 #   bash scripts/build-run.sh --log-level debug   # 诊断模式：daemon 写 debug 级日志
 #   bash scripts/build-run.sh --debug-endpoints   # 挂载 /api/v1/debug/* 内省路由
 #   bash scripts/build-run.sh --help
@@ -33,6 +34,7 @@ SKIP_SEA=0
 SKIP_AGENT=0
 NO_TYPECHECK=0
 CLEAN=0
+BUILD_PACKAGES=0
 # Daemon log level (fatal|error|warn|info|debug|trace|silent). Default `info`
 # records turn processing / model calls / MCP connections to server.log so
 # prompt failures are diagnosable. Override with --log-level when reproducing.
@@ -53,6 +55,7 @@ while [[ $# -gt 0 ]]; do
     --skip-agent) SKIP_AGENT=1; shift ;;
     --no-typecheck) NO_TYPECHECK=1; shift ;;
     --clean) CLEAN=1; shift ;;
+    --build-packages) BUILD_PACKAGES=1; shift ;;
     --log-level)
       [[ $# -ge 2 ]] || { echo "error: --log-level requires a value" >&2; exit 2; }
       LOG_LEVEL="$2"; shift 2 ;;
@@ -100,6 +103,13 @@ EXE="kimi"
 log() { printf '\033[1;36m▸ %s\033[0m\n' "$*"; }
 warn() { printf '\033[1;33m⚠ %s\033[0m\n' "$*" >&2; }
 err()  { printf '\033[1;31m✖ %s\033[0m\n' "$*" >&2; }
+
+# ---- 0. 可选：构建 packages/（上游 merge 后必须，否则 main.cjs 引用旧 dist） ----
+if [[ "$BUILD_PACKAGES" == "1" ]]; then
+  log "构建 packages/（pnpm build:packages）…"
+  pnpm run build:packages
+  log "packages/ 构建完成"
+fi
 
 # ---- 1. 构建内嵌 agent（tsdown 产出 main.cjs，跳过 SEA 注入） ----
 # 新架构：不再用 SEA（postject 注入 Node 二进制），而是直接用 tsdown 打包

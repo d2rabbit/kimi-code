@@ -31,7 +31,7 @@ pnpm desktop:dev
 
 ## 完整构建脚本
 
-### `build-run.sh` (Linux / macOS / Git Bash) 与 `build-run.ps1` (Windows)
+### `build-run.sh` (Linux / macOS) 与 `build-run.ps1` (Windows)
 
 两个脚本是功能对等的，参数名按平台惯例（bash 用 `--flag`，PowerShell 用 `-Flag`）。
 
@@ -41,10 +41,21 @@ pnpm desktop:dev
 | 构建 + 前台运行 | `bash scripts/build-run.sh --foreground` | `.\scripts\build-run.ps1 -Foreground` |
 | 只构建不启动 | `bash scripts/build-run.sh --no-run` | `.\scripts\build-run.ps1 -NoRun` |
 | 打包安装包 | `bash scripts/build-run.sh --dist` | `.\scripts\build-run.ps1 -Dist` |
-| 打包（复用 SEA） | `bash scripts/build-run.sh --dist --skip-sea` | `.\scripts\build-run.ps1 -Dist -SkipSea` |
+| 跳过 agent 构建 | `bash scripts/build-run.sh --skip-agent` | `.\scripts\build-run.ps1 -SkipAgent` |
+| 跳过类型检查 | `bash scripts/build-run.sh --no-typecheck` | `.\scripts\build-run.ps1 -NoTypecheck` |
+| 清空 release 重编 | `bash scripts/build-run.sh --clean` | `.\scripts\build-run.ps1 -Clean` |
+| 先构建 packages/ | `bash scripts/build-run.sh --build-packages` | `.\scripts\build-run.ps1 -BuildPackages` |
 | 诊断模式（debug 日志） | `bash scripts/build-run.sh --foreground --log-level debug` | `.\scripts\build-run.ps1 -Foreground -LogLevel debug` |
 | 启用 debug 端点 | `bash scripts/build-run.sh --debug-endpoints` | `.\scripts\build-run.ps1 -DebugEndpoints` |
 | 帮助 | `bash scripts/build-run.sh --help` | `Get-Help .\scripts\build-run.ps1` |
+
+### 上游 merge 后首次构建
+
+从 `github/main` 合并了上游更新后，`packages/` 源码可能变更，需要先重建：
+
+```bash
+bash scripts/build-run.sh --build-packages --foreground
+```
 
 ## 诊断
 
@@ -59,18 +70,20 @@ pnpm desktop:dev
 
 脚本执行的完整步骤：
 
-1. **构建 SEA**（除非 `--skip-sea` / `-SkipSea`）：
+0. **（可选）构建 packages/**（`--build-packages`）：上游 merge 后必须，否则 main.cjs 引用旧 dist
+1. **构建内嵌 agent**（除非 `--skip-agent`）：
    - `pnpm --filter @moonshot-ai/kimi-web run build`（kimi-web 前端）
    - `node apps/kimi-code/scripts/copy-web-assets.mjs`（拷贝到 kimi-code/dist-web）
-   - `pnpm --filter @moonshot-ai/kimi-code run build:native:sea`（打包 SEA）
+   - tsdown 打包 → `dist-native/intermediates/main.cjs`（约 30 秒）
 2. **前端检查 + 构建**：`svelte-check` + `vite build`
 3. **Rust 检查 + 构建**：`cargo check` + `cargo build --release --features custom-protocol`
-4. **SEA staging**：把 SEA 拷到 `target/release/bin/<target>/`（dev）或 `src-tauri/resources/bin/<target>/`（dist）
+4. **agent 就绪**：dev 模式直接引用 `main.cjs`；打包模式由 `before-bundle.cjs` 拷贝到 `resources/bin/`
 5. **启动**：前台运行或后台独立进程
 
 ## 产物位置
 
 - **release 二进制**：`src-tauri/target/release/kimi-desktop-tauri[.exe]`
+- **内嵌 agent**：`apps/kimi-code/dist-native/intermediates/main.cjs`
 - **安装包**（`--dist`）：`src-tauri/target/release/bundle/`
   - Linux：`.deb` / `.rpm` / `.AppImage`
   - macOS：`.dmg`

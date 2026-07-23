@@ -13,32 +13,36 @@
   For deeper diagnostics:
     .\scripts\build-run.ps1 -Foreground -LogLevel debug -DebugEndpoints
 
-.PARAMETER SkipSea
-  Forwarded to build-run.ps1 — reuse an existing SEA instead of rebuilding.
+.PARAMETER SkipAgent
+  Forwarded to build-run.ps1 — reuse an existing main.cjs instead of rebuilding.
+
+.PARAMETER BuildPackages
+  Forwarded to build-run.ps1 — rebuild packages/ first (after upstream merge).
 #>
 [CmdletBinding()]
 param(
-  [switch]$SkipSea
+  [switch]$SkipAgent,
+  [switch]$BuildPackages
 )
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $AgentLog = Join-Path $env:USERPROFILE '.kimi-code\desktop\server\server.log'
 
-Write-Host "▸ Kimi Code Desktop · 快速启动" -ForegroundColor Cyan
-Write-Host "  模式：前台（Ctrl+C 退出）"
-Write-Host "  daemon 日志：$AgentLog"
-Write-Host "  停止：Ctrl+C，或关闭客户端窗口"
+Write-Host "[ Kimi Code Desktop - Quick Launch ]" -ForegroundColor Cyan
+Write-Host "  Mode: foreground (Ctrl+C to stop)"
+Write-Host "  Daemon log: $AgentLog"
 Write-Host ""
 
 $logDir = Split-Path -Parent $AgentLog
 if (-not (Test-Path $logDir)) {
-  Write-Host "⚠ 首次启动：embedded agent 将在 $logDir 创建日志目录" -ForegroundColor Yellow
+  Write-Host "[ First launch: embedded agent will create log dir at $logDir ]" -ForegroundColor Yellow
   Write-Host ""
 }
 
 # Forward to build-run.ps1 with preset diagnostics. Pass through extra flags.
 $extraArgs = @()
-if ($SkipSea) { $extraArgs += '-SkipSea' }
+if ($SkipAgent) { $extraArgs += '-SkipAgent' }
+if ($BuildPackages) { $extraArgs += '-BuildPackages' }
 
 & (Join-Path $ScriptDir 'build-run.ps1') -Foreground -LogLevel info @extraArgs
