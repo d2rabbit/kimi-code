@@ -70,6 +70,19 @@
   // Usage hero: context ring geometry
   const usage = $derived(client.activeSessionUsage());
 
+  // Managed account plan usage (GET /oauth/usage) — fills quota bars when authenticated.
+  let oauthUsage = $state<{ plan: string; used?: number; limit?: number; extra?: number } | null>(null);
+  $effect(() => {
+    if (client.authProvider()?.status === 'authenticated') {
+      void client.client.getOauthUsage().then((u) => { oauthUsage = u; });
+    } else {
+      oauthUsage = null;
+    }
+  });
+  const usagePct = $derived(
+    oauthUsage && oauthUsage.limit ? Math.min(100, Math.round(((oauthUsage.used ?? 0) / oauthUsage.limit) * 100)) : 0,
+  );
+
   // 真实聚合：按工作区汇总全部会话的 token 与费用（来自 sessions 的 usage 字段）
   const usageByWs = $derived.by(() => {
     const map = new Map<string, { name: string; input: number; output: number; cache: number; cost: number; sessions: number }>();
@@ -220,12 +233,22 @@
           </div>
         </div>
 
-        <!-- Quota bars (structure per draft; fills render only when quota data exists) -->
+        <!-- Quota bars — filled from GET /oauth/usage when managed account is authenticated -->
         <div class="quota-row">
           <div class="quota-card">
-            <div class="quota-t"><span>Token 额度</span><span class="mono pct">—</span></div>
-            <div class="bar"><i style="width:0%"></i></div>
-            <div class="quota-m mono">账户配额由服务端管理，登录后在账单页查看</div>
+            <div class="quota-t">
+              <span>Token 额度{#if oauthUsage?.plan} · {oauthUsage.plan}{/if}</span>
+              <span class="mono pct">{#if oauthUsage?.limit}{usagePct}%{:else}—{/if}</span>
+            </div>
+            <div class="bar"><i style="width:{usagePct}%"></i></div>
+            <div class="quota-m mono">
+              {#if oauthUsage?.limit}
+                {(oauthUsage.used ?? 0).toLocaleString()} / {oauthUsage.limit.toLocaleString()} tokens
+                {#if oauthUsage.extra} · 额外 {oauthUsage.extra.toLocaleString()}{/if}
+              {:else}
+                账户配额由服务端管理，登录后在账单页查看
+              {/if}
+            </div>
           </div>
           <div class="quota-card">
             <div class="quota-t"><span>MCP 额度</span><span class="mono pct purple">—</span></div>

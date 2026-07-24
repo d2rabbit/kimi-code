@@ -535,6 +535,35 @@ export interface AppTranscriptPlanResponse {
   plans: AppTranscriptPlanEntry[];
 }
 
+/** Managed account plan usage (GET /oauth/usage). */
+export interface AppManagedUsage {
+  plan: string;
+  periodStart?: string;
+  periodEnd?: string;
+  usageLimit?: number;
+  usageUsed?: number;
+  extraUsage?: number;
+  booster?: { remaining?: number; total?: number };
+}
+
+/** Tool descriptor with active state (GET /tools). */
+export interface AppToolDescriptor {
+  name: string;
+  description: string;
+  inputSchema: unknown;
+  source: 'builtin' | 'skill' | 'mcp';
+  mcpServerId?: string;
+  active?: boolean;
+}
+
+/** Attached WS client (GET /connections). */
+export interface AppConnection {
+  id: string;
+  hasClientHello: boolean;
+  subscriptions: string[];
+  connectedAt: string;
+}
+
 export interface KimiEventHandlers {
   onEvent(event: AppEvent, meta: { sessionId: string; seq: number }): void;
   onResync(sessionId: string, currentSeq: number, epoch?: string): void;
@@ -830,4 +859,21 @@ export interface KimiWebApi {
   } | null>;
   cancelOAuthLogin(): Promise<{ cancelled: boolean; status: string }>;
   logout(): Promise<{ loggedOut: boolean }>;
+
+  // Tools — GET /tools (tool descriptors with active state, #2005)
+  listTools(sessionId?: string): Promise<AppToolDescriptor[]>;
+
+  // OAuth usage — GET /oauth/usage (managed account plan usage, #2027)
+  getOauthUsage(): Promise<AppManagedUsage | null>;
+
+  // Connections — GET /connections (attached WS clients diagnostic)
+  getConnections(): Promise<AppConnection[]>;
+
+  // Shutdown — POST /shutdown (graceful daemon termination)
+  shutdownDaemon(): Promise<{ shuttingDown: true }>;
+
+  // GUI store — server-backed localStorage mirror
+  guiStoreGetItem(key: string): Promise<string | null>;
+  guiStoreSetItem(key: string, value: string): Promise<void>;
+  guiStoreRemoveItem(key: string): Promise<void>;
 }

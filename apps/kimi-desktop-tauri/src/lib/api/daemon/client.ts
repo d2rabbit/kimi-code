@@ -6,6 +6,8 @@ import { buildRestUrl, buildWsUrl } from '../config';
 import { getCredential } from './serverAuth';
 import type {
   AppConfig,
+  AppConnection,
+  AppManagedUsage,
   AppMessage,
   AppMessageRole,
   AppModel,
@@ -20,6 +22,7 @@ import type {
   AppTask,
   AppTaskStatus,
   AppTerminal,
+  AppToolDescriptor,
   AppTranscriptPlanResponse,
   AppWorkspace,
   ApprovalResponse,
@@ -59,11 +62,13 @@ import type {
   WireAuthResult,
   WireBackgroundTask,
   WireConfig,
+  WireConnection,
   WireEvent,
   WireFileMeta,
   WireFsBrowseResult,
   WireFsEntry,
   WireFsHomeResult,
+  WireManagedUsage,
   WireMessage,
   WireModel,
   WireOAuthCancelResult,
@@ -80,6 +85,7 @@ import type {
   WireSessionWarningsResponse,
   WireSessionRuntimeStatus,
   WireSessionSnapshot,
+  WireToolDescriptor,
   WireTranscriptPlanResponse,
   WireWorkspace,
   WireLogoutResult,
@@ -1263,6 +1269,83 @@ export class DaemonKimiWebApi implements KimiWebApi {
   async restartMcpServer(serverId: string): Promise<{ restarted: true }> {
     await this.http.post(`/mcp/servers/${encodeURIComponent(serverId)}:restart`);
     return { restarted: true };
+  }
+
+  // -------------------------------------------------------------------------
+  // Tools — GET /tools (tool descriptors with active state, #2005)
+  // -------------------------------------------------------------------------
+  async listTools(sessionId?: string): Promise<AppToolDescriptor[]> {
+    const query: Record<string, string> = {};
+    if (sessionId !== undefined) query['session_id'] = sessionId;
+    const data = await this.http.get<{ tools: WireToolDescriptor[] }>('/tools', query);
+    return (data.tools ?? []).map((t) => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: t.input_schema,
+      source: t.source,
+      mcpServerId: t.mcp_server_id,
+      active: t.active,
+    }));
+  }
+
+  // -------------------------------------------------------------------------
+  // OAuth usage — GET /oauth/usage (managed account plan usage, #2027)
+  // -------------------------------------------------------------------------
+  async getOauthUsage(): Promise<AppManagedUsage | null> {
+    try {
+      const data = await this.http.get<WireManagedUsage>('/oauth/usage');
+      return {
+        plan: data.plan,
+        periodStart: data.period_start,
+        periodEnd: data.period_end,
+        usageLimit: data.usage_limit,
+        usageUsed: data.usage_used,
+        extraUsage: data.extra_usage,
+        booster: data.booster
+          ? { remaining: data.booster.remaining, total: data.booster.total }
+          : undefined,
+      };
+    } catch {
+      // Non-managed accounts or unconfigured providers return errors — treat as null.
+      return null;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Connections — GET /connections (attached WS clients diagnostic)
+  // -------------------------------------------------------------------------
+  async getConnections(): Promise<AppConnection[]> {
+    const data = await this.http.get<{ connections: WireConnection[] }>('/connections');
+    return (data.connections ?? []).map((c) => ({
+      id: c.id,
+      hasClientHello: c.has_client_hello,
+      subscriptions: c.subscriptions,
+      connectedAt: c.connected_at,
+    }));
+  }
+
+  // -------------------------------------------------------------------------
+  // Shutdown — POST /shutdown (graceful daemon termination)
+  // -------------------------------------------------------------------------
+  async shutdownDaemon(): Promise<{ shuttingDown: true }> {
+    await this.http.post('/shutdown');
+    return { shuttingDown: true };
+  }
+
+  // -------------------------------------------------------------------------
+  // GUI store — server-backed localStorage mirror
+  // -------------------------------------------------------------------------
+  async guiStoreGetItem(key: string): Promise<string | null> {
+    const data = await this.http.get<{ value: string | null }>('/gui/store/getItem', { key });
+    return data.value;
+  }
+
+  async guiStoreSetItem(key: string, value: string): Promise<void> {
+    await this.http.post('/gui/store/setItem', { key, value });
+  }
+
+  async guiStoreRemoveItem(key: string): Promise<void> {
+    await this.http.post('/gui/store/removeItem', { key });
   }
 
   // -------------------------------------------------------------------------

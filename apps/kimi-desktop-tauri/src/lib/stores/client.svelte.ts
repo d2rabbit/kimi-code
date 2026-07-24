@@ -1302,4 +1302,29 @@ export const client = {
   get archivedLoading() { return archivedLoading; },
   loadArchivedSessions,
   restoreSession,
+
+  // Deep integration: previously-unused upstream capabilities.
+  /** List all agent tools with their active/inactive state (GET /tools). */
+  listTools: (sessionId?: string) => getApi().listTools(sessionId),
+  /** Get managed account plan usage (GET /oauth/usage). Returns null for non-managed. */
+  getOauthUsage: () => getApi().getOauthUsage(),
+  /** List attached WebSocket connections for diagnostics (GET /connections). */
+  getConnections: () => getApi().getConnections(),
+  /** Gracefully shut down the embedded daemon (POST /shutdown). */
+  shutdownDaemon: () => getApi().shutdownDaemon(),
+  /** Server-backed key-value store — mirrors localStorage on the daemon (GET /gui/store/getItem). */
+  guiStoreGet: (key: string) => getApi().guiStoreGetItem(key),
+  /** Server-backed key-value store — set item (POST /gui/store/setItem). */
+  guiStoreSet: (key: string, value: string) => getApi().guiStoreSetItem(key, value),
+  /** Server-backed key-value store — remove item (POST /gui/store/removeItem). */
+  guiStoreRemove: (key: string) => getApi().guiStoreRemoveItem(key),
+  /** Get plan review info for an agent's ExitPlanMode calls (GET /transcript/plan). */
+  getTranscriptPlan: (sessionId: string, agentId: string, toolCallId?: string) =>
+    getApi().getTranscriptPlan(sessionId, agentId, toolCallId),
+  /** Import a provider from models.dev catalog (POST /providers:import_catalog). */
+  importProviderFromCatalog: (input: { catalogId: string; id?: string; apiKey?: string; baseUrl?: string }) =>
+    getApi().importProviderFromCatalog(input),
+  /** Replace an existing provider (PUT /providers/{id}). */
+  replaceProvider: (id: string, input: { newId?: string; type: string; apiKey?: string; baseUrl?: string; defaultModel?: string }) =>
+    getApi().replaceProvider(id, input),
 };

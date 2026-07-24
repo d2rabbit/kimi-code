@@ -437,6 +437,41 @@ export interface WireAuthResult {
   managed_provider: WireManagedProvider | null;
 }
 
+/** GET /oauth/usage — managed account plan usage (#2027). */
+export interface WireManagedUsage {
+  plan: string;
+  period_start?: string;
+  period_end?: string;
+  usage_limit?: number;
+  usage_used?: number;
+  extra_usage?: number;
+  booster?: { remaining?: number; total?: number };
+}
+
+/** GET /tools — tool descriptors with active state (#2005). */
+export interface WireToolDescriptor {
+  name: string;
+  description: string;
+  input_schema: unknown;
+  source: 'builtin' | 'skill' | 'mcp';
+  mcp_server_id?: string;
+  active?: boolean;
+}
+
+/** GET /connections — attached WS clients. */
+export interface WireConnection {
+  id: string;
+  has_client_hello: boolean;
+  subscriptions: string[];
+  connected_at: string;
+}
+
+/** GUI store — server-backed localStorage mirror. */
+export interface WireGuiStoreItem {
+  key: string;
+  value: string | null;
+}
+
 export interface WireOAuthLoginStartResult {
   flow_id: string;
   provider: string;
