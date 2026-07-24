@@ -20,6 +20,7 @@ import type {
   AppTask,
   AppTaskStatus,
   AppTerminal,
+  AppTranscriptPlanResponse,
   AppWorkspace,
   ApprovalResponse,
   FsBrowseResult,
@@ -79,6 +80,7 @@ import type {
   WireSessionWarningsResponse,
   WireSessionRuntimeStatus,
   WireSessionSnapshot,
+  WireTranscriptPlanResponse,
   WireWorkspace,
   WireLogoutResult,
 } from './wire';
@@ -491,6 +493,41 @@ export class DaemonKimiWebApi implements KimiWebApi {
       pendingApprovals: data.pending_approvals.map(toAppApprovalRequest),
       pendingQuestions: data.pending_questions.map(toAppQuestionRequest),
       subagents: data.subagents?.map(toAppTask),
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // Transcript Plan — GET /sessions/{id}/transcript/plan (#2094)
+  // -------------------------------------------------------------------------
+
+  async getTranscriptPlan(
+    sessionId: string,
+    agentId: string,
+    toolCallId?: string,
+  ): Promise<AppTranscriptPlanResponse> {
+    const params: Record<string, string> = { agent_id: agentId };
+    if (toolCallId !== undefined) params['tool_call_id'] = toolCallId;
+    const data = await this.http.get<WireTranscriptPlanResponse>(
+      `/sessions/${encodeURIComponent(sessionId)}/transcript/plan`,
+      params,
+    );
+    return {
+      agentId: data.agent_id,
+      plans: data.plans.map((p) => ({
+        toolCallId: p.tool_call_id,
+        turnId: p.turn_id,
+        source: p.source,
+        plan: p.plan,
+        path: p.path,
+        options: p.options,
+        review: p.review
+          ? {
+              state: p.review.state,
+              selectedOption: p.review.selected_option,
+              feedback: p.review.feedback,
+            }
+          : undefined,
+      })),
     };
   }
 
@@ -1092,13 +1129,53 @@ export class DaemonKimiWebApi implements KimiWebApi {
     baseUrl?: string;
     defaultModel?: string;
   }): Promise<AppProvider> {
-    // PRESUMED endpoint: POST /v1/providers → WireProvider
+    // POST /v1/providers → WireProvider
     const body: Record<string, unknown> = { type: input.type };
     if (input.apiKey !== undefined) body['api_key'] = input.apiKey;
     if (input.baseUrl !== undefined) body['base_url'] = input.baseUrl;
     if (input.defaultModel !== undefined) body['default_model'] = input.defaultModel;
     const data = await this.http.post<WireProvider>('/providers', body);
     return toAppProvider(data);
+  }
+
+  /** PUT /providers/{id} — replace an existing provider (#2110). */
+  async replaceProvider(id: string, input: {
+    newId?: string;
+    type: string;
+    apiKey?: string;
+    baseUrl?: string;
+    defaultModel?: string;
+  }): Promise<AppProvider> {
+    const body: Record<string, unknown> = { type: input.type };
+    if (input.newId !== undefined) body['new_id'] = input.newId;
+    if (input.apiKey !== undefined) body['api_key'] = input.apiKey;
+    if (input.baseUrl !== undefined) body['base_url'] = input.baseUrl;
+    if (input.defaultModel !== undefined) body['default_model'] = input.defaultModel;
+    const data = await this.http.put<{ provider: WireProvider }>(
+      `/providers/${encodeURIComponent(id)}`,
+      body,
+    );
+    return toAppProvider(data.provider);
+  }
+
+  /** POST /providers:import_catalog — import a models.dev entry as provider (#2110). */
+  async importProviderFromCatalog(input: {
+    catalogId: string;
+    id?: string;
+    apiKey?: string;
+    baseUrl?: string;
+  }): Promise<AppProvider> {
+    const body: Record<string, unknown> = { catalog_id: input.catalogId };
+    if (input.id !== undefined) body['id'] = input.id;
+    if (input.apiKey !== undefined) body['api_key'] = input.apiKey;
+    if (input.baseUrl !== undefined) body['base_url'] = input.baseUrl;
+    const data = await this.http.post<WireProvider>('/providers:import_catalog', body);
+    return toAppProvider(data);
+  }
+
+  /** POST /models/{id}:set_default — dedicated default model endpoint (#2110). */
+  async setDefaultModel(modelId: string): Promise<void> {
+    await this.http.post(`/models/${encodeURIComponent(modelId)}:set_default`, {});
   }
 
   async deleteProvider(id: string): Promise<{ deleted: true }> {
@@ -1149,10 +1226,13 @@ export class DaemonKimiWebApi implements KimiWebApi {
       services: 'services',
       mergeAllAvailableSkills: 'merge_all_available_skills',
       extraSkillDirs: 'extra_skill_dirs',
+      extraAgentDirs: 'extra_agent_dirs',
       loopControl: 'loop_control',
       background: 'background',
       experimental: 'experimental',
       telemetry: 'telemetry',
+      secondaryModel: 'secondary_model',
+      mcp: 'mcp',
       raw: 'raw',
     };
     for (const [key, value] of Object.entries(patch)) {

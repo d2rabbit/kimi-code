@@ -515,6 +515,26 @@ export interface AppSessionSnapshot {
   pendingQuestions: AppQuestionRequest[];
 }
 
+/** Plan review info from GET /sessions/{id}/transcript/plan (#2094). */
+export interface AppTranscriptPlanReview {
+  state: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  selectedOption?: string;
+  feedback?: string;
+}
+export interface AppTranscriptPlanEntry {
+  toolCallId: string;
+  turnId: number;
+  source: 'interaction' | 'display' | 'output';
+  plan: string;
+  path?: string;
+  options?: Array<{ label: string; description?: string }>;
+  review?: AppTranscriptPlanReview;
+}
+export interface AppTranscriptPlanResponse {
+  agentId: string;
+  plans: AppTranscriptPlanEntry[];
+}
+
 export interface KimiEventHandlers {
   onEvent(event: AppEvent, meta: { sessionId: string; seq: number }): void;
   onResync(sessionId: string, currentSeq: number, epoch?: string): void;
@@ -643,11 +663,31 @@ export interface AppConfig {
   services?: unknown;
   mergeAllAvailableSkills?: boolean;
   extraSkillDirs?: string[];
+  extraAgentDirs?: string[];
   loopControl?: unknown;
   background?: unknown;
   experimental?: Record<string, boolean>;
   telemetry?: boolean;
+  /** Secondary model for subagents (#2064). */
+  secondaryModel?: AppSecondaryModel;
+  /** Global MCP server timeout config (#2065). */
+  mcp?: { startupTimeoutMs?: number; toolTimeoutMs?: number };
   raw?: Record<string, unknown>;
+}
+
+/** Secondary model recipe — subagents can run on this instead of the primary model. */
+export interface AppSecondaryModel {
+  model?: string;
+  maxContextSize?: number;
+  maxInputSize?: number;
+  maxOutputSize?: number;
+  capabilities?: string[];
+  displayName?: string;
+  reasoningKey?: string;
+  adaptiveThinking?: boolean;
+  supportEfforts?: string[];
+  defaultEffort?: string;
+  offEffort?: string;
 }
 
 /** A session-scoped skill the user can invoke from the slash menu. */
@@ -683,6 +723,8 @@ export interface KimiWebApi {
   listMessages(sessionId: string, input?: PageRequest & { role?: AppMessageRole }): Promise<Page<AppMessage>>;
   /** v2 initial sync: atomic session state + `asOfSeq` watermark + epoch. */
   getSessionSnapshot(sessionId: string): Promise<AppSessionSnapshot>;
+  /** GET /sessions/{id}/transcript/plan — plan review info (#2094). */
+  getTranscriptPlan(sessionId: string, agentId: string, toolCallId?: string): Promise<AppTranscriptPlanResponse>;
   submitPrompt(sessionId: string, input: PromptSubmission): Promise<PromptSubmitResult>;
   /** Steer daemon-queued prompts into the active turn (TUI ctrl+s). */
   steerPrompts(sessionId: string, promptIds: string[]): Promise<{ steered: boolean; promptIds: string[] }>;
@@ -734,10 +776,16 @@ export interface KimiWebApi {
   browseFs(path?: string): Promise<FsBrowseResult>;
   getFsHome(): Promise<{ home: string; recentRoots: string[] }>;
 
-  // PRESUMED — not in current daemon docs; isolated in adapter, swap when backend defines them.
+  // Models + Providers — upstream REST endpoints (#2110 provider write API)
   listModels(): Promise<AppModel[]>;
   listProviders(): Promise<AppProvider[]>;
   addProvider(input: { type: string; apiKey?: string; baseUrl?: string; defaultModel?: string }): Promise<AppProvider>;
+  /** PUT /providers/{id} — replace provider (#2110). */
+  replaceProvider(id: string, input: { newId?: string; type: string; apiKey?: string; baseUrl?: string; defaultModel?: string }): Promise<AppProvider>;
+  /** POST /providers:import_catalog — import models.dev entry (#2110). */
+  importProviderFromCatalog(input: { catalogId: string; id?: string; apiKey?: string; baseUrl?: string }): Promise<AppProvider>;
+  /** POST /models/{id}:set_default — dedicated endpoint (#2110). */
+  setDefaultModel(modelId: string): Promise<void>;
   deleteProvider(id: string): Promise<{ deleted: true }>;
   refreshProvider(id: string): Promise<ProviderRefreshResult>;
   refreshAllProviders(): Promise<ProviderRefreshResult>;

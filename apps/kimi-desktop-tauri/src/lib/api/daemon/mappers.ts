@@ -809,10 +809,32 @@ export function toAppConfig(wire: WireConfig): AppConfig {
     services: wire.services,
     mergeAllAvailableSkills: wire.merge_all_available_skills,
     extraSkillDirs: wire.extra_skill_dirs,
+    extraAgentDirs: wire.extra_agent_dirs,
     loopControl: wire.loop_control,
     background: wire.background,
     experimental: wire.experimental,
     telemetry: wire.telemetry,
+    secondaryModel: wire.secondary_model
+      ? {
+          model: wire.secondary_model.model,
+          maxContextSize: wire.secondary_model.max_context_size,
+          maxInputSize: wire.secondary_model.max_input_size,
+          maxOutputSize: wire.secondary_model.max_output_size,
+          capabilities: wire.secondary_model.capabilities,
+          displayName: wire.secondary_model.display_name,
+          reasoningKey: wire.secondary_model.reasoning_key,
+          adaptiveThinking: wire.secondary_model.adaptive_thinking,
+          supportEfforts: wire.secondary_model.support_efforts,
+          defaultEffort: wire.secondary_model.default_effort,
+          offEffort: wire.secondary_model.off_effort,
+        }
+      : undefined,
+    mcp: wire.mcp
+      ? {
+          startupTimeoutMs: wire.mcp.startup_timeout_ms,
+          toolTimeoutMs: wire.mcp.tool_timeout_ms,
+        }
+      : undefined,
     raw: wire.raw,
   };
 }

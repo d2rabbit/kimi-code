@@ -1034,11 +1034,17 @@ async function saveModelAlias(
   await refreshModels();
 }
 
-/** Set the default model via POST /models/:id:set_default (the real endpoint). */
+/** Set the default model via POST /models/:id:set_default (the real endpoint, #2110). */
 async function setDefaultModel(modelId: string): Promise<void> {
-  // The REST endpoint POST /models/<id>:set_default is the cleanest path.
-  // But the API client doesn't expose it directly — fall back to POST /config.
-  await updateConfig({ defaultModel: modelId });
+  const a = getApi();
+  try {
+    await a.setDefaultModel(modelId);
+  } catch {
+    // Fallback to config write if the dedicated endpoint isn't available.
+    await updateConfig({ defaultModel: modelId });
+  }
+  // Refresh config so the UI reflects the new default.
+  ui.config = await a.getConfig();
 }
 
 /** Refresh the provider catalog from the daemon. */

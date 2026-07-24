@@ -394,11 +394,31 @@ export interface WireConfig {
   services?: unknown;
   merge_all_available_skills?: boolean;
   extra_skill_dirs?: string[];
+  extra_agent_dirs?: string[];
   loop_control?: unknown;
   background?: unknown;
   experimental?: Record<string, boolean>;
   telemetry?: boolean;
+  /** Secondary model for subagents (#2064). */
+  secondary_model?: WireSecondaryModel;
+  /** Global MCP server timeout config (#2065). */
+  mcp?: { startup_timeout_ms?: number; tool_timeout_ms?: number };
   raw?: Record<string, unknown>;
+}
+
+/** A secondary model recipe — subagents can run on this instead of the primary model. */
+export interface WireSecondaryModel {
+  model?: string;
+  max_context_size?: number;
+  max_input_size?: number;
+  max_output_size?: number;
+  capabilities?: string[];
+  display_name?: string;
+  reasoning_key?: string;
+  adaptive_thinking?: boolean;
+  support_efforts?: string[];
+  default_effort?: string;
+  off_effort?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -565,6 +585,26 @@ export interface WireSessionSnapshot {
 
 export interface WireSessionAbortResult {
   aborted: boolean;
+}
+
+/** `GET /sessions/{id}/transcript/plan` — plan review info (#2094). */
+export interface WireTranscriptPlanReview {
+  state: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  selected_option?: string;
+  feedback?: string;
+}
+export interface WireTranscriptPlanEntry {
+  tool_call_id: string;
+  turn_id: number;
+  source: 'interaction' | 'display' | 'output';
+  plan: string;
+  path?: string;
+  options?: Array<{ label: string; description?: string }>;
+  review?: WireTranscriptPlanReview;
+}
+export interface WireTranscriptPlanResponse {
+  agent_id: string;
+  plans: WireTranscriptPlanEntry[];
 }
 
 export interface WireErrorFrame {
