@@ -876,4 +876,7 @@ export interface KimiWebApi {
   guiStoreGetItem(key: string): Promise<string | null>;
   guiStoreSetItem(key: string, value: string): Promise<void>;
   guiStoreRemoveItem(key: string): Promise<void>;
+
+  // Session export — POST /sessions/{id}/export (diagnostic archive download)
+  exportSession(sessionId: string, webLog?: string): Promise<Blob>;
 }

@@ -102,6 +102,58 @@ export class DaemonHttpClient {
    *  must carry the Bearer token — e.g. <video>/<img> src, which the browser
    *  fetches natively and cannot authorize on its own. Returns the body as a
    *  Blob on 2xx; otherwise parses the daemon envelope and throws. */
+  /** POST that returns a raw binary Blob (not JSON envelope). Used for session export. */
+  async postBlob(path: string, body?: unknown): Promise<Blob> {
+    const url = buildRestUrl(this.origin, path);
+    const requestId = createRequestId();
+    const headers: Record<string, string> = {
+      'X-Request-Id': requestId,
+      'Content-Type': 'application/json',
+    };
+    this.addClientHeaders(headers);
+    const startedAt = Date.now();
+    traceRestRequest({ method: 'POST', path, url, requestId });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: timeoutSignal(),
+      });
+    } catch (err) {
+      traceRestFailure({
+        method: 'POST',
+        path,
+        requestId,
+        phase: 'fetch',
+        durationMs: Date.now() - startedAt,
+        error: err,
+      });
+      throw new DaemonNetworkError({
+        message: `Network error calling POST ${path}`,
+        cause: err,
+        method: 'POST',
+        path,
+        url,
+        requestId,
+        phase: 'fetch',
+        timeoutMs: REQUEST_TIMEOUT_MS,
+      });
+    }
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new DaemonApiError({
+        code: response.status,
+        msg: text || response.statusText,
+        requestId,
+        timestamp: Date.now(),
+        durationMs: Date.now() - startedAt,
+      });
+    }
+    return response.blob();
+  }
+
   async getBlob(path: string): Promise<Blob> {
     const url = buildRestUrl(this.origin, path);
     const requestId = createRequestId();

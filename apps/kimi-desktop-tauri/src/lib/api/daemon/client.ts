@@ -423,6 +423,16 @@ export class DaemonKimiWebApi implements KimiWebApi {
     return data.warnings ?? [];
   }
 
+  /** POST /sessions/{id}/export — download a diagnostic archive (tar.gz). */
+  async exportSession(sessionId: string, webLog?: string): Promise<Blob> {
+    const body: Record<string, unknown> = {};
+    if (webLog !== undefined) body['web_log'] = webLog;
+    return this.http.postBlob(
+      `/sessions/${encodeURIComponent(sessionId)}/export`,
+      Object.keys(body).length > 0 ? body : undefined,
+    );
+  }
+
   async archiveSession(sessionId: string): Promise<{ archived: true }> {
     const data = await this.http.post<WireArchiveResult>(
       `/sessions/${encodeURIComponent(sessionId)}:archive`,

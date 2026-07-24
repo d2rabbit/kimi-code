@@ -1327,4 +1327,6 @@ export const client = {
   /** Replace an existing provider (PUT /providers/{id}). */
   replaceProvider: (id: string, input: { newId?: string; type: string; apiKey?: string; baseUrl?: string; defaultModel?: string }) =>
     getApi().replaceProvider(id, input),
+  /** Export a session diagnostic archive (POST /sessions/{id}/export → tar.gz Blob). */
+  exportSession: (sessionId: string, webLog?: string) => getApi().exportSession(sessionId, webLog),
 };
