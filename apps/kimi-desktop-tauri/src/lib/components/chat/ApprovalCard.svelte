@@ -4,6 +4,8 @@
 <script lang="ts">
   import type { AppApprovalRequest } from '../../api/types';
   import Icon from '../ui/Icon.svelte';
+  import IconButton from '../ui/IconButton.svelte';
+  import Button from '../ui/Button.svelte';
   import * as client from '../../stores/client.svelte';
 
   let {
@@ -27,14 +29,13 @@
   }
 </script>
 
-<div class="approval-card glass-panel" class:minimized>
+<div class="approval-card" class:minimized>
   <div class="approval-header" onclick={() => minimized = !minimized} role="button" tabindex="0"
     onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); minimized = !minimized; } }}>
     <span class="approval-icon"><Icon name="alert-triangle" size="sm" /></span>
     <span class="approval-kind">{request.toolName} — {request.action}</span>
-    <button class="minimize-btn" onclick={(e) => { e.stopPropagation(); minimized = !minimized; }} type="button" aria-label={minimized ? '展开' : '折叠'}>
-      <Icon name={minimized ? 'chevron-down' : 'chevron-right'} size="sm" />
-    </button>
+    <IconButton name={minimized ? 'chevron-down' : 'chevron-right'} label={minimized ? '展开' : '折叠'} size="sm"
+      onclick={(e) => { e.stopPropagation(); minimized = !minimized; }} />
   </div>
 
   {#if !minimized}
@@ -45,31 +46,32 @@
     </div>
 
     <div class="approval-actions">
-      <button class="action-btn approve" onclick={() => decide('approved')} disabled={busy} type="button">
+      <Button variant="primary" size="sm" onclick={() => decide('approved')} disabled={busy}>
         同意 <kbd>1</kbd>
-      </button>
-      <button class="action-btn approve-session" onclick={() => decide('approved')} disabled={busy} type="button">
+      </Button>
+      <Button variant="default" size="sm" onclick={() => decide('approved')} disabled={busy}>
         本会话同意 <kbd>2</kbd>
-      </button>
-      <button class="action-btn reject" onclick={() => decide('rejected')} disabled={busy} type="button">
+      </Button>
+      <Button variant="danger" size="sm" onclick={() => decide('rejected')} disabled={busy}>
         拒绝 <kbd>3</kbd>
-      </button>
+      </Button>
     </div>
   {/if}
 </div>
 
 <style>
   .approval-card {
-    border: 1px solid var(--warn);
-    border-radius: var(--r-lg);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--warn);
+    border-radius: var(--g-radius-card, var(--r-lg));
     overflow: hidden;
-    background: var(--l2);
-    box-shadow: var(--toplight);
+    background: var(--mat-surface-2, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    box-shadow: var(--elev-card, var(--toplight));
     margin-bottom: 8px;
   }
   .approval-card.minimized {
-    border-color: var(--bd);
-    background: var(--l2);
+    border-color: var(--g-border-color, var(--bd));
   }
 
   .approval-header {
@@ -79,6 +81,7 @@
     padding: 9px 12px;
     cursor: pointer;
     user-select: none;
+    /* 语义 warning 底色，无契约等价物，保留 */
     background: var(--warn-soft);
   }
   .approval-card.minimized .approval-header { background: transparent; }
@@ -87,7 +90,7 @@
     align-items: center;
     justify-content: center;
     width: 22px; height: 22px;
-    border-radius: var(--r-sm);
+    border-radius: var(--g-radius-control, var(--r-sm));
     color: var(--warn);
     flex-shrink: 0;
   }
@@ -97,16 +100,6 @@
     font-weight: 600;
     color: var(--warn);
   }
-  .minimize-btn {
-    width: 24px; height: 24px;
-    border: none; border-radius: var(--r-sm);
-    background: transparent;
-    color: var(--warn);
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background var(--duration-fast) var(--ease);
-  }
-  .minimize-btn:hover { background: var(--color-hover); }
 
   .approval-body {
     padding: 10px 12px 4px;
@@ -117,10 +110,10 @@
   }
   .approval-detail code {
     font-family: var(--font-mono);
-    background: var(--l3);
-    border: 1px solid var(--bd);
+    background: var(--mat-surface-3, var(--l3));
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
     padding: 1px 5px;
-    border-radius: 4px;
+    border-radius: var(--g-radius-chip, 4px);
     font-size: 11px;
     color: var(--ac);
   }
@@ -130,48 +123,16 @@
     gap: 8px;
     padding: 8px 12px 12px;
   }
-  .action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 24px;
-    padding: 0 10px;
-    border-radius: var(--r-sm);
-    border: 1px solid var(--bd2);
-    background: transparent;
-    color: var(--tx2);
-    font-size: 11px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
-  }
-  .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .action-btn kbd {
+  .approval-actions kbd {
     font-size: 8px;
     padding: 0 4px;
     border-radius: 4px;
     border: 1px solid var(--bd2);
     font-family: var(--font-mono);
-    color: var(--tx3);
     opacity: 0.8;
   }
-  .action-btn.approve {
-    background: var(--ac);
-    border-color: transparent;
-    color: #fff;
-  }
-  .action-btn.approve:hover:not(:disabled) { background: var(--ac-h); }
-  .action-btn.approve-session:hover:not(:disabled) {
-    background: var(--ac-soft);
-    color: var(--ac);
-    border-color: var(--ac-bd);
-  }
-  .action-btn.reject {
-    border-color: var(--err);
-    color: var(--err);
-  }
-  .action-btn.reject:hover:not(:disabled) {
-    background: var(--err-soft);
+  .approval-actions :global(.btn-primary kbd),
+  .approval-actions :global(.btn-danger kbd) {
+    border-color: rgba(255, 255, 255, 0.35);
   }
 </style>

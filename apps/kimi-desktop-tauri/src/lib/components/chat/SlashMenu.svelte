@@ -120,10 +120,12 @@
     right: 0;
     max-height: 320px;
     overflow-y: auto;
-    background: var(--l3);
-    border: 1px solid rgba(84, 84, 88, 0.65);
-    border-radius: 12px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    background: var(--mat-surface-3, var(--l3));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, rgba(84, 84, 88, 0.65));
+    border-radius: var(--g-radius-overlay, 12px);
+    box-shadow: var(--elev-overlay, 0 12px 40px rgba(0, 0, 0, 0.4));
     z-index: 200;
     padding: 4px;
   }
@@ -137,15 +139,15 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: rgba(235, 235, 245, 0.3);
+    color: var(--color-text-faint, rgba(235, 235, 245, 0.3));
   }
   .slash-group-header :global(svg) {
-    color: rgba(235, 235, 245, 0.3);
+    color: var(--color-text-faint, rgba(235, 235, 245, 0.3));
   }
   .slash-group-count {
     margin-left: auto;
-    font-family: 'JetBrains Mono', monospace;
-    color: rgba(235, 235, 245, 0.2);
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    color: var(--color-text-faint, rgba(235, 235, 245, 0.2));
   }
 
   .slash-item {
@@ -155,19 +157,19 @@
     width: 100%;
     padding: 8px 12px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--g-radius-control, 8px);
     background: transparent;
-    color: rgba(255, 255, 255, 0.92);
+    color: var(--color-text, rgba(255, 255, 255, 0.92));
     font-size: 13px;
     cursor: pointer;
     text-align: left;
     transition: background 120ms;
   }
   .slash-item:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--color-hover, rgba(255, 255, 255, 0.04));
   }
   .slash-item.active {
-    background: rgba(45, 212, 191, 0.1);
+    background: var(--color-accent-soft, rgba(45, 212, 191, 0.1));
   }
 
   .slash-item-icon {
@@ -176,24 +178,24 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(235, 235, 245, 0.6);
+    border-radius: var(--g-radius-control, 8px);
+    background: var(--color-hover, rgba(255, 255, 255, 0.04));
+    color: var(--color-text-muted, rgba(235, 235, 245, 0.6));
     flex-shrink: 0;
   }
   .slash-item.active .slash-item-icon {
-    background: rgba(45, 212, 191, 0.12);
-    color: #2dd4bf;
+    background: var(--color-accent-soft, rgba(45, 212, 191, 0.12));
+    color: var(--color-accent, #2dd4bf);
   }
 
   .slash-name {
-    color: #2dd4bf;
+    color: var(--color-accent, #2dd4bf);
     font-weight: 500;
     white-space: nowrap;
     min-width: 80px;
   }
   .slash-desc {
-    color: rgba(235, 235, 245, 0.6);
+    color: var(--color-text-muted, rgba(235, 235, 245, 0.6));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -203,7 +205,7 @@
   .slash-empty {
     padding: 16px;
     text-align: center;
-    color: rgba(235, 235, 245, 0.3);
+    color: var(--color-text-faint, rgba(235, 235, 245, 0.3));
     font-size: 13px;
   }
 </style>

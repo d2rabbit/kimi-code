@@ -3,6 +3,12 @@
   import * as client from '../../stores/client.svelte';
   import Icon from '../ui/Icon.svelte';
   import Empty from '../ui/Empty.svelte';
+  import Button from '../ui/Button.svelte';
+  import ListRow from '../ui/ListRow.svelte';
+  import Menu from '../ui/Menu.svelte';
+  import MenuItem from '../ui/MenuItem.svelte';
+  import Divider from '../ui/Divider.svelte';
+  import Chip from '../ui/Chip.svelte';
   import { tooltip } from '../../actions/tooltip';
   import FolderPicker from '../shell/FolderPicker.svelte';
   import { shortcut } from '../../lib/desktopFlag';
@@ -74,7 +80,9 @@
 
 <aside class="sidebar">
   <!-- New task -->
-  <button class="newtask" onclick={newChat}>＋ 新建任务 <span>{shortcut('N')}</span></button>
+  <div class="newtask-wrap">
+    <Button variant="cta" class="newtask-btn" onclick={newChat}>＋ 新建任务 <span class="newtask-kbd">{shortcut('N')}</span></Button>
+  </div>
 
   <!-- Module nav -->
   <nav class="mods">
@@ -98,11 +106,11 @@
           <Icon name={collapsed.has(ws.id) ? 'folder-closed' : 'folder'} size="sm" class="ws-icon" />
           <span class="arrow">▾</span>
           <span class="ws-name" title={ws.name}>{ws.name}</span>
-          <span class="cnt">{list.length}</span>
+          <Chip size="sm" class="cnt">{list.length}</Chip>
         </div>
         {#if !collapsed.has(ws.id)}
           {#each list as s (s.id)}
-            <div class="s-row" class:active={s.id === client.activeSessionId() && activeModule === 'chat'}>
+            <ListRow class="s-row" active={s.id === client.activeSessionId() && activeModule === 'chat'}>
               {#if renamingId === s.id}
                 <input class="rename" type="text" bind:value={renameValue}
                   onkeydown={(e) => { if (e.key==='Enter') confirmRename(s.id); if (e.key==='Escape') renamingId=null; }}
@@ -117,24 +125,28 @@
                   <span class="s-title">{s.title || '新对话'}</span>
                 </button>
               {/if}
-              {#if renamingId !== s.id}
-                <button class="s-more" aria-label="更多" onclick={(e) => openMenu(e, s)}><span>⋯</span></button>
-              {/if}
-            </div>
+              {#snippet trailing()}
+                {#if renamingId !== s.id}
+                  <button class="s-more" aria-label="更多" onclick={(e) => openMenu(e, s)}><span>⋯</span></button>
+                {/if}
+              {/snippet}
+            </ListRow>
           {/each}
         {/if}
       {/each}
     {:else if client.sessions().length > 0}
       {#each client.sessions() as s (s.id)}
-        <div class="s-row" class:active={s.id === client.activeSessionId() && activeModule === 'chat'}>
+        <ListRow class="s-row" active={s.id === client.activeSessionId() && activeModule === 'chat'}>
           <button class="s-btn" class:active={s.id === client.activeSessionId() && activeModule === 'chat'} onclick={(e) => select(e, s.id)} oncontextmenu={(e) => openMenu(e, s)}>
             {#if s.status === 'running' || s.status === 'awaitingApproval' || s.status === 'awaitingQuestion'}
               <span class="s-status-dot" data-status={s.status}></span>
             {/if}
             <span class="s-title">{s.title || '新对话'}</span>
           </button>
-          <button class="s-more" aria-label="更多" onclick={(e) => openMenu(e, s)}><span>⋯</span></button>
-        </div>
+          {#snippet trailing()}
+            <button class="s-more" aria-label="更多" onclick={(e) => openMenu(e, s)}><span>⋯</span></button>
+          {/snippet}
+        </ListRow>
       {/each}
     {/if}
     {#if client.sessions().length === 0 && client.workspaces().length === 0}
@@ -159,27 +171,29 @@
 {/if}
 
 {#if menuSession}
-  <div class="glass-menu animate-spring-in" style="position: fixed; left: {Math.min(menuSession.x, innerWidth - 170)}px; top: {Math.min(menuSession.y, innerHeight - 160)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
-    <button class="glass-menu-item" onclick={() => startRename(menuSession!.id, menuSession!.title)}><Icon name="pencil" size="sm" /> 重命名</button>
-    <button class="glass-menu-item" onclick={() => fork(menuSession!.id)}><Icon name="git-branch" size="sm" /> Fork</button>
-    <div class="glass-menu-divider"></div>
-    <button class="glass-menu-item danger" onclick={() => archive(menuSession!.id)}><Icon name="delete" size="sm" /> 归档</button>
+  <div class="ctx-menu" style="position: fixed; left: {Math.min(menuSession.x, innerWidth - 170)}px; top: {Math.min(menuSession.y, innerHeight - 160)}px; z-index: 300;" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="presentation">
+    <Menu>
+      <MenuItem icon="pencil" onclick={() => startRename(menuSession!.id, menuSession!.title)}>重命名</MenuItem>
+      <MenuItem icon="git-branch" onclick={() => fork(menuSession!.id)}>Fork</MenuItem>
+      <Divider />
+      <MenuItem icon="delete" danger onclick={() => archive(menuSession!.id)}>归档</MenuItem>
+    </Menu>
   </div>
 {/if}
 
 <style>
-  .sidebar { width: var(--sidebar-width, 216px); flex: none; height: 100%; display: flex; flex-direction: column; background: var(--l1); border-right: 1px solid var(--bd); overflow: hidden; }
-
-  /* ---- New task ---- */
-  .newtask {
-    margin: 12px 12px 8px; display: flex; align-items: center; justify-content: center; gap: 6px;
-    height: 32px; border: none; border-radius: var(--r-md); font-size: 12.5px; font-weight: 600;
-    background: var(--ac); color: #fff; cursor: pointer;
-    box-shadow: 0 1px 6px rgba(79, 168, 255, 0.22);
-    transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
+  .sidebar {
+    width: var(--sidebar-width, 216px); flex: none; height: 100%; display: flex; flex-direction: column; overflow: hidden;
+    background: var(--mat-sidebar-bg, var(--l1));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border-right: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
   }
-  .newtask:hover { background: var(--ac-h); transform: translateY(-1px); }
-  .newtask span { opacity: 0.65; font-weight: 400; font-size: 11px; }
+
+  /* ---- New task（CTA 原语，表面/动画由主题契约驱动） ---- */
+  .newtask-wrap { padding: 12px 12px 8px; }
+  .newtask-wrap :global(.newtask-btn) { width: 100%; height: 32px; }
+  .newtask-kbd { opacity: 0.65; font-weight: 400; font-size: 11px; }
 
   /* ---- Module nav ---- */
   .mods { display: flex; flex-direction: column; padding: 2px 8px 8px; border-bottom: 1px solid var(--bd); }
@@ -218,22 +232,22 @@
   .ws-g .arrow { font-size: 9px; color: var(--tx3); width: 10px; transition: transform var(--duration-fast) var(--ease); }
   .ws-g.closed .arrow { transform: rotate(-90deg); }
   .ws-g .ws-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-  .ws-g .cnt {
-    margin-left: auto; font-size: 10px; color: var(--tx3); font-weight: 500;
-    background: var(--l3); padding: 1px 7px; border-radius: 999px;
-    min-width: 18px; text-align: center;
-  }
+  .ws-g :global(.cnt) { margin-left: auto; }
 
   /* Session row — indented under the workspace header, smaller font,
-     lighter weight: clear subordinate in the hierarchy. */
-  .s-row {
-    position: relative; display: flex; align-items: center;
-    border-radius: var(--r-sm); margin: 1px 6px 1px 20px;  /* ← left indent */
+     lighter weight: clear subordinate in the hierarchy. ListRow 原语承载，
+     保留 s-row 类（global CSS 钩子仍指向它，待后续清理任务移除）。 */
+  .sess-list :global(.s-row) {
+    margin: 1px 6px 1px 20px;  /* ← left indent */
+    width: auto;
+    padding: 0;
+    gap: 0;
   }
-  .s-row:hover { background: var(--ac-soft); }
-  .s-row.active { background: var(--ac-soft); }
+  .sess-list :global(.s-row:hover) { background: var(--ac-soft); }
+  .sess-list :global(.s-row.active) { background: var(--ac-soft); }
   .s-btn {
     flex: 1; display: flex; align-items: center; gap: 7px; text-align: left;
+    width: 100%;
     height: 28px; padding: 0 22px 0 14px;
     border: none; border-radius: var(--r-sm);
     background: transparent; color: var(--tx2);
@@ -253,10 +267,10 @@
     .s-status-dot[data-status="running"] { animation: none; }
   }
   .s-more { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 4px; background: transparent; color: var(--tx3); cursor: pointer; opacity: 0; transition: opacity var(--duration-fast); }
-  .s-row:hover .s-more { opacity: 1; }
+  :global(.s-row:hover) .s-more { opacity: 1; }
   .s-more:hover { background: var(--color-hover); color: var(--tx2); }
   .s-more span { font-size: 12px; }
-  .rename { flex: 1; padding: 3px 6px; border: 1px solid var(--bd2); border-radius: var(--r-sm); background: var(--l2); color: var(--tx); font-size: 12px; outline: none; margin: 0 4px; }
+  .rename { display: block; width: calc(100% - 8px); flex: 1; padding: 3px 6px; border: 1px solid var(--bd2); border-radius: var(--r-sm); background: var(--l2); color: var(--tx); font-size: 12px; outline: none; margin: 0 4px; }
   .rename:focus { border-color: var(--ac); }
 
 

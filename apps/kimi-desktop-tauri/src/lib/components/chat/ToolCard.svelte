@@ -6,6 +6,7 @@
 <script lang="ts">
   import type { ToolCall } from '../../types';
   import StatusDot from '../ui/StatusDot.svelte';
+  import Chip from '../ui/Chip.svelte';
   import Icon from '../ui/Icon.svelte';
   import { toolLabel, toolSummary } from '../../lib/toolMeta';
   import { toast } from '../../stores/toast.svelte';
@@ -157,7 +158,7 @@
     <StatusDot status={tool.status} />
     <Icon name={toolIcon(tool.name) as never} size="sm" />
     <span class="tool-name">{toolLabel(tool.name)}</span>
-    <span class="status-badge" data-status={tool.status}>{statusLabel}</span>
+    <Chip tone={tool.status === 'running' ? 'accent' : tool.status === 'ok' ? 'success' : tool.status === 'error' ? 'danger' : 'neutral'}>{statusLabel}</Chip>
     {#if tool.arg}
       {#if filePath}
         <span
@@ -257,10 +258,12 @@
   }
   .tool-card {
     margin: 6px 0;
-    border-radius: var(--r-lg);
-    border: 1px solid var(--bd);
-    background: var(--l2);
-    box-shadow: var(--toplight);
+    border-radius: var(--g-radius-card, var(--r-lg));
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-surface-2, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    box-shadow: var(--elev-card, var(--toplight));
     overflow: hidden;
     transition: border-color var(--duration-fast) var(--ease);
   }
@@ -292,25 +295,7 @@
     flex: none;
   }
 
-  /* Status badge — small pill next to the tool name, color-coded. */
-  .status-badge {
-    flex: none;
-    font-size: 9.5px;
-    font-weight: 600;
-    padding: 1px 7px;
-    border-radius: 999px;
-    line-height: 1.5;
-    letter-spacing: 0.01em;
-  }
-  .status-badge[data-status="running"] {
-    background: var(--ac-soft); color: var(--ac);
-  }
-  .status-badge[data-status="ok"] {
-    background: var(--ok-soft); color: var(--ok);
-  }
-  .status-badge[data-status="error"] {
-    background: var(--err-soft); color: var(--err);
-  }
+  /* Status badge 已由 <Chip> 原语渲染（tone 映射 running/ok/error）。 */
 
   /* Output toolbar — copy buttons, floats above the output panel. */
   .tool-output-toolbar {
@@ -318,16 +303,17 @@
     justify-content: flex-end;
     gap: 6px;
     padding: 5px 10px;
-    background: var(--l2);
-    border-top: 1px solid var(--bd);
-    border-bottom: 1px solid var(--bd);
+    background: var(--mat-surface-2, var(--l2));
+    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
   }
   .tool-action-btn {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 3px 9px;
-    border: 1px solid var(--bd2);
-    border-radius: var(--r-sm);
-    background: var(--l1);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-control, var(--r-sm));
+    background: var(--mat-control-bg, var(--l1));
+    box-shadow: var(--elev-control, none);
     color: var(--tx2);
     font-size: 10.5px;
     font-family: var(--font-mono, monospace);
@@ -345,15 +331,15 @@
     font-size: 10.5px;
     color: var(--tx3);
     font-family: var(--font-mono, monospace);
-    border-top: 1px solid var(--bd);
-    background: var(--l2);
+    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-surface-2, var(--l2));
     user-select: none;
   }
   .json-output > summary:hover { color: var(--tx); }
   .json-view {
     margin: 0;
     max-height: 280px;
-    background: var(--l1);
+    background: var(--mat-surface-1, var(--l1));
     white-space: pre-wrap;
     word-break: break-all;
     color: var(--tx);
@@ -394,7 +380,7 @@
     flex: none;
     font-size: 10px;
     padding: 1px 5px;
-    border-radius: var(--r-sm);
+    border-radius: var(--g-radius-chip, var(--r-sm));
     font-weight: var(--weight-medium);
     font-family: var(--font-mono);
   }
@@ -402,23 +388,23 @@
   .diff-chip.del { background: var(--err-soft); color: var(--err); }
 
   .tool-output {
-    border-top: 1px solid var(--bd);
+    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
     padding: 9px 12px;
     max-height: 300px;
     overflow-y: auto;
-    background: var(--l1);
+    background: var(--mat-surface-1, var(--l1));
     font-family: var(--font-mono);
     font-size: 11px;
     line-height: 1.65;
   }
 
   /* Bash 终端块 */
-  .term { border-top: 1px solid var(--bd); }
+  .term { border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); }
   .term-cmd {
     display: flex; align-items: center; gap: 7px;
     padding: 7px 12px;
-    background: var(--l1);
-    border-bottom: 1px solid var(--bd);
+    background: var(--mat-surface-1, var(--l1));
+    border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
     font-family: var(--font-mono); font-size: 11px; color: var(--tx);
   }
   .term-prompt { color: var(--ac); font-weight: 700; }

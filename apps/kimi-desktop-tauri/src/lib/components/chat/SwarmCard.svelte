@@ -87,7 +87,7 @@
   .swarm-card {
     border-top: 1px solid var(--bd);
     padding: 9px 12px;
-    background: var(--l1);
+    background: var(--mat-surface-1, var(--l1));
     font-size: 11px;
     display: flex;
     flex-direction: column;
@@ -109,7 +109,7 @@
     align-items: center;
     gap: 8px;
     padding: 4px 4px;
-    border-radius: var(--r-sm);
+    border-radius: var(--g-radius-control, 4px);
   }
   .swarm-row:hover { background: var(--color-hover); }
 

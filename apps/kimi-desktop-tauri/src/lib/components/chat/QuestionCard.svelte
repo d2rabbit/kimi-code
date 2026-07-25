@@ -3,6 +3,7 @@
 <script lang="ts">
   import Button from '../ui/Button.svelte';
   import IconButton from '../ui/IconButton.svelte';
+  import Chip from '../ui/Chip.svelte';
   import * as client from '../../stores/client.svelte';
 
   type QuestionOption = { id: string; label: string; description?: string; recommended?: boolean };
@@ -144,7 +145,7 @@
             </span>
             <span class="q-option-text">{opt.label}</span>
             {#if opt.recommended}
-              <span class="q-recommend">推荐</span>
+              <Chip tone="success">推荐</Chip>
             {/if}
           </button>
         {/each}
@@ -172,16 +173,17 @@
 
 <style>
   .question-card {
-    border: 1px solid var(--ac-bd);
-    border-radius: var(--r-lg);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--ac-bd);
+    border-radius: var(--g-radius-card, var(--r-lg));
     overflow: hidden;
-    background: var(--l2);
-    box-shadow: var(--toplight);
+    background: var(--mat-surface-2, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    box-shadow: var(--elev-card, var(--toplight));
     margin-bottom: 8px;
   }
   .question-card.minimized {
-    border-color: var(--bd);
-    background: var(--l2);
+    border-color: var(--g-border-color, var(--bd));
   }
 
   .q-header {
@@ -240,8 +242,8 @@
     align-items: center;
     gap: 9px;
     padding: 9px 10px;
-    border-radius: var(--r-md);
-    border: 1px solid var(--bd);
+    border-radius: var(--g-radius-control, var(--r-md));
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
     background: transparent;
     color: var(--tx2);
     font-size: 12px;
@@ -268,13 +270,6 @@
   }
   .q-option-text {
     flex: 1;
-  }
-  .q-recommend {
-    font-size: 10px;
-    padding: 1px 8px;
-    border-radius: var(--radius-full);
-    background: var(--ok-soft);
-    color: var(--ok);
   }
 
   .q-footer {

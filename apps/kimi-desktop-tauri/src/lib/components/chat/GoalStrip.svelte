@@ -11,6 +11,7 @@
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
   import type { AppGoalStatus } from '../../api/types';
+  import Button from '../ui/Button.svelte';
 
   const goal = $derived(client.goal());
 
@@ -81,12 +82,12 @@
 
     <div class="gs-actions">
       {#if g.status === 'active'}
-        <button class="gs-btn" onclick={() => control('pause')} type="button">暂停</button>
+        <Button size="sm" onclick={() => control('pause')}>暂停</Button>
       {:else if g.status === 'paused'}
-        <button class="gs-btn primary" onclick={() => control('resume')} type="button">继续</button>
+        <Button size="sm" variant="primary" onclick={() => control('resume')}>继续</Button>
       {/if}
       {#if g.status === 'active' || g.status === 'paused'}
-        <button class="gs-btn danger" onclick={() => control('cancel')} type="button">取消</button>
+        <Button size="sm" variant="danger" onclick={() => control('cancel')}>取消</Button>
       {/if}
     </div>
   </section>
@@ -105,10 +106,12 @@
     align-items: center;
     padding: 8px 14px;
     margin: 8px 20px 0;
-    border: 1px solid var(--bd2);
-    border-radius: var(--r-md);
-    background: var(--l1);
-    box-shadow: var(--toplight);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-card, 4px);
+    background: var(--mat-surface-2, var(--l1));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    box-shadow: var(--elev-card, var(--toplight));
     font-size: 12px;
   }
 
@@ -139,7 +142,7 @@
   }
 
   .gs-status {
-    flex: none; padding: 2px 8px; border-radius: 999px;
+    flex: none; padding: 2px 8px; border-radius: var(--g-radius-chip, 999px);
     font-size: 10.5px; font-weight: 600;
   }
   .st-active .gs-status { background: var(--ac-soft); color: var(--ac); }
@@ -156,16 +159,4 @@
 
   .gs-stat { color: var(--tx2); }
   .gs-reason { color: var(--tx3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
-
-  .gs-btn {
-    padding: 3px 10px; border-radius: var(--r-sm);
-    border: 1px solid var(--bd2); background: transparent;
-    color: var(--tx2); font: inherit; font-size: 11px; cursor: pointer;
-    transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
-  }
-  .gs-btn:hover { background: var(--l2); color: var(--tx); }
-  .gs-btn.primary { background: var(--ac-soft); border-color: var(--ac-bd); color: var(--ac); }
-  .gs-btn.primary:hover { background: var(--ac); color: #fff; }
-  .gs-btn.danger { border-color: var(--color-danger-bd); color: var(--err); }
-  .gs-btn.danger:hover { background: var(--err-soft); }
 </style>

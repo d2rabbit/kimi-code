@@ -6,6 +6,7 @@
     disabled = false,
     invalid = false,
     rows = 3,
+    autofocus = false,
     class: cls = '',
     oninput,
     onkeydown,
@@ -15,17 +16,20 @@
     disabled?: boolean;
     invalid?: boolean;
     rows?: number;
+    autofocus?: boolean;
     class?: string;
     oninput?: (e: Event) => void;
     onkeydown?: (e: KeyboardEvent) => void;
   } = $props();
 </script>
 
+<!-- svelte-ignore a11y_autofocus -->
 <textarea
   class="ui-textarea {invalid ? 'ui-textarea-invalid' : ''} {cls}"
   {placeholder}
   {disabled}
   {rows}
+  {autofocus}
   bind:value
   {oninput}
   {onkeydown}

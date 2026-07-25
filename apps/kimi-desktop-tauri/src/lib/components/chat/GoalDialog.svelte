@@ -10,7 +10,8 @@
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
   import { toast } from '../../stores/toast.svelte';
-  import Icon from '../ui/Icon.svelte';
+  import Dialog from '../ui/Dialog.svelte';
+  import Button from '../ui/Button.svelte';
 
   let {
     open = $bindable(false),
@@ -69,73 +70,45 @@
   }
 </script>
 
-{#if open}
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div class="mask" onclick={() => { open = false; }} onkeydown={(e) => { if (e.key === 'Escape') open = false; }} role="presentation">
-    <div class="dialog glass-panel" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="设置目标" tabindex="-1">
-      <header class="head">
-        <h3>{existing ? '更新目标' : '设置目标'}</h3>
-        <button class="close" onclick={() => { open = false; }} type="button" aria-label="关闭"><Icon name="close" size="sm" /></button>
-      </header>
-      <p class="hint">用一句话描述你希望 agent 持续推进的目标。可以包含停止条件（如"20 轮后停止"）。</p>
-      <!-- svelte-ignore a11y_autofocus -->
-      <textarea
-        bind:value={text}
-        onkeydown={onKey}
-        placeholder="例如：把 packages/foo 里所有的 console.log 替换为结构化 logger，10 轮内完成"
-        rows="4"
-        autofocus
-        disabled={busy}
-      ></textarea>
-      {#if existing}
-        <p class="existing">
-          当前目标：<span class="mono">{existing.objective}</span>
-          <span class="status">状态：{existing.status}</span>
-        </p>
-      {/if}
-      <footer class="foot">
-        <span class="kbd-hint">⌘↩ 提交 · Esc 关闭</span>
-        <span style="flex:1"></span>
-        {#if existing}
-          <button class="btn" onclick={() => { void clearGoal(); }} type="button" disabled={busy}>取消目标</button>
-        {/if}
-        <button class="btn primary" onclick={() => { void submit(); }} type="button" disabled={busy || !text.trim()}>
-          {existing ? '更新' : '启动'}
-        </button>
-      </footer>
-    </div>
-  </div>
-{/if}
+<Dialog bind:open title={existing ? '更新目标' : '设置目标'}>
+  <p class="hint">用一句话描述你希望 agent 持续推进的目标。可以包含停止条件（如"20 轮后停止"）。</p>
+  <!-- svelte-ignore a11y_autofocus -->
+  <textarea
+    bind:value={text}
+    onkeydown={onKey}
+    placeholder="例如：把 packages/foo 里所有的 console.log 替换为结构化 logger，10 轮内完成"
+    rows="4"
+    autofocus
+    disabled={busy}
+  ></textarea>
+  {#if existing}
+    <p class="existing">
+      当前目标：<span class="mono">{existing.objective}</span>
+      <span class="status">状态：{existing.status}</span>
+    </p>
+  {/if}
+  <footer class="foot">
+    <span class="kbd-hint">⌘↩ 提交 · Esc 关闭</span>
+    <span style="flex:1"></span>
+    {#if existing}
+      <Button size="sm" onclick={() => { void clearGoal(); }} disabled={busy}>取消目标</Button>
+    {/if}
+    <Button variant="primary" size="sm" onclick={() => { void submit(); }} disabled={busy || !text.trim()}>
+      {existing ? '更新' : '启动'}
+    </Button>
+  </footer>
+</Dialog>
 
 <style>
-  .mask {
-    position: fixed; inset: 0; z-index: 500;
-    background: var(--overlay);
-    backdrop-filter: blur(6px);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .dialog {
-    width: 560px; max-width: calc(100vw - 32px);
-    background: var(--l1);
-    border: 1px solid var(--bd2);
-    border-radius: 12px;
-    padding: 18px 20px 14px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
-  }
-  .head { display: flex; align-items: center; margin-bottom: 6px; }
-  .head h3 { margin: 0; font-size: 15px; flex: 1; }
-  .close {
-    border: none; background: transparent; color: var(--tx3);
-    cursor: pointer; padding: 4px; border-radius: 6px;
-  }
-  .close:hover { background: var(--l2); color: var(--tx); }
   .hint { margin: 0 0 10px; font-size: 12px; color: var(--tx2); line-height: 1.5; }
+  /* 保留原生 textarea：Textarea 原语不透传 autofocus，对话框需要自动聚焦 */
   textarea {
     width: 100%; box-sizing: border-box;
     padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--bd);
-    background: var(--l2);
+    border-radius: var(--g-radius-input, 8px);
+    border: var(--g-border-w-input, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-input-bg, var(--l2));
+    box-shadow: var(--elev-input, none);
     color: var(--tx);
     font: inherit; font-size: 13px;
     resize: vertical;
@@ -150,16 +123,4 @@
   .existing .status { color: var(--ac); }
   .foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
   .kbd-hint { font-size: 11px; color: var(--tx3); }
-  .btn {
-    padding: 7px 14px; border-radius: 7px; cursor: pointer;
-    border: 1px solid var(--bd2); background: var(--l2); color: var(--tx);
-    font-size: 12px; font-weight: 500;
-  }
-  .btn:hover:not(:disabled) { background: var(--l3); }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn.primary {
-    background: var(--ac); color: var(--color-text-on-accent, #fff);
-    border-color: transparent;
-  }
-  .btn.primary:hover:not(:disabled) { background: var(--ac-h); }
 </style>

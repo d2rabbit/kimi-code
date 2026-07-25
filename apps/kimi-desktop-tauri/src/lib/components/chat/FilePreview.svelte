@@ -6,6 +6,7 @@
   import MarkdownRenderer from './MarkdownRenderer.svelte';
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
+  import Spinner from '../ui/Spinner.svelte';
 
   // Determine language from file extension for basic syntax hint.
   function detectLang(path: string): string {
@@ -95,7 +96,7 @@
   <div class="fp-body">
     {#if client.previewLoading()}
       <div class="fp-loading">
-        <div class="spinner"></div>
+        <Spinner size="lg" />
         <p>加载中…</p>
       </div>
     {:else if client.previewError()}
@@ -148,7 +149,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 8px 0 14px;
-    border-bottom: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--color-line, rgba(84,84,88,0.65)));
   }
   .fp-title-wrap {
     display: flex;
@@ -188,14 +189,6 @@
     color: var(--color-text-muted, rgba(235,235,245,0.6));
   }
   .fp-error { color: var(--color-danger, #ff453a); }
-  .spinner {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 2px solid var(--color-line, rgba(84,84,88,0.65));
-    border-top-color: var(--color-accent, #2dd4bf);
-    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
-  }
 
   /* Code view */
   .code-view {

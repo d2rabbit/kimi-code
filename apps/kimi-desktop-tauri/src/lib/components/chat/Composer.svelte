@@ -4,6 +4,9 @@
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
+  import Menu from '../ui/Menu.svelte';
+  import MenuItem from '../ui/MenuItem.svelte';
+  import Spinner from '../ui/Spinner.svelte';
   import SlashMenu from './SlashMenu.svelte';
   import GoalDialog from './GoalDialog.svelte';
   import SwarmDialog from './SwarmDialog.svelte';
@@ -411,7 +414,7 @@
             <Icon name="close" size="sm" />
           </button>
           {#if att.uploading}
-            <div class="chip-loading"></div>
+            <div class="chip-loading"><Spinner size="sm" /></div>
           {/if}
           {#if att.error}
             <div class="chip-error" title={att.error}>!</div>
@@ -493,11 +496,14 @@
           <span class="mic">{client.planMode() ? '📋' : client.permission() === 'yolo' ? '⚡' : client.permission() === 'auto' ? '✏️' : '✋'}</span><b>{client.planMode() ? '计划模式' : PERMS.find((p) => p.id === client.permission())?.label}</b><span class="chev">▾</span>
         </button>
         {#if openMenu === 'mode'}
-          <div class="pop glass-menu animate-spring-in" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
-            <button class="pop-item glass-menu-item" class:on={!client.planMode() && client.permission() === 'manual'} onclick={() => setMode('manual')} type="button">✋ 手动<span class="src">逐条审批</span></button>
-            <button class="pop-item glass-menu-item" class:on={!client.planMode() && client.permission() === 'auto'} onclick={() => setMode('auto')} type="button">✏️ 自动<span class="src">自动编辑，高危审批</span></button>
-            <button class="pop-item glass-menu-item" class:on={!client.planMode() && client.permission() === 'yolo'} onclick={() => setMode('yolo')} type="button">⚡ 完全访问<span class="src">不审批</span></button>
-            <button class="pop-item glass-menu-item" class:on={client.planMode()} onclick={() => setMode('plan')} type="button">📋 计划模式<span class="src">只读分析出计划</span></button>
+          <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+          <div class="pop" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="presentation">
+            <Menu>
+              <MenuItem class={!client.planMode() && client.permission() === 'manual' ? 'on' : ''} onclick={() => setMode('manual')}>✋ 手动<span class="src">逐条审批</span></MenuItem>
+              <MenuItem class={!client.planMode() && client.permission() === 'auto' ? 'on' : ''} onclick={() => setMode('auto')}>✏️ 自动<span class="src">自动编辑，高危审批</span></MenuItem>
+              <MenuItem class={!client.planMode() && client.permission() === 'yolo' ? 'on' : ''} onclick={() => setMode('yolo')}>⚡ 完全访问<span class="src">不审批</span></MenuItem>
+              <MenuItem class={client.planMode() ? 'on' : ''} onclick={() => setMode('plan')}>📋 计划模式<span class="src">只读分析出计划</span></MenuItem>
+            </Menu>
           </div>
         {/if}
       </span>
@@ -523,14 +529,17 @@
             <span class="psq"></span><b>{activeModelName}</b><span class="chev">▾</span>
           </button>
           {#if openMenu === 'model'}
-            <div class="pop glass-menu animate-spring-in" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
-              {#each client.models() as m (m.id)}
-                <button class="pop-item glass-menu-item" class:on={(client.activeSessionModel() || client.defaultModel()) === m.id}
-                  onclick={() => { client.client.setModel(m.id); closeMenus(); }} type="button">
-                  {m.displayName || m.id}
-                  {#if (client.activeSessionModel() || client.defaultModel()) === m.id}<span class="src">当前</span>{/if}
-                </button>
-              {/each}
+            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+            <div class="pop" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="presentation">
+              <Menu>
+                {#each client.models() as m (m.id)}
+                  <MenuItem class={(client.activeSessionModel() || client.defaultModel()) === m.id ? 'on' : ''}
+                    onclick={() => { client.client.setModel(m.id); closeMenus(); }}>
+                    {m.displayName || m.id}
+                    {#if (client.activeSessionModel() || client.defaultModel()) === m.id}<span class="src">当前</span>{/if}
+                  </MenuItem>
+                {/each}
+              </Menu>
             </div>
           {/if}
         </span>
@@ -542,14 +551,17 @@
           <span class="sep"></span><b>{thinkLabel}</b><span class="chev">▾</span>
         </button>
         {#if openMenu === 'think'}
-          <div class="pop glass-menu animate-spring-in" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="menu" tabindex="-1">
-            {#each THINK_LEVELS as l (l.id)}
-              <button class="pop-item glass-menu-item" class:on={client.thinking() === l.id}
-                onclick={() => { client.client.setThinking(l.id); closeMenus(); }} type="button">
-                {l.label}
-                {#if client.thinking() === l.id}<span class="src">当前</span>{/if}
-              </button>
-            {/each}
+          <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+          <div class="pop" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="presentation">
+            <Menu>
+              {#each THINK_LEVELS as l (l.id)}
+                <MenuItem class={client.thinking() === l.id ? 'on' : ''}
+                  onclick={() => { client.client.setThinking(l.id); closeMenus(); }}>
+                  {l.label}
+                  {#if client.thinking() === l.id}<span class="src">当前</span>{/if}
+                </MenuItem>
+              {/each}
+            </Menu>
           </div>
         {/if}
       </span>
@@ -579,7 +591,8 @@
   .attachment-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
   .attachment-chip {
     position: relative; width: 56px; height: 56px;
-    border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--bd);
+    border-radius: var(--g-radius-card, var(--r-md)); overflow: hidden;
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
   }
   .attachment-chip img { width: 100%; height: 100%; object-fit: cover; }
   .attachment-chip.uploading img { opacity: 0.5; }
@@ -590,11 +603,6 @@
     cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
   }
   .chip-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .chip-loading::after {
-    content: ''; width: 14px; height: 14px; border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--ac);
-    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
-  }
   .chip-error {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     background: var(--err-soft); color: var(--err); font-weight: bold;
@@ -602,10 +610,12 @@
 
   /* ---- Composer card ---- */
   .composer-card {
-    background: var(--l2);
-    border: 1px solid var(--bd2);
-    border-radius: 18px;
-    box-shadow: var(--toplight), 0 6px 20px rgba(0, 0, 0, 0.08);
+    background: var(--mat-surface-2, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-card, 18px);
+    box-shadow: var(--elev-card, var(--toplight));
     transition: border-color var(--duration-fast) var(--ease);
   }
   .composer-card:focus-within { border-color: var(--ac-bd); }
@@ -614,7 +624,10 @@
   .atch-row { display: flex; gap: 6px; padding: 10px 12px 0; flex-wrap: wrap; }
   .atch {
     display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 7px 0 8px;
-    border-radius: 8px; border: 1px solid var(--bd2); background: var(--l1);
+    border-radius: var(--g-radius-chip, 8px);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    background: var(--mat-chip-bg, var(--l1));
+    box-shadow: var(--elev-chip, none);
     font-size: 11px; font-family: var(--font-mono); color: var(--tx);
   }
   .atch .fi2 { width: 13px; height: 13px; border-radius: 4px; background: var(--ac); color: #fff; font-size: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-ui); font-weight: 700; }
@@ -633,18 +646,19 @@
 
   .sendc {
     flex: none; width: 34px; height: 34px; border-radius: 50%; border: none;
-    background: var(--ac); color: #fff; display: flex; align-items: center; justify-content: center;
+    background: var(--mat-primary-bg, var(--ac)); color: var(--color-text-on-accent, #fff);
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
-    box-shadow: 0 2px 8px rgba(79, 168, 255, 0.35);
+    box-shadow: var(--elev-control, 0 2px 8px rgba(79, 168, 255, 0.35));
   }
   .sendc:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
-  .sendc:not(:disabled):hover { background: var(--ac-h); transform: scale(1.06); }
-  .sendc:not(:disabled):active { transform: scale(0.95); }
+  .sendc:not(:disabled):hover { background: var(--mat-primary-bg-hover, var(--ac-h)); transform: scale(1.06); }
+  .sendc:not(:disabled):active { transform: var(--motion-press, scale(0.95)); }
 
   /* Control row */
-  .ctrl { display: flex; align-items: center; gap: 6px; padding: 8px 12px 10px; border-top: 1px solid var(--bd); }
+  .ctrl { display: flex; align-items: center; gap: 6px; padding: 8px 12px 10px; border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); }
   .mini-toggle {
-    padding: 0 10px; height: 30px; border: 1px solid transparent; border-radius: 8px; background: transparent;
+    padding: 0 10px; height: 30px; border: 1px solid transparent; border-radius: var(--g-radius-control, 8px); background: transparent;
     color: var(--tx3); font-size: 10.5px; font-weight: 500; cursor: pointer;
     transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
   }
@@ -657,11 +671,15 @@
   .ring.warning { background: conic-gradient(var(--warn) calc(var(--pct, 0) * 1%), var(--bd) 0); }
 
   .pill-wrap { position: relative; }
-  .mode-pill { border: 1px solid var(--bd); background: var(--l1); }
+  .mode-pill {
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-control-bg, var(--l1));
+    box-shadow: var(--elev-control, none);
+  }
   .mode-pill .mic { font-size: 11px; }
   .cpill {
     display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px;
-    border-radius: 8px; font-size: 11px; font-weight: 500; color: var(--tx2);
+    border-radius: var(--g-radius-control, 8px); font-size: 11px; font-weight: 500; color: var(--tx2);
     border: 1px solid transparent; background: transparent; cursor: pointer;
     transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
   }
@@ -675,9 +693,11 @@
     position: absolute; bottom: calc(100% + 6px); right: 0; z-index: 200;
     min-width: 170px; max-height: 300px; overflow-y: auto;
   }
-  .pop-item { font-size: 12px; }
-  .pop-item.on { color: var(--ac); font-weight: 600; }
-  .pop-item .src { margin-left: auto; font-size: 9px; color: var(--tx3); border: 1px solid var(--bd); border-radius: 4px; padding: 1px 5px; }
+  /* Menu/MenuItem 原语的选中态与密度微调（沿用旧 .pop-item 视觉） */
+  .pop :global(.ui-menu-item) { font-size: 12px; }
+  .pop :global(.ui-menu-item.on) { color: var(--ac); font-weight: 600; }
+  .pop :global(.ui-menu-item-label) { display: flex; align-items: center; gap: 6px; }
+  .pop .src { margin-left: auto; font-size: 9px; color: var(--tx3); border: 1px solid var(--bd); border-radius: 4px; padding: 1px 5px; }
 
   /* Mention menu */
   .mention-menu {

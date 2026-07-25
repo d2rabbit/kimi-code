@@ -2,6 +2,7 @@
 <script lang="ts">
   import * as client from '../../stores/client.svelte';
   import IconButton from '../ui/IconButton.svelte';
+  import Spinner from '../ui/Spinner.svelte';
   import Composer from './Composer.svelte';
   import MarkdownRenderer from './MarkdownRenderer.svelte';
   import ToolCard from './ToolCard.svelte';
@@ -174,7 +175,7 @@
           </div>
         </div>
       {:else if client.turns().length === 0}
-        <div class="loading"><div class="spinner" role="progressbar" aria-busy="true" aria-label="加载中"></div></div>
+        <div class="loading"><Spinner size="md" /></div>
       {:else}
         {#each client.turns() as turn (turn.id)}
           {#if turn.role === 'user'}
@@ -242,7 +243,7 @@
 <style>
   .chat { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
 
-  .hdr { flex: none; height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid var(--bd); }
+  .hdr { flex: none; height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); }
   .hdr-title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip-run { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 8px; font-size: 10.5px; font-weight: 600; background: var(--ok-soft); color: var(--ok); }
   .dot-run { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); animation: kimi-pulse 1.5s infinite; }
@@ -257,23 +258,25 @@
   .w-logo .w-mark { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; font-size: 19px; font-weight: 800; box-shadow: 0 0 24px rgba(79, 168, 255, 0.35); }
   .welcome h1 { font-size: 22px; font-weight: 700; color: var(--tx); margin: 0; letter-spacing: -0.02em; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 420px; }
-  .chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--bd); background: var(--l2); box-shadow: var(--toplight); color: var(--tx2); font-size: 12px; cursor: pointer; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease); }
-  .chip:hover { border-color: var(--ac-bd); color: var(--ac); background: var(--ac-soft); transform: translateY(-1px); }
+  .chip { padding: 7px 14px; border-radius: var(--g-radius-chip, 999px); border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); background: var(--mat-chip-bg, var(--l2)); box-shadow: var(--elev-chip, none); color: var(--tx2); font-size: 12px; cursor: pointer; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease); }
+  .chip:hover { border-color: var(--ac-bd); color: var(--ac); background: var(--ac-soft); transform: var(--motion-hover-lift, translateY(-1px)); }
 
-  .msg { display: flex; gap: 10px; font-size: 13px; line-height: 1.65; animation: kimi-fade-in var(--duration-fast, 120ms) var(--ease, ease); }
+  .msg { display: flex; gap: 10px; font-size: 13px; line-height: 1.65; }
   .msg.user { justify-content: flex-end; }
   .avatar { width: 22px; height: 22px; border-radius: var(--r-sm); flex: none; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; margin-top: 2px; }
   .avatar.u { background: var(--amb-soft); color: var(--amb); }
   .avatar.a { background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; }
 
-  /* ---- QQ 式气泡 ---- */
+  /* ---- QQ 式气泡（M3：契约 token 驱动表面） ---- */
   .bubble { max-width: 88%; padding: 10px 14px; font-size: 13px; line-height: 1.65; }
   .u-bub {
-    background: var(--ac-soft);
-    border: 1px solid var(--ac-bd);
+    background: var(--mat-bubble-bg, var(--ac-soft));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--ac-bd));
     color: var(--tx);
-    border-radius: 14px 14px 4px 14px;
-    box-shadow: var(--toplight);
+    border-radius: var(--g-radius-bubble, 14px 14px 4px 14px);
+    box-shadow: var(--elev-bubble, none);
   }
   .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
   .a-text { max-width: 100%; padding: 2px 0; }
@@ -291,8 +294,9 @@
   .ai-text + .ai-text, .think + .ai-text { margin-top: 6px; }
   .think {
     margin: 2px 0 6px;
-    border-radius: var(--r-md);
-    border: 1px solid var(--bd);
+    border-radius: var(--g-radius-card, var(--r-md));
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    /* accent 渐变底色无契约等价物，保留 */
     background: linear-gradient(135deg, var(--ac-soft), transparent 60%);
     overflow: hidden;
     transition: border-color var(--duration-fast) var(--ease);
@@ -341,14 +345,17 @@
     width: fit-content;
     font-size: 11px; color: var(--tx3);
     cursor: pointer;
-    background: var(--l2);
-    border: 1px solid var(--bd);
-    border-radius: var(--r-sm);
+    background: var(--mat-control-bg, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-radius: var(--g-radius-control, var(--r-sm));
+    box-shadow: var(--elev-control, none);
     padding: 4px 10px;
     transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
   }
   .tg-toggle:hover {
-    color: var(--tx); border-color: var(--bd2); background: var(--l3);
+    color: var(--tx); border-color: var(--bd2); background: var(--mat-control-bg-hover, var(--l3));
   }
   .tg-chevron { font-size: 9px; transition: transform var(--duration-fast) var(--ease); width: 8px; }
   .tg-icon { font-size: 11px; }
@@ -358,8 +365,7 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     max-width: 280px;
   }
-  .compact { text-align: center; font-size: 11px; color: var(--tx3); padding: 6px; border-top: 1px solid var(--bd); border-bottom: 1px solid var(--bd); }
+  .compact { text-align: center; font-size: 11px; color: var(--tx3); padding: 6px; border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); }
 
   .loading { display: flex; justify-content: center; padding: 30px; }
-  .spinner { width: 20px; height: 20px; border: 2px solid var(--bd); border-top-color: var(--ac); border-radius: 50%; animation: kimi-spin var(--duration-spin, 0.8s) linear infinite; }
 </style>

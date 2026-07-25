@@ -106,7 +106,7 @@
   .toc-row:focus-visible {
     outline: none;
     box-shadow: var(--p-focus-ring, 0 0 0 3px var(--ac-soft));
-    border-radius: var(--r-sm, 6px);
+    border-radius: var(--g-radius-control, 6px);
   }
 
   .toc-bar {
