@@ -2,18 +2,21 @@
      技能 / MCP / 命令统一由插件承载。 -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
+  import Segmented from '../ui/Segmented.svelte';
   import PluginPanel from './PluginPanel.svelte';
 
-  let pluginTab = $state<'installed' | 'discover'>('installed');
+  let pluginTab = $state('installed');
+
+  const tabOptions = [
+    { value: 'installed', label: '已安装' },
+    { value: 'discover', label: '发现' },
+  ];
 </script>
 
 <h2>插件管理 <span class="beta-badge">Beta</span></h2>
 <p class="sub-desc">技能 / MCP / 命令统一由插件承载；启用或停用已安装的插件</p>
 <div class="list-controls">
-  <div class="seg">
-    <button class="seg-btn" class:on={pluginTab === 'installed'} onclick={() => pluginTab = 'installed'} type="button">已安装</button>
-    <button class="seg-btn" class:on={pluginTab === 'discover'} onclick={() => pluginTab = 'discover'} type="button">发现</button>
-  </div>
+  <Segmented bind:value={pluginTab} options={tabOptions} size="sm" />
   <div class="searchbox"><Icon name="search" size="sm" /><span>搜索插件…</span></div>
 </div>
 {#if pluginTab === 'installed'}
@@ -25,11 +28,8 @@
 <style>
   h2 { font-size: 20px; font-weight: 600; color: var(--tx); margin: 0 0 4px; letter-spacing: -0.02em; }
   .sub-desc { font-size: 12px; color: var(--tx3); margin: 0 0 20px; }
-  .beta-badge { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: var(--ac-soft); color: var(--ac); vertical-align: middle; font-weight: 600; }
+  .beta-badge { font-size: 10px; padding: 2px 8px; border-radius: var(--g-radius-chip, 99px); background: var(--ac-soft); color: var(--ac); vertical-align: middle; font-weight: 600; }
   .list-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-  .seg { display: inline-flex; border: 1px solid var(--bd2); border-radius: var(--r-md); overflow: hidden; }
-  .seg-btn { padding: 5px 12px; border: none; background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
-  .seg-btn.on { background: var(--ac-soft); color: var(--ac); font-weight: 600; }
-  .searchbox { flex: 1; display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--r-lg); background: var(--l1); border: 1px solid var(--bd); color: var(--tx3); font-size: 12px; }
+  .searchbox { flex: 1; display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--g-radius-input, 4px); background: var(--mat-input-bg, var(--l1)); border: var(--g-border-w-input, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); box-shadow: var(--elev-input, none); color: var(--tx3); font-size: 12px; }
   .empty-text { color: var(--tx3); font-size: 13px; }
 </style>

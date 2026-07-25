@@ -4,6 +4,12 @@
      with tinted icon squares, search rows, dashed add boxes. -->
 <script lang="ts">
   import Icon from '../components/ui/Icon.svelte';
+  import Button from '../components/ui/Button.svelte';
+  import IconButton from '../components/ui/IconButton.svelte';
+  import Chip from '../components/ui/Chip.svelte';
+  import Input from '../components/ui/Input.svelte';
+  import Segmented from '../components/ui/Segmented.svelte';
+  import Switch from '../components/ui/Switch.svelte';
   import type { IconName } from '../lib/icon-types';
   import { shortcut } from '../lib/desktopFlag';
   import PluginsSection from '../components/settings/PluginsSection.svelte';
@@ -32,6 +38,33 @@
     { id: 'index', label: '索引库', icon: 'server' },
     { id: 'usage', label: '使用统计', icon: 'check-list' },
     { id: 'guide', label: '引导', icon: 'help-circle' },
+  ];
+
+  const THEME_OPTIONS = [
+    { value: 'dark', label: '深色' },
+    { value: 'light', label: '浅色' },
+    { value: 'clay', label: '粘土' },
+    { value: 'brutal', label: '粗野' },
+    { value: 'glass', label: '玻璃' },
+    { value: 'aqua', label: '水凝' },
+    { value: 'system', label: '跟随系统' },
+  ];
+
+  const PREVIEW_MODE_OPTIONS = [
+    { value: 'source', label: '源码' },
+    { value: 'markdown', label: 'Markdown' },
+    { value: 'html', label: 'HTML' },
+  ];
+
+  const DIFF_EXPAND_OPTIONS = [
+    { value: 'collapse', label: '折叠' },
+    { value: 'expand', label: '展开' },
+  ];
+
+  const HL_THEME_OPTIONS = [
+    { value: 'one-dark', label: 'One Dark' },
+    { value: 'github-dark', label: 'GitHub Dark' },
+    { value: 'dracula', label: 'Dracula' },
   ];
 
   function onKeydown(e: KeyboardEvent) {
@@ -132,7 +165,7 @@
       <div class="sp-foot">
         <div class="avatar">{(client.authProvider()?.name || 'U')[0].toUpperCase()}</div>
         <span class="user-name">{client.authProvider()?.name || '未登录'}</span>
-        {#if client.authProvider()?.status === 'authenticated'}<span class="badge-pro">Pro</span>{/if}
+        {#if client.authProvider()?.status === 'authenticated'}<Chip tone="warning">Pro</Chip>{/if}
       </div>
     </nav>
 
@@ -145,15 +178,11 @@
         <p class="sub-desc">外观偏好和应用设置</p>
         <div class="scard">
           <span class="lab"><span class="t">界面主题</span><span class="d">深色 / 浅色 / 粘土 / 粗野 / 玻璃 / 水凝 / 跟随系统</span></span>
-          <div class="seg">
-            <button class="seg-btn" class:on={!client.colorScheme() || client.colorScheme() === 'dark'} onclick={() => client.client.setColorScheme('dark')}>深色</button>
-            <button class="seg-btn" class:on={client.colorScheme() === 'light'} onclick={() => client.client.setColorScheme('light')}>浅色</button>
-            <button class="seg-btn" class:on={client.colorScheme() === 'clay'} onclick={() => client.client.setColorScheme('clay')}>粘土</button>
-            <button class="seg-btn" class:on={client.colorScheme() === 'brutal'} onclick={() => client.client.setColorScheme('brutal')}>粗野</button>
-            <button class="seg-btn" class:on={client.colorScheme() === 'glass'} onclick={() => client.client.setColorScheme('glass')}>玻璃</button>
-            <button class="seg-btn" class:on={client.colorScheme() === 'aqua'} onclick={() => client.client.setColorScheme('aqua')}>水凝</button>
-            <button class="seg-btn" class:on={client.colorScheme() === 'system'} onclick={() => client.client.setColorScheme('system')}>跟随系统</button>
-          </div>
+          <Segmented
+            value={client.colorScheme() || 'dark'}
+            options={THEME_OPTIONS}
+            onchange={(v) => client.client.setColorScheme(v as 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua')}
+          />
         </div>
         <div class="scard">
           <span class="lab"><span class="t">字体大小</span><span class="d">UI 字体大小 (px)</span></span>
@@ -164,21 +193,21 @@
         </div>
         <label class="scard toggle-card">
           <span class="lab"><span class="t">遥测</span><span class="d">发送匿名使用数据</span></span>
-          <button class="toggle" class:on={client.config()?.telemetry} onclick={() => toggleConfig('telemetry', !client.config()?.telemetry)} aria-label="切换遥测"></button>
+          <Switch checked={client.config()?.telemetry ?? false} label="切换遥测" onchange={(c) => toggleConfig('telemetry', c)} />
         </label>
         <label class="scard toggle-card">
           <span class="lab"><span class="t">合并所有 Skills</span><span class="d">自动合并所有来源的技能</span></span>
-          <button class="toggle" class:on={client.config()?.mergeAllAvailableSkills} onclick={() => toggleConfig('mergeAllAvailableSkills', !client.config()?.mergeAllAvailableSkills)} aria-label="切换合并 Skills"></button>
+          <Switch checked={client.config()?.mergeAllAvailableSkills ?? false} label="切换合并 Skills" onchange={(c) => toggleConfig('mergeAllAvailableSkills', c)} />
         </label>
         <h3>诊断</h3>
         <div class="scard">
           <span class="lab"><span class="t">内嵌 Agent</span><span class="d">应用私有代理进程，随应用启动/退出</span></span>
           <span class="mono-val">{daemon.state.origin ?? '—'}</span>
-          <span class="okchip">● {daemon.state.status === 'connected' ? '已连接' : '未连接'}</span>
+          <Chip tone="success">● {daemon.state.status === 'connected' ? '已连接' : '未连接'}</Chip>
         </div>
         <div class="scard">
           <span class="lab"><span class="t">版本</span><span class="d">Kimi Code Desktop · daemon {client.serverVersion() || '未知'}</span></span>
-          <button class="btn sm" onclick={() => { toast.ok('已是最新版本'); }} type="button">检查更新</button>
+          <Button size="sm" onclick={() => { toast.ok('已是最新版本'); }}>检查更新</Button>
         </div>
 
       {:else if active === 'preview'}
@@ -186,26 +215,19 @@
         <p class="sub-desc">文件预览的显示偏好</p>
         <div class="scard">
           <span class="lab"><span class="t">默认渲染模式</span><span class="d">文件预览的默认显示方式</span></span>
-          <div class="seg">
-            <button class="seg-btn" class:on={previewMode === 'source'} onclick={() => { previewMode = 'source'; localStorage.setItem('kode.preview-mode', 'source'); }} type="button">源码</button>
-            <button class="seg-btn" class:on={previewMode === 'markdown'} onclick={() => { previewMode = 'markdown'; localStorage.setItem('kode.preview-mode', 'markdown'); }} type="button">Markdown</button>
-            <button class="seg-btn" class:on={previewMode === 'html'} onclick={() => { previewMode = 'html'; localStorage.setItem('kode.preview-mode', 'html'); }} type="button">HTML</button>
-          </div>
+          <Segmented bind:value={previewMode} options={PREVIEW_MODE_OPTIONS} onchange={(v) => localStorage.setItem('kode.preview-mode', v)} />
         </div>
         <div class="scard">
           <span class="lab"><span class="t">Diff 展开方式</span><span class="d">工具调用中的 diff 默认状态</span></span>
-          <div class="seg">
-            <button class="seg-btn" class:on={!diffAutoExpand} onclick={() => { diffAutoExpand = false; localStorage.setItem('kode.diff-expand', 'false'); }} type="button">折叠</button>
-            <button class="seg-btn" class:on={diffAutoExpand} onclick={() => { diffAutoExpand = true; localStorage.setItem('kode.diff-expand', 'true'); }} type="button">展开</button>
-          </div>
+          <Segmented
+            value={diffAutoExpand ? 'expand' : 'collapse'}
+            options={DIFF_EXPAND_OPTIONS}
+            onchange={(v) => { diffAutoExpand = v === 'expand'; localStorage.setItem('kode.diff-expand', v === 'expand' ? 'true' : 'false'); }}
+          />
         </div>
         <div class="scard">
           <span class="lab"><span class="t">语法高亮主题</span><span class="d">代码块的配色方案</span></span>
-          <div class="seg">
-            <button class="seg-btn" class:on={hlTheme === 'one-dark'} onclick={() => { hlTheme = 'one-dark'; localStorage.setItem('kode.hl-theme', 'one-dark'); }} type="button">One Dark</button>
-            <button class="seg-btn" class:on={hlTheme === 'github-dark'} onclick={() => { hlTheme = 'github-dark'; localStorage.setItem('kode.hl-theme', 'github-dark'); }} type="button">GitHub Dark</button>
-            <button class="seg-btn" class:on={hlTheme === 'dracula'} onclick={() => { hlTheme = 'dracula'; localStorage.setItem('kode.hl-theme', 'dracula'); }} type="button">Dracula</button>
-          </div>
+          <Segmented bind:value={hlTheme} options={HL_THEME_OPTIONS} onchange={(v) => localStorage.setItem('kode.hl-theme', v)} />
         </div>
 
       {:else if active === 'models'}
@@ -216,7 +238,7 @@
         <div class="bind-card">
           <div class="bind-head">
             <span class="bind-name">Kimi</span>
-            {#if client.authProvider()?.status === 'authenticated'}<span class="okchip">已启用</span>{/if}
+            {#if client.authProvider()?.status === 'authenticated'}<Chip tone="success">已启用</Chip>{/if}
             <span class="bind-right">{client.authProvider()?.status === 'authenticated' ? '连接方式: 个人套餐' : '未连接'}</span>
           </div>
           <div class="bind-body">
@@ -225,10 +247,10 @@
               <span class="d">{#if client.authProvider()?.status === 'authenticated'}订阅生效中 · 第一方模型可用{:else}登录后可使用 Kimi K2 等第一方模型，无需 API Key{/if}</span>
             </div>
             {#if client.authProvider()?.status === 'authenticated'}
-              <button class="btn sm" onclick={() => { toast.info('账号管理（浏览器打开）'); }} type="button">管理</button>
-              <button class="btn ghost-acc sm" onclick={() => { void client.client.logout(); }} type="button">解绑</button>
+              <Button size="sm" onclick={() => { toast.info('账号管理（浏览器打开）'); }}>管理</Button>
+              <Button size="sm" class="ghost-acc" onclick={() => { void client.client.logout(); }}>解绑</Button>
             {:else}
-              <button class="btn pri sm" onclick={() => showLogin = true} type="button">登录 Kimi</button>
+              <Button variant="primary" size="sm" onclick={() => showLogin = true}>登录 Kimi</Button>
             {/if}
           </div>
         </div>
@@ -264,11 +286,11 @@
             <div class="item-row">
               <span class="isq"><Icon name="sparkles" size="sm" /></span>
               <span class="ir">
-                <span class="it">{m.displayName || m.id}{#if m.id === client.defaultModel()}<span class="defchip">默认</span>{/if}</span>
+                <span class="it">{m.displayName || m.id}{#if m.id === client.defaultModel()}<Chip tone="accent">默认</Chip>{/if}</span>
                 <span class="id mono">{m.provider} · {kFmt(m.maxContextSize)} context</span>
               </span>
               {#if m.id !== client.defaultModel()}
-                <button class="btn sm" onclick={() => { void client.client.setDefaultModel(m.id); }} type="button">设为默认</button>
+                <Button size="sm" onclick={() => { void client.client.setDefaultModel(m.id); }}>设为默认</Button>
               {/if}
             </div>
           {/each}
@@ -284,14 +306,14 @@
               <span class="it">{p.id}</span>
               <span class="id mono">{p.type}{#if p.baseUrl} · {p.baseUrl}{/if}</span>
             </span>
-            {#if p.status === 'connected'}<span class="okchip">已连接</span>
-            {:else if p.status === 'error'}<span class="warnchip">错误</span>
-            {:else}<span class="warnchip">未配置</span>{/if}
+            {#if p.status === 'connected'}<Chip tone="success">已连接</Chip>
+            {:else if p.status === 'error'}<Chip tone="warning">错误</Chip>
+            {:else}<Chip tone="warning">未配置</Chip>{/if}
             {#if p.hasApiKey}
-              <button class="btn sm" onclick={() => { void client.client.refreshProviderModels(p.id); }} type="button">↻</button>
-              <button class="btn sm" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }} type="button">更新 Key</button>
+              <IconButton name="refresh" variant="default" size="sm" label="刷新模型" onclick={() => { void client.client.refreshProviderModels(p.id); }} />
+              <Button size="sm" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }}>更新 Key</Button>
             {:else}
-              <button class="btn sm" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }} type="button">配置</button>
+              <Button size="sm" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }}>配置</Button>
             {/if}
           </div>
         {/each}
@@ -300,10 +322,10 @@
 
         {#if showEditProvider}
           <div class="scard add-model-form">
-            <div class="form-row-vertical"><span class="form-lbl">更新 {editingProvider} 的 API Key</span><input class="form-input" type="password" bind:value={providerApiKey} placeholder="输入新的 API Key" /></div>
+            <div class="form-row-vertical"><span class="form-lbl">更新 {editingProvider} 的 API Key</span><Input type="password" bind:value={providerApiKey} placeholder="输入新的 API Key" /></div>
             <div class="form-actions">
-              <button class="btn sm" onclick={() => showEditProvider = false} type="button">取消</button>
-              <button class="btn pri sm" onclick={async () => {
+              <Button size="sm" onclick={() => showEditProvider = false}>取消</Button>
+              <Button variant="primary" size="sm" onclick={async () => {
                 if (!editingProvider || !providerApiKey.trim()) return;
                 const existing = client.providers().find((p) => p.id === editingProvider);
                 await client.client.saveProvider(editingProvider, {
@@ -312,7 +334,7 @@
                   baseUrl: existing?.baseUrl,
                 });
                 showEditProvider = false; providerApiKey = '';
-              }} type="button">保存</button>
+              }}>保存</Button>
             </div>
           </div>
         {/if}
@@ -338,7 +360,7 @@
             <span class="it">自定义命令</span>
             <span class="id">命令文件位于项目 <code>.kimi/commands/</code> 与全局 <code>commands/</code> 目录，直接编辑 Markdown 即可创建</span>
           </span>
-          <button class="btn sm" disabled type="button">＋ 新建</button>
+          <Button size="sm" disabled>＋ 新建</Button>
         </div>
 
       {:else if active === 'index'}
@@ -354,7 +376,7 @@
               <span class="it">{ws.name}</span>
               <span class="id mono">@ 提及当前基于实时文件搜索（无持久索引）</span>
             </span>
-            <button class="btn sm" disabled type="button">重建索引</button>
+            <Button size="sm" disabled>重建索引</Button>
           </div>
         {/each}
 
@@ -426,7 +448,7 @@
         <p class="sub-desc">重新查看首次启动引导或了解快捷键</p>
         <div class="scard">
           <span class="lab"><span class="t">新手引导</span><span class="d">包含 Kimi 登录与主题选择，可随时重新打开</span></span>
-          <button class="btn ghost-acc sm" onclick={() => { client.client.setOnboarded(false); onnavigate(); }} type="button">重新打开 →</button>
+          <Button size="sm" class="ghost-acc" onclick={() => { client.client.setOnboarded(false); onnavigate(); }}>重新打开 →</Button>
         </div>
         <h3>快捷键</h3>
         {#each [[shortcut('K'), '命令面板'], [shortcut('N'), '新建对话'], [shortcut('P'), '搜索会话'], [shortcut(','), '打开设置'], [shortcut('S'), 'Steer (注入运行中的回合)'], ['Esc', '返回 / 关闭 overlay']] as [key, desc]}
@@ -453,7 +475,7 @@
   @keyframes spIn { from { opacity: 0; transform: translateY(6px); } }
 
   /* ---- Top header ---- */
-  .sp-header { flex: none; height: 40px; display: flex; align-items: center; padding: 0 16px; background: var(--l1); border-bottom: 1px solid var(--bd); }
+  .sp-header { flex: none; height: 40px; display: flex; align-items: center; padding: 0 16px; background: var(--mat-header-bg, var(--l1)); border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); }
   .sp-header-t { font-size: 13px; color: var(--tx2); font-weight: 500; }
   .sp-header-r { margin-left: auto; display: flex; align-items: center; gap: 6px; }
   .sp-header-r .hint { font-size: 10px; color: var(--tx3); }
@@ -462,7 +484,7 @@
   .sp-body { flex: 1; display: flex; overflow: hidden; }
 
   /* ---- Left nav ---- */
-  .sp-nav { width: 220px; flex: none; height: 100%; display: flex; flex-direction: column; background: var(--l1); border-right: 1px solid var(--bd); padding: 12px 8px; overflow-y: auto; }
+  .sp-nav { width: 220px; flex: none; height: 100%; display: flex; flex-direction: column; background: var(--mat-sidebar-bg, var(--l1)); border-right: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); padding: 12px 8px; overflow-y: auto; }
   .sp-back { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: none; border-radius: var(--r-md); background: transparent; font-size: 12.5px; color: var(--tx2); cursor: pointer; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
   .sp-back:hover { background: var(--ac-soft); color: var(--tx); }
   .sp-divider { height: 1px; background: var(--bd); margin: 8px 4px; }
@@ -472,7 +494,6 @@
   .sp-foot { display: flex; align-items: center; gap: 8px; padding: 4px; }
   .sp-foot .avatar { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
   .sp-foot .user-name { font-size: 11px; color: var(--tx2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .badge-pro { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 99px; background: var(--amb-soft); color: var(--amb); }
 
   /* ---- Content ---- */
   .sp-content { flex: 1; overflow-y: auto; }
@@ -482,43 +503,34 @@
   .sub-desc { font-size: 12px; color: var(--tx3); margin: 0 0 20px; }
 
   /* ---- Row cards ---- */
-  .scard { display: flex; align-items: center; gap: 16px; padding: 14px 18px; margin-bottom: 10px; border: 1px solid var(--bd); border-radius: 14px; background: var(--l2); box-shadow: var(--toplight); font-size: 13px; }
+  .scard {
+    display: flex; align-items: center; gap: 16px; padding: 14px 18px; margin-bottom: 10px; font-size: 13px;
+    background: var(--mat-surface-2, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-radius: var(--g-radius-card, 14px);
+    box-shadow: var(--elev-card, var(--toplight));
+  }
   .scard .lab { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .scard .lab .t { font-size: 13px; font-weight: 500; color: var(--tx); }
   .scard .lab .d { font-size: 11px; color: var(--tx3); }
   .toggle-card { cursor: pointer; }
   .mono-val { font-family: var(--font-mono); font-size: 11px; color: var(--tx2); }
 
-  .seg { display: inline-flex; border: 1px solid var(--bd2); border-radius: var(--r-md); overflow: hidden; }
-  .seg-btn { padding: 5px 12px; border: none; background: transparent; color: var(--tx2); font-size: 12px; cursor: pointer; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
-  .seg-btn.on { background: var(--ac-soft); color: var(--ac); font-weight: 600; }
-
   .slider-wrap { display: flex; align-items: center; gap: 10px; }
   .slider { width: 140px; height: 4px; -webkit-appearance: none; appearance: none; border-radius: 2px; background: linear-gradient(90deg, var(--ac) var(--pct, 50%), var(--bd2) var(--pct, 50%)); outline: none; cursor: pointer; }
   .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); cursor: pointer; }
 
-  .toggle { width: 36px; height: 20px; border-radius: 999px; border: none; background: var(--bd2); cursor: pointer; position: relative; transition: background 0.2s; flex: none; }
-  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--tx2); transition: left 0.2s var(--ease), background 0.2s var(--ease); }
-  .toggle.on { background: var(--ac); }
-  .toggle.on::after { left: 18px; background: #fff; }
+  /* Accent-tinted action button (override of the Button default surface). */
+  :global(.ghost-acc) { background: var(--ac-soft); border-color: var(--ac-bd); color: var(--ac); }
+  :global(.ghost-acc:hover:not(:disabled)) { background: var(--ac-soft); border-color: var(--ac); color: var(--ac); }
 
-  .btn { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px; border-radius: var(--r-md); font-size: 12px; font-weight: 600; border: 1px solid var(--bd2); color: var(--tx2); background: transparent; cursor: pointer; white-space: nowrap; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease); }
-  .btn:hover:not(:disabled) { color: var(--tx); border-color: var(--tx3); }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn.pri { background: var(--ac); border-color: transparent; color: #fff; }
-  .btn.pri:hover:not(:disabled) { background: var(--ac-h); color: #fff; }
-  .btn.ghost-acc { border-color: var(--ac-bd); color: var(--ac); background: var(--ac-soft); }
-  .btn.ghost-acc:hover:not(:disabled) { border-color: var(--ac); color: var(--ac); }
-  .btn.sm { height: 26px; padding: 0 10px; font-size: 11px; }
-
-  .okchip { font-size: 10px; color: var(--ok); background: var(--ok-soft); border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
-  .warnchip { font-size: 10px; color: var(--warn); background: var(--warn-soft); border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
-  .defchip { font-size: 10px; color: var(--ac); background: var(--ac-soft); border-radius: 99px; padding: 2px 8px; font-weight: 600; }
   .keycap { font-family: var(--font-mono); font-size: 11px; padding: 3px 10px; border-radius: var(--r-md); background: var(--ac-soft); color: var(--ac); border: 1px solid var(--ac-bd); }
   .empty-text { color: var(--tx3); font-size: 13px; }
 
   /* ---- Binding card (Kimi provider, gradient brand border) ---- */
-  .bind-card { border-radius: 14px; padding: 18px; margin-bottom: 12px; background: linear-gradient(135deg, rgba(79,168,255,0.10), rgba(91,192,190,0.05)); border: 1px solid var(--ac-bd); }
+  .bind-card { border-radius: var(--g-radius-card, 14px); padding: 18px; margin-bottom: 12px; background: linear-gradient(135deg, rgba(79,168,255,0.10), rgba(91,192,190,0.05)); border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--ac-bd); }
   .bind-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .bind-name { font-size: 15px; font-weight: 600; color: var(--tx); }
   .bind-right { margin-left: auto; font-size: 12px; color: var(--tx2); }
@@ -529,7 +541,15 @@
 
   /* ---- Quota bars ---- */
   .quota-row { display: flex; gap: 10px; margin-bottom: 12px; }
-  .quota-card { flex: 1; border-radius: 14px; background: var(--l2); border: 1px solid var(--bd); box-shadow: var(--toplight); padding: 16px; }
+  .quota-card {
+    flex: 1; padding: 16px;
+    background: var(--mat-surface-2, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-radius: var(--g-radius-card, 14px);
+    box-shadow: var(--elev-card, var(--toplight));
+  }
   .quota-t { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px; color: var(--tx2); }
   .quota-t .pct { font-size: 11px; color: var(--ac); }
   .quota-t .pct.purple { color: var(--color-done); }
@@ -541,18 +561,26 @@
   .quota-m { font-size: 10px; color: var(--tx3); margin-top: 6px; }
 
   /* ---- Item rows (icon square + title + desc + controls) ---- */
-  .item-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: var(--l2); border: 1px solid var(--bd); box-shadow: var(--toplight); margin-bottom: 8px; }
+  .item-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 8px;
+    background: var(--mat-surface-2, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-radius: var(--g-radius-card, 12px);
+    box-shadow: var(--elev-card, var(--toplight));
+  }
   .isq { width: 28px; height: 28px; border-radius: 8px; background: var(--ac-soft); color: var(--ac); display: flex; align-items: center; justify-content: center; flex: none; }
   .ir { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .it { font-size: 13px; font-weight: 500; color: var(--tx); display: flex; align-items: center; gap: 6px; }
   .id { font-size: 11px; color: var(--tx3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .id.mono { font-family: var(--font-mono); }
   .list-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-  .searchbox { flex: 1; display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--r-lg); background: var(--l1); border: 1px solid var(--bd); color: var(--tx3); font-size: 12px; }
+  .searchbox { flex: 1; display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: var(--mat-input-bg, var(--l1)); border: var(--g-border-w-input, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); border-radius: var(--g-radius-input, 8px); box-shadow: var(--elev-input, none); color: var(--tx3); font-size: 12px; }
 
   /* ---- Usage hero ---- */
   .usage-hero { display: flex; gap: 16px; margin-bottom: 12px; }
-  .hero-main { flex: 2; border-radius: 14px; background: linear-gradient(135deg, rgba(79,168,255,0.10), rgba(91,192,190,0.04)); border: 1px solid var(--ac-bd); padding: 20px; }
+  .hero-main { flex: 2; border-radius: var(--g-radius-card, 14px); background: linear-gradient(135deg, rgba(79,168,255,0.10), rgba(91,192,190,0.04)); border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--ac-bd); padding: 20px; }
   .hero-head { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
   .hero-tag { font-size: 11px; color: var(--ac); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
   .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -560,29 +588,35 @@
   .hg-v { font-size: 20px; color: var(--tx); font-weight: 600; }
   .hg-v.acc { color: var(--ac); }
   .hg-v.ok { color: var(--ok); }
-  .hero-ring { flex: 1; border-radius: 14px; background: var(--l2); border: 1px solid var(--bd); box-shadow: var(--toplight); padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+  .hero-ring {
+    flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    background: var(--mat-surface-2, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-radius: var(--g-radius-card, 14px);
+    box-shadow: var(--elev-card, var(--toplight));
+  }
   .ring-wrap { position: relative; width: 80px; height: 80px; }
   .ring-c { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
   .ring-pct { font-size: 16px; font-weight: 600; color: var(--tx); }
   .ring-l { font-size: 9px; color: var(--tx3); }
   .ring-m { font-size: 10px; color: var(--tx2); }
-  .ws-bar-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 12px; background: var(--l1); border: 1px solid var(--bd); margin-bottom: 6px; }
+  .ws-bar-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-radius: var(--g-radius-card, 12px); background: var(--mat-surface-1, var(--l1)); border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); margin-bottom: 6px; }
   .ws-name { font-size: 13px; color: var(--tx); min-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ws-bar-row .bar { flex: 1; }
   .ws-tok { font-size: 11px; color: var(--tx2); min-width: 50px; text-align: right; }
   .ws-cost { font-size: 11px; color: var(--ok); min-width: 56px; text-align: right; }
 
   /* ---- Shortcut rows ---- */
-  .key-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-radius: 10px; background: var(--l1); border: 1px solid var(--bd); margin-bottom: 4px; }
+  .key-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-radius: var(--g-radius-card, 10px); background: var(--mat-surface-1, var(--l1)); border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); margin-bottom: 4px; }
   .key-desc { font-size: 13px; color: var(--tx2); }
 
   /* ---- Forms ---- */
   .add-model-form { flex-direction: column; align-items: stretch; gap: 10px; display: flex; }
   .form-row-vertical { display: flex; flex-direction: column; gap: 3px; }
   .form-lbl { font-size: 11px; color: var(--tx3); }
-  .form-input { padding: 6px 10px; border-radius: var(--r-md); background: var(--l1); border: 1px solid var(--bd); color: var(--tx); font-size: 12px; outline: none; font-family: inherit; }
-  .form-input:focus { border-color: var(--ac); }
   .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
-  .dashed-btn { width: 100%; padding: 14px; border: 1.5px dashed var(--ac-bd); border-radius: 14px; background: transparent; color: var(--ac); font-size: 13px; cursor: pointer; font-family: inherit; opacity: 0.8; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), opacity var(--duration-fast) var(--ease); }
+  .dashed-btn { width: 100%; padding: 14px; border: var(--g-border-w-input, 1.5px) dashed var(--ac-bd); border-radius: var(--g-radius-card, 14px); background: transparent; color: var(--ac); font-size: 13px; cursor: pointer; font-family: inherit; opacity: 0.8; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), opacity var(--duration-fast) var(--ease); }
   .dashed-btn:hover { border-color: var(--ac); background: var(--ac-soft); opacity: 1; }
 </style>

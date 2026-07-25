@@ -5,6 +5,10 @@
 <script lang="ts">
   import { invoke as tauriInvoke } from '@tauri-apps/api/core';
   import Icon from '../ui/Icon.svelte';
+  import Button from '../ui/Button.svelte';
+  import Card from '../ui/Card.svelte';
+  import Input from '../ui/Input.svelte';
+  import Spinner from '../ui/Spinner.svelte';
   import type { IconName } from '../../lib/icon-types';
   import { toast } from '../../stores/toast.svelte';
 
@@ -268,19 +272,10 @@
       <p class="plugin-desc">管理通过 Kimi Code CLI 安装的技能、MCP 服务器和数据源插件。</p>
     </div>
     <div style="display: flex; gap: 6px;">
-      <button class="refresh-btn" onclick={loadPlugins} disabled={loading}>
-        <Icon name="refresh" size="sm" />
-        刷新
-      </button>
+      <Button size="sm" icon="refresh" onclick={loadPlugins} disabled={loading}>刷新</Button>
       {#if isTauri}
-        <button class="refresh-btn" onclick={installFromZip} disabled={installing} title="从本地 .zip 文件安装插件" style="color: var(--color-accent); border-color: var(--color-accent-bd);">
-          <Icon name="download" size="sm" />
-          本地安装
-        </button>
-        <button class="refresh-btn" onclick={() => showInstallForm = !showInstallForm} style="color: var(--color-accent); border-color: var(--color-accent-bd);">
-          <Icon name="plus" size="sm" />
-          URL/GitHub
-        </button>
+        <Button size="sm" icon="download" onclick={installFromZip} disabled={installing}>本地安装</Button>
+        <Button size="sm" variant="primary" icon="plus" onclick={() => showInstallForm = !showInstallForm}>URL/GitHub</Button>
       {/if}
     </div>
   </div>
@@ -293,28 +288,28 @@
     <div class="plugin-install-form">
       <label style="display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--color-text-faint);">
         <span>插件源 (GitHub repo / 名称 / ZIP URL)</span>
-        <input bind:value={installSource} placeholder="owner/repo 或 plugin-name" style="padding: 5px 10px; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); color: var(--color-text); font-size: 12px; outline: none;" onkeydown={(e) => { if (e.key === 'Enter') installPlugin(); }} />
+        <Input bind:value={installSource} placeholder="owner/repo 或 plugin-name" size="sm" onkeydown={(e) => { if (e.key === 'Enter') installPlugin(); }} />
       </label>
       {#if installMsg}<p style="font-size: 11px; color: var(--color-text-faint);">{installMsg}</p>{/if}
       <div style="display: flex; justify-content: flex-end; gap: 6px;">
-        <button class="refresh-btn" onclick={() => showInstallForm = false}>取消</button>
-        <button class="refresh-btn" style="color: var(--color-accent); border-color: var(--color-accent-bd);" onclick={installPlugin} disabled={installing}>
+        <Button size="sm" variant="ghost" onclick={() => showInstallForm = false}>取消</Button>
+        <Button size="sm" variant="primary" onclick={installPlugin} disabled={installing}>
           {installing ? '安装中…' : '安装'}
-        </button>
+        </Button>
       </div>
     </div>
   {/if}
 
   {#if loading}
     <div class="plugin-loading">
-      <div class="spinner"></div>
+      <Spinner size="lg" />
       <p>扫描插件目录…</p>
     </div>
   {:else if error}
     <div class="plugin-error">
       <Icon name="error-warning" size="md" />
       <p>{error}</p>
-      <button class="retry-btn" onclick={loadPlugins}>重试</button>
+      <Button size="sm" onclick={loadPlugins}>重试</Button>
     </div>
   {:else if plugins.length === 0}
     <div class="plugin-empty">
@@ -352,7 +347,8 @@
           {:else}
             {#each items as plugin (plugin.id)}
               {@const trust = trustLevel(plugin.source)}
-              <div class="plugin-card glass-panel" class:disabled={!plugin.enabled}>
+              <Card variant="raised" padding="none">
+                <div class="plugin-card" class:disabled={!plugin.enabled}>
                 <div class="plugin-card-top">
                   <div class="plugin-icon-wrap" style="color: {meta.color}">
                     <Icon name={meta.icon} size="md" />
@@ -407,16 +403,17 @@
                       </a>
                     {/if}
                     {#if isTauri && !isPlaceholder}
-                      <button class="refresh-btn" style="font-size: 11px; padding: 3px 8px;" onclick={() => togglePlugin(plugin.id, plugin.enabled)}>
+                      <Button size="sm" onclick={() => togglePlugin(plugin.id, plugin.enabled)}>
                         {plugin.enabled ? '禁用' : '启用'}
-                      </button>
-                      <button class="refresh-btn" style="font-size: 11px; padding: 3px 8px; color: var(--color-danger);" onclick={() => uninstallPlugin(plugin.id, plugin.displayName)}>
+                      </Button>
+                      <Button size="sm" variant="danger" onclick={() => uninstallPlugin(plugin.id, plugin.displayName)}>
                         卸载
-                      </button>
+                      </Button>
                     {/if}
                   </div>
                 </div>
-              </div>
+                </div>
+              </Card>
             {/each}
           {/if}
         </section>
@@ -453,21 +450,6 @@
     color: var(--color-text-muted, #999);
     margin: 0;
   }
-  .refresh-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 5px 10px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: transparent;
-    color: var(--color-text-muted, #999);
-    font-size: var(--text-xs, 12px);
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .refresh-btn:hover { color: var(--color-text, #ececec); border-color: var(--color-line-strong, #3a3a3a); }
-  .refresh-btn:disabled { opacity: 0.5; }
 
   .plugin-loading,
   .plugin-error,
@@ -536,7 +518,7 @@
     background: var(--l3);
     color: var(--tx2);
     padding: 1px 8px;
-    border-radius: 999px;
+    border-radius: var(--g-radius-chip, 999px);
     min-width: 18px;
     text-align: center;
   }
@@ -550,9 +532,9 @@
     text-align: center;
     font-size: 11.5px;
     color: var(--tx3);
-    background: var(--l2);
+    background: var(--mat-surface-1, var(--l2));
     border: 1px dashed var(--bd2);
-    border-radius: var(--r-md);
+    border-radius: var(--g-radius-card, 4px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -565,7 +547,7 @@
     font-size: 11.5px;
     color: var(--tx2);
     background: var(--ac-soft);
-    border-radius: var(--r-md);
+    border-radius: var(--g-radius-card, 4px);
   }
 
   .plugin-card {
@@ -588,8 +570,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-sm, 6px);
-    background: rgba(255,255,255,0.05);
+    border-radius: var(--g-radius-control, 6px);
+    background: var(--mat-control-bg, rgba(255,255,255,0.05));
     color: var(--color-text-muted, #999);
     flex-shrink: 0;
   }
@@ -625,14 +607,14 @@
     gap: 3px;
     font-size: 10px;
     padding: 2px 7px;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--g-radius-chip, 999px);
     background: rgba(255,255,255,0.05);
     color: var(--color-text-muted, #999);
   }
   .trust-chip {
     font-size: 10px;
     padding: 2px 7px;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--g-radius-chip, 999px);
     font-weight: 500;
   }
   .trust-chip.success {
@@ -650,7 +632,7 @@
   .mcp-chip {
     font-size: 10px;
     padding: 2px 7px;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--g-radius-chip, 999px);
     background: rgba(163, 113, 247, 0.14);
     color: #a371f7;
     font-family: var(--font-mono, monospace);
@@ -658,7 +640,7 @@
   .count-chip {
     font-size: 10px;
     padding: 2px 7px;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--g-radius-chip, 999px);
     background: var(--color-accent-soft, rgba(79, 168, 255, 0.12));
     color: var(--color-accent, #4fa8ff);
     font-family: var(--font-mono, monospace);
@@ -666,7 +648,7 @@
   .disabled-chip {
     font-size: 10px;
     padding: 2px 7px;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--g-radius-chip, 999px);
     background: rgba(248, 81, 73, 0.14);
     color: var(--color-danger, #ff453a);
   }
@@ -712,29 +694,10 @@
     align-items: flex-start;
     gap: 8px;
     padding: 10px 12px;
-    border-radius: var(--radius-sm, 6px);
-    background: rgba(255,255,255,0.03);
+    border-radius: var(--g-radius-card, 6px);
+    background: var(--mat-surface-1, rgba(255,255,255,0.03));
     color: var(--color-text-muted, #999);
     font-size: var(--text-xs, 12px);
     line-height: 1.5;
-  }
-
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid rgba(255,255,255,0.1);
-    border-top-color: var(--color-text, #ececec);
-    border-radius: 50%;
-    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
-  }
-
-  .retry-btn {
-    padding: 6px 14px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: transparent;
-    color: var(--color-text, #ececec);
-    font-size: var(--text-sm, 13px);
-    cursor: pointer;
   }
 </style>

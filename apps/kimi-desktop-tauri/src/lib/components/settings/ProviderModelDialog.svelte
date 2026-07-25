@@ -17,7 +17,11 @@
      'create new' for now).
 -->
 <script lang="ts">
-  import Icon from '../ui/Icon.svelte';
+  import Button from '../ui/Button.svelte';
+  import IconButton from '../ui/IconButton.svelte';
+  import Input from '../ui/Input.svelte';
+  import Select from '../ui/Select.svelte';
+  import Switch from '../ui/Switch.svelte';
   import * as client from '../../stores/client.svelte';
   import { toast } from '../../stores/toast.svelte';
 
@@ -86,6 +90,11 @@
   let pUrl = $state('');
   // Existing providers — user can pick one instead of creating new.
   const existingProviders = $derived(client.providers());
+  const providerOptions = $derived(existingProviders.map((p) => ({ value: p.id, label: p.id })));
+  const TYPE_OPTIONS = Object.entries(PRESETS).map(([value, preset]) => ({
+    value,
+    label: `${preset.label}${preset.hint ? ` · ${preset.hint}` : ''}`,
+  }));
   let useExisting = $state(false);
   let selectedProvider = $state('');
 
@@ -200,7 +209,7 @@
     <div class="pmd-head">
       <span class="pmd-title">供应商与模型配置</span>
       <span class="pmd-sub">一站式配置供应商、模型与思考等级</span>
-      <button class="pmd-x" onclick={onclose} aria-label="关闭" type="button"><Icon name="close" size="sm" /></button>
+      <IconButton name="close" size="sm" label="关闭" onclick={onclose} class="pmd-x" />
     </div>
 
     <div class="pmd-body">
@@ -210,7 +219,7 @@
           <span class="pmd-sec-title">① 供应商</span>
           {#if existingProviders.length > 0}
             <label class="pmd-toggle-inline">
-              <input type="checkbox" bind:checked={useExisting} />
+              <Switch bind:checked={useExisting} />
               <span>使用已有</span>
             </label>
           {/if}
@@ -219,32 +228,24 @@
         {#if useExisting}
           <label class="fld">
             <span class="lbl">选择供应商</span>
-            <select class="inp" bind:value={selectedProvider}>
-              {#each existingProviders as p (p.id)}
-                <option value={p.id}>{p.id}</option>
-              {/each}
-            </select>
+            <Select bind:value={selectedProvider} options={providerOptions} />
           </label>
         {:else}
           <label class="fld">
             <span class="lbl">服务类型</span>
-            <select class="inp" bind:value={pType} onchange={onTypeChange}>
-              {#each Object.entries(PRESETS) as [val, preset] (val)}
-                <option value={val}>{preset.label}{preset.hint ? ` · ${preset.hint}` : ''}</option>
-              {/each}
-            </select>
+            <Select bind:value={pType} options={TYPE_OPTIONS} onchange={onTypeChange} />
           </label>
           <label class="fld">
             <span class="lbl">供应商 ID<span class="hint">用于引用，默认与类型同名</span></span>
-            <input class="inp" bind:value={pId} placeholder={pType} />
+            <Input bind:value={pId} placeholder={pType} />
           </label>
           <label class="fld">
             <span class="lbl">API Key</span>
-            <input class="inp" type="password" bind:value={pKey} placeholder="sk-..." />
+            <Input type="password" bind:value={pKey} placeholder="sk-..." />
           </label>
           <label class="fld">
             <span class="lbl">Base URL<span class="hint">可选，留空用默认端点</span></span>
-            <input class="inp" bind:value={pUrl} placeholder={PRESETS[pType]?.baseUrl ?? 'https://…'} />
+            <Input bind:value={pUrl} placeholder={PRESETS[pType]?.baseUrl ?? 'https://…'} />
           </label>
         {/if}
       </section>
@@ -254,7 +255,7 @@
         <header class="pmd-sec-head">
           <span class="pmd-sec-title">② 模型<span class="pmd-sec-optional">（可选）</span></span>
           <label class="pmd-toggle-inline">
-            <input type="checkbox" bind:checked={addModel} />
+            <Switch bind:checked={addModel} />
             <span>添加模型别名</span>
           </label>
         </header>
@@ -262,20 +263,20 @@
         {#if addModel}
           <label class="fld">
             <span class="lbl">模型名<span class="hint">与供应商上的名称一致</span></span>
-            <input class="inp" bind:value={mName} placeholder="gpt-4o" oninput={() => { if (!mAlias) mAlias = mName; }} />
+            <Input bind:value={mName} placeholder="gpt-4o" oninput={() => { if (!mAlias) mAlias = mName; }} />
           </label>
           <label class="fld">
             <span class="lbl">别名<span class="hint">聊天中显示/选择用，默认同模型名</span></span>
-            <input class="inp" bind:value={mAlias} placeholder={mName || 'my-model'} />
+            <Input bind:value={mAlias} placeholder={mName || 'my-model'} />
           </label>
           <div class="fld-row">
             <label class="fld">
               <span class="lbl">Context</span>
-              <input class="inp" type="number" bind:value={mContext} placeholder="128000" />
+              <Input type="number" bind:value={mContext} placeholder="128000" />
             </label>
             <label class="fld">
               <span class="lbl">显示名<span class="hint">可选</span></span>
-              <input class="inp" bind:value={mDisplay} placeholder={mName || 'GPT-4o'} />
+              <Input bind:value={mDisplay} placeholder={mName || 'GPT-4o'} />
             </label>
           </div>
         {/if}
@@ -286,7 +287,7 @@
         <header class="pmd-sec-head">
           <span class="pmd-sec-title">③ 思考（thinking）</span>
           <label class="pmd-toggle-inline">
-            <input type="checkbox" bind:checked={thinkingEnabled} />
+            <Switch bind:checked={thinkingEnabled} />
             <span>{thinkingEnabled ? '已启用' : '已关闭'}</span>
           </label>
         </header>
@@ -317,10 +318,10 @@
     </div>
 
     <div class="pmd-foot">
-      <button class="btn" onclick={onclose} type="button">取消</button>
-      <button class="btn pri" disabled={saving || (!useExisting && !pId.trim())} onclick={submit} type="button">
+      <Button onclick={onclose}>取消</Button>
+      <Button variant="primary" disabled={saving || (!useExisting && !pId.trim())} onclick={submit}>
         {saving ? '保存中…' : '保存配置'}
-      </button>
+      </Button>
     </div>
   </div>
 </div>
@@ -329,21 +330,26 @@
   .pmd-backdrop { position: fixed; inset: 0; z-index: var(--z-modal, 400); display: flex; align-items: center; justify-content: center; background: var(--overlay); padding: 16px; }
   .pmd-dialog {
     width: min(540px, 92vw); max-height: 90vh; overflow-y: auto;
-    background: var(--l3); border: 1px solid var(--bd2); border-radius: var(--r-xl);
-    box-shadow: var(--sh-lg);
+    background: var(--mat-surface-3, var(--l3));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-overlay, 16px);
+    box-shadow: var(--elev-overlay, var(--sh-lg));
   }
-  .pmd-head { display: flex; align-items: baseline; gap: 8px; padding: 16px 18px 8px; position: sticky; top: 0; background: var(--l3); border-bottom: 1px solid var(--bd); z-index: 1; }
+  .pmd-head { display: flex; align-items: baseline; gap: 8px; padding: 16px 18px 8px; position: sticky; top: 0; background: var(--mat-surface-3, var(--l3)); border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); z-index: 1; }
   .pmd-title { font-size: 15px; font-weight: 700; color: var(--tx); letter-spacing: -0.01em; }
   .pmd-sub { font-size: 11px; color: var(--tx3); }
-  .pmd-x { margin-left: auto; width: 26px; height: 26px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--tx3); cursor: pointer; display: flex; align-items: center; justify-content: center; flex: none; }
-  .pmd-x:hover { background: var(--ac-soft); color: var(--tx); }
+  :global(.pmd-x) { margin-left: auto; flex: none; }
 
   .pmd-body { display: flex; flex-direction: column; gap: 14px; padding: 14px 18px 4px; }
 
   .pmd-section {
     display: flex; flex-direction: column; gap: 10px;
-    padding: 12px; border: 1px solid var(--bd); border-radius: var(--r-lg);
-    background: var(--l1);
+    padding: 12px;
+    background: var(--mat-surface-1, var(--l1));
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-radius: var(--g-radius-card, 12px);
   }
   .pmd-sec-head {
     display: flex; align-items: center; justify-content: space-between;
@@ -353,30 +359,23 @@
   .pmd-sec-optional { font-size: 10px; color: var(--tx3); font-weight: 400; margin-left: 4px; }
 
   .pmd-toggle-inline {
-    display: inline-flex; align-items: center; gap: 5px;
+    display: inline-flex; align-items: center; gap: 6px;
     font-size: 11px; color: var(--tx2); cursor: pointer;
   }
-  .pmd-toggle-inline input { margin: 0; }
 
   .fld { display: flex; flex-direction: column; gap: 4px; flex: 1; }
   .fld-row { display: flex; gap: 10px; }
   .lbl { font-size: 11.5px; font-weight: 500; color: var(--tx); display: flex; align-items: baseline; gap: 6px; }
   .hint { font-size: 10px; color: var(--tx3); font-weight: 400; }
-  .inp {
-    padding: 8px 10px; border-radius: var(--r-md); background: var(--l2);
-    border: 1px solid var(--bd); color: var(--tx); font-size: 12.5px;
-    outline: none; font-family: inherit; width: 100%;
-    transition: border-color var(--duration-fast) var(--ease);
-  }
-  .inp:focus { border-color: var(--ac); }
 
   .effort-grid {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
   }
   .effort-pill {
     display: flex; flex-direction: column; gap: 2px;
-    padding: 9px 12px; border-radius: var(--r-md);
-    border: 1.5px solid var(--bd2); background: var(--l2);
+    padding: 9px 12px; border-radius: var(--g-radius-control, 8px);
+    border: var(--g-border-w-input, 1.5px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    background: var(--mat-surface-2, var(--l2));
     cursor: pointer; text-align: left;
     transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
   }
@@ -401,17 +400,7 @@
   .pmd-foot {
     display: flex; justify-content: flex-end; gap: 8px;
     padding: 14px 18px 16px; position: sticky; bottom: 0;
-    background: var(--l3); border-top: 1px solid var(--bd);
+    background: var(--mat-surface-3, var(--l3));
+    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
   }
-  .btn {
-    display: inline-flex; align-items: center; gap: 5px; height: 30px;
-    padding: 0 16px; border-radius: var(--r-md);
-    font-size: 12.5px; font-weight: 600;
-    border: 1px solid var(--bd2); color: var(--tx2); background: transparent;
-    cursor: pointer; transition: all var(--duration-fast) var(--ease);
-  }
-  .btn:hover:not(:disabled) { color: var(--tx); border-color: var(--tx3); }
-  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .btn.pri { background: var(--ac); border-color: transparent; color: var(--color-text-on-accent, #fff); }
-  .btn.pri:hover:not(:disabled) { background: var(--ac-h); }
 </style>

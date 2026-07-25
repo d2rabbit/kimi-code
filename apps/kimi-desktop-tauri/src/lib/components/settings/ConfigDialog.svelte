@@ -5,8 +5,15 @@
   import Dialog from '../ui/Dialog.svelte';
   import { daemon } from '../../stores/daemon.svelte';
   import Button from '../ui/Button.svelte';
+  import Chip from '../ui/Chip.svelte';
+  import Empty from '../ui/Empty.svelte';
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
+  import Input from '../ui/Input.svelte';
+  import Segmented from '../ui/Segmented.svelte';
+  import Select from '../ui/Select.svelte';
+  import Spinner from '../ui/Spinner.svelte';
+  import Switch from '../ui/Switch.svelte';
   import SkillsPanel from './SkillsPanel.svelte';
   import McpPanel from './McpPanel.svelte';
   import MemoryPanel from './MemoryPanel.svelte';
@@ -116,6 +123,24 @@
     { value: 'google-genai', label: 'Google Gemini' },
     { value: 'openai_responses', label: 'OpenAI Responses API' },
   ];
+
+  const SCHEME_OPTIONS = [
+    { value: 'light', label: '浅色' },
+    { value: 'dark', label: '深色' },
+    { value: 'clay', label: '粘土' },
+    { value: 'brutal', label: '粗野' },
+    { value: 'glass', label: '玻璃' },
+    { value: 'aqua', label: '水凝' },
+    { value: 'system', label: '跟随系统' },
+  ];
+
+  const PERMISSION_OPTIONS = [
+    { value: 'manual', label: '手动确认' },
+    { value: 'auto', label: '自动批准' },
+    { value: 'yolo', label: 'YOLO' },
+  ];
+
+  const modelProviderOptions = $derived(client.providers().map((p) => ({ value: p.id, label: `${p.id} (${p.type})` })));
 
   function openAddProvider() {
     editingProviderId = null;
@@ -392,7 +417,7 @@
         <Button size="sm" variant="default" icon="plus" onclick={openAddModel}>添加模型</Button>
       </div>
       {#if client.models().length === 0}
-        <p class="empty">暂无模型。请先添加 Provider，然后添加模型别名。</p>
+        <Empty title="暂无模型" desc="请先添加 Provider，然后添加模型别名。" />
       {:else}
         <div class="model-list">
           {#each client.models() as model (model.id)}
@@ -401,7 +426,7 @@
                 <span class="model-name">{model.displayName || model.id}</span>
                 <span class="model-meta">{model.provider} · {model.model}</span>
                 {#if model.id === client.defaultModel()}
-                  <span class="badge-default">默认</span>
+                  <Chip tone="accent">默认</Chip>
                 {/if}
               </div>
               {#if model.id !== client.defaultModel()}
@@ -418,23 +443,19 @@
           <div class="form-card" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
             <h4>添加模型别名</h4>
             <label>别名 (用于选择模型)
-              <input bind:value={modelForm.alias} placeholder="如 gpt-4o" />
+              <Input bind:value={modelForm.alias} placeholder="如 gpt-4o" />
             </label>
             <label>Provider
-              <select bind:value={modelForm.provider}>
-                {#each client.providers() as p (p.id)}
-                  <option value={p.id}>{p.id} ({p.type})</option>
-                {/each}
-              </select>
+              <Select bind:value={modelForm.provider} options={modelProviderOptions} />
             </label>
             <label>真实模型名
-              <input bind:value={modelForm.model} placeholder="如 gpt-4o-2024-11-20" />
+              <Input bind:value={modelForm.model} placeholder="如 gpt-4o-2024-11-20" />
             </label>
             <label>最大上下文长度
-              <input type="number" bind:value={modelForm.maxContextSize} min="1000" step="1000" />
+              <input class="num-input" type="number" bind:value={modelForm.maxContextSize} min="1000" step="1000" />
             </label>
             <label>显示名称 (可选)
-              <input bind:value={modelForm.displayName} placeholder="如 GPT-4o" />
+              <Input bind:value={modelForm.displayName} placeholder="如 GPT-4o" />
             </label>
             <div class="form-actions">
               <Button variant="ghost" onclick={() => showModelForm = false}>取消</Button>
@@ -454,7 +475,7 @@
         <Button size="sm" variant="default" icon="plus" onclick={openAddProvider}>添加 Provider</Button>
       </div>
       {#if client.providers().length === 0}
-        <p class="empty">暂无 Provider。点击「添加 Provider」开始配置。</p>
+        <Empty title="暂无 Provider" desc="点击「添加 Provider」开始配置。" />
       {:else}
         <div class="provider-list">
           {#each client.providers() as p (p.id)}
@@ -486,23 +507,19 @@
           <div class="form-card" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
             <h4>{editingProviderId ? '编辑 Provider' : '添加 Provider'}</h4>
             <label>名称 (唯一标识)
-              <input bind:value={providerForm.id} placeholder="如 my-openai" disabled={!!editingProviderId} />
+              <Input bind:value={providerForm.id} placeholder="如 my-openai" disabled={!!editingProviderId} />
             </label>
             <label>类型
-              <select bind:value={providerForm.type}>
-                {#each PROVIDER_TYPES as pt}
-                  <option value={pt.value}>{pt.label}</option>
-                {/each}
-              </select>
+              <Select bind:value={providerForm.type} options={PROVIDER_TYPES} />
             </label>
             <label>API Key
-              <input type="password" bind:value={providerForm.apiKey} placeholder={editingProviderId ? '留空表示不修改' : 'sk-...'} />
+              <Input type="password" bind:value={providerForm.apiKey} placeholder={editingProviderId ? '留空表示不修改' : 'sk-...'} />
             </label>
             <label>Base URL (可选)
-              <input bind:value={providerForm.baseUrl} placeholder="https://api.openai.com/v1" />
+              <Input bind:value={providerForm.baseUrl} placeholder="https://api.openai.com/v1" />
             </label>
             <label>默认模型 (可选)
-              <input bind:value={providerForm.defaultModel} placeholder="gpt-4o" />
+              <Input bind:value={providerForm.defaultModel} placeholder="gpt-4o" />
             </label>
             <div class="form-actions">
               <Button variant="ghost" onclick={() => showProviderForm = false}>取消</Button>
@@ -548,76 +565,60 @@
       <h3>外观</h3>
       <div class="setting-row">
         <span>主题</span>
-        <div class="segmented">
-          {#each ['light', 'dark', 'clay', 'brutal', 'glass', 'aqua', 'system'] as scheme}
-            <button
-              class="seg-btn"
-              class:active={client.colorScheme() === scheme}
-              onclick={() => setColorScheme(scheme as 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua')}
-            >
-              {scheme === 'light' ? '浅色' : scheme === 'dark' ? '深色' : scheme === 'clay' ? '粘土' : scheme === 'brutal' ? '粗野' : scheme === 'glass' ? '玻璃' : scheme === 'aqua' ? '水凝' : '跟随系统'}
-            </button>
-          {/each}
-        </div>
+        <Segmented
+          value={client.colorScheme() || 'dark'}
+          options={SCHEME_OPTIONS}
+          onchange={(v) => setColorScheme(v as 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua')}
+        />
       </div>
 
       <h3>权限模式</h3>
       <div class="setting-row">
         <span>默认权限</span>
-        <div class="segmented">
-          {#each [['manual', '手动确认'], ['auto', '自动批准'], ['yolo', 'YOLO']] as [val, label]}
-            <button
-              class="seg-btn"
-              class:active={client.config()?.defaultPermissionMode === val}
-              onclick={() => setPermission(val as 'manual' | 'auto' | 'yolo')}
-              disabled={saving}
-            >
-              {label}
-            </button>
-          {/each}
-        </div>
+        <Segmented
+          value={client.config()?.defaultPermissionMode ?? 'manual'}
+          options={PERMISSION_OPTIONS}
+          onchange={(v) => { if (!saving) setPermission(v as 'manual' | 'auto' | 'yolo'); }}
+        />
       </div>
 
       <h3>开关</h3>
-      <label class="switch-row">
+      <div class="switch-row">
         <span>
           <div class="switch-label">思考模式</div>
           <div class="switch-sub">启用模型的思考/推理能力</div>
         </span>
-        <input
-          type="checkbox"
-          class="toggle"
-          checked={client.config()?.thinking?.enabled}
+        <Switch
+          checked={client.config()?.thinking?.enabled ?? false}
           disabled={saving}
-          onchange={(e) => toggleThinking((e.target as HTMLInputElement).checked)}
+          label="思考模式"
+          onchange={(c) => toggleThinking(c)}
         />
-      </label>
-      <label class="switch-row">
+      </div>
+      <div class="switch-row">
         <span>
           <div class="switch-label">遥测</div>
           <div class="switch-sub">发送匿名使用数据帮助改进产品</div>
         </span>
-        <input
-          type="checkbox"
-          class="toggle"
-          checked={client.config()?.telemetry}
+        <Switch
+          checked={client.config()?.telemetry ?? false}
           disabled={saving}
-          onchange={(e) => toggleConfig('telemetry', (e.target as HTMLInputElement).checked)}
+          label="遥测"
+          onchange={(c) => toggleConfig('telemetry', c)}
         />
-      </label>
-      <label class="switch-row">
+      </div>
+      <div class="switch-row">
         <span>
           <div class="switch-label">合并所有可用 Skills</div>
           <div class="switch-sub">自动合并所有来源的 Skills</div>
         </span>
-        <input
-          type="checkbox"
-          class="toggle"
-          checked={client.config()?.mergeAllAvailableSkills}
+        <Switch
+          checked={client.config()?.mergeAllAvailableSkills ?? false}
           disabled={saving}
-          onchange={(e) => toggleConfig('mergeAllAvailableSkills', (e.target as HTMLInputElement).checked)}
+          label="合并所有可用 Skills"
+          onchange={(c) => toggleConfig('mergeAllAvailableSkills', c)}
         />
-      </label>
+      </div>
     </div>
   {/if}
 
@@ -626,23 +627,18 @@
     <div class="tab-content">
       <h3>已归档会话</h3>
       {#if client.client.archivedLoading}
-        <div class="archived-loading"><div class="spinner"></div><p>加载中…</p></div>
+        <div class="archived-loading"><Spinner size="lg" /><p>加载中…</p></div>
       {:else if client.client.archivedSessions.length === 0}
-        <div class="archived-empty">
-          <Icon name="archive" size="lg" />
-          <p>没有已归档的会话</p>
-        </div>
+        <Empty icon="🗂" title="没有已归档的会话" />
       {:else}
         <div class="archived-list">
           {#each client.client.archivedSessions as session (session.id)}
-            <div class="archived-row glass-panel">
+            <div class="archived-row">
               <div class="archived-info">
                 <span class="archived-title">{session.title || '新对话'}</span>
                 <span class="archived-meta">{session.cwd ?? ''}</span>
               </div>
-              <button class="restore-btn" onclick={() => client.client.restoreSession(session.id)}>
-                <Icon name="refresh" size="sm" /> 恢复
-              </button>
+              <Button size="sm" icon="refresh" onclick={() => client.client.restoreSession(session.id)}>恢复</Button>
             </div>
           {/each}
         </div>
@@ -666,18 +662,17 @@
           <div class="switch-sub mono">{daemon.state.origin || 'http://127.0.0.1:58627'}</div>
         </div>
       </div>
-      <label class="setting-row">
+      <div class="setting-row">
         <div>
           <div class="switch-label">遥测</div>
           <div class="switch-sub">发送匿名使用数据帮助改进产品</div>
         </div>
-        <input
-          type="checkbox"
-          class="switch"
-          checked={client.config()?.telemetry}
-          onchange={(e) => toggleConfig('telemetry', (e.target as HTMLInputElement).checked)}
+        <Switch
+          checked={client.config()?.telemetry ?? false}
+          label="遥测"
+          onchange={(c) => toggleConfig('telemetry', c)}
         />
-      </label>
+      </div>
     </div>
   {/if}
 </Dialog>
@@ -686,7 +681,7 @@
   .tabs {
     display: flex;
     gap: 2px;
-    border-bottom: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--color-line, rgba(84,84,88,0.65)));
     margin-bottom: 20px;
   }
   .tab {
@@ -733,7 +728,7 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
-    border-radius: var(--radius-lg, 12px);
+    border-radius: var(--g-radius-card, 12px);
     margin-bottom: 12px;
   }
   .status-card.ok { background: var(--color-success-soft, rgba(78, 201, 176, 0.1)); }
@@ -749,8 +744,8 @@
     font-weight: var(--weight-semibold, 700);
     letter-spacing: 0.1em;
     padding: 12px 24px;
-    background: var(--color-surface-raised, #1a1a1e);
-    border-radius: var(--radius-md, 8px);
+    background: var(--mat-surface-2, var(--color-surface-raised, #1a1a1e));
+    border-radius: var(--g-radius-card, 8px);
     margin: 12px 0;
     display: inline-block;
   }
@@ -768,7 +763,7 @@
     left: 0; right: 0; top: 50%;
     border-top: 1px solid var(--color-line, rgba(84,84,88,0.65));
   }
-  .divider span { background: var(--color-surface, rgba(28,28,30,0.72)); padding: 0 12px; position: relative; }
+  .divider span { background: var(--mat-surface-3, var(--color-surface, rgba(28,28,30,0.72))); padding: 0 12px; position: relative; }
 
   .section-header {
     display: flex;
@@ -777,8 +772,6 @@
     margin-bottom: 12px;
   }
   .section-header h3 { margin: 0; }
-
-  .empty { color: var(--color-text-muted, rgba(235,235,245,0.6)); font-size: var(--text-sm, 13px); padding: 20px 0; }
 
   /* Model list */
   .model-list, .provider-list { display: flex; flex-direction: column; gap: 4px; }
@@ -795,13 +788,6 @@
   .model-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .model-name { font-weight: var(--weight-medium, 500); }
   .model-meta { font-size: var(--text-xs, 12px); color: var(--color-text-faint, rgba(235,235,245,0.3)); }
-  .badge-default {
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: var(--radius-full, 999px);
-    background: var(--color-accent, #2dd4bf);
-    color: #fff;
-  }
 
   /* Provider list */
   .provider-row {
@@ -809,8 +795,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    border-radius: var(--g-radius-card, 8px);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--color-line, rgba(84,84,88,0.65)));
   }
   .provider-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .provider-name { font-weight: var(--weight-medium, 500); }
@@ -829,13 +815,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--overlay, rgba(0, 0, 0, 0.4));
     animation: kimi-fade-in var(--duration-fast, 120ms) var(--ease, ease);
   }
   .form-card {
-    background: var(--color-surface, rgba(28,28,30,0.72));
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
-    border-radius: var(--radius-lg, 12px);
+    background: var(--mat-surface-3, var(--color-surface, rgba(28,28,30,0.72)));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--color-line, rgba(84,84,88,0.65)));
+    border-radius: var(--g-radius-overlay, 12px);
+    box-shadow: var(--elev-overlay, none);
     padding: 24px;
     width: min(440px, 90vw);
     display: flex;
@@ -845,20 +834,20 @@
   }
   .form-card h4 { margin: 0 0 4px; font-size: var(--text-base, 14px); font-weight: var(--weight-medium, 500); }
   .form-card label { display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm, 13px); color: var(--color-text-muted, rgba(235,235,245,0.6)); }
-  .form-card input, .form-card select {
+  .num-input {
     padding: 8px 10px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
-    background: var(--color-surface-raised, #1a1a1e);
+    border-radius: var(--g-radius-input, 6px);
+    border: var(--g-border-w-input, 1px) var(--g-border-style, solid) var(--g-border-color, var(--color-line, rgba(84,84,88,0.65)));
+    background: var(--mat-input-bg, var(--color-surface-raised, #1a1a1e));
+    box-shadow: var(--elev-input, none);
     color: var(--color-text, rgba(255,255,255,0.92));
     font-size: var(--text-sm, 13px);
     font-family: inherit;
   }
-  .form-card input:focus, .form-card select:focus {
+  .num-input:focus {
     outline: none;
     border-color: var(--color-accent, #2dd4bf);
   }
-  .form-card input:disabled { opacity: 0.5; }
   .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
   /* General settings */
@@ -869,57 +858,18 @@
     padding: 8px 0;
     margin-bottom: 8px;
   }
-  .segmented { display: flex; gap: 2px; background: var(--color-surface-raised, #1a1a1e); border-radius: var(--radius-sm, 6px); padding: 2px; }
-  .seg-btn {
-    padding: 5px 12px;
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted, rgba(235,235,245,0.6));
-    font-size: var(--text-xs, 12px);
-    border-radius: var(--radius-xs, 4px);
-    cursor: pointer;
-    transition: background var(--duration-fast, 120ms), color var(--duration-fast, 120ms);
-  }
-  .seg-btn:hover { color: var(--color-text, rgba(255,255,255,0.92)); }
-  .seg-btn.active { background: var(--color-accent, #2dd4bf); color: #fff; }
 
   .switch-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 12px 0;
-    cursor: pointer;
   }
   .switch-label { font-size: var(--text-sm, 13px); font-weight: var(--weight-medium, 500); }
   .switch-sub { font-size: var(--text-xs, 12px); color: var(--color-text-faint, rgba(235,235,245,0.3)); margin-top: 2px; }
-  .toggle {
-    appearance: none;
-    width: 38px;
-    height: 22px;
-    background: var(--color-line-strong, rgba(84,84,88,0.4));
-    border-radius: 11px;
-    position: relative;
-    cursor: pointer;
-    transition: background var(--duration-fast, 120ms);
-    flex: none;
-  }
-  .toggle:checked { background: var(--color-accent, #2dd4bf); }
-  .toggle::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #fff;
-    top: 3px;
-    left: 3px;
-    transition: transform var(--duration-fast, 120ms);
-  }
-  .toggle:checked::after { transform: translateX(16px); }
 
   /* Archived sessions */
-  .archived-loading,
-  .archived-empty {
+  .archived-loading {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -937,7 +887,12 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 14px;
-    border-radius: var(--radius-md, 8px);
+    background: var(--mat-surface-2, var(--color-surface-raised, #1a1a1e));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--color-line, rgba(84,84,88,0.65)));
+    border-radius: var(--g-radius-card, 8px);
+    box-shadow: var(--elev-card, none);
   }
   .archived-info {
     display: flex;
@@ -953,31 +908,6 @@
     font-size: var(--text-xs, 11px);
     font-family: var(--font-mono, monospace);
     color: var(--color-text-faint, #555);
-  }
-  .restore-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 5px 10px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: transparent;
-    color: var(--color-text-muted, #999);
-    font-size: var(--text-xs, 12px);
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .restore-btn:hover {
-    color: var(--color-text, #ececec);
-    border-color: var(--color-line-strong, #3a3a3a);
-  }
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid rgba(255,255,255,0.1);
-    border-top-color: var(--color-text, #ececec);
-    border-radius: 50%;
-    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
   }
   .mono {
     font-family: var(--font-mono, monospace);

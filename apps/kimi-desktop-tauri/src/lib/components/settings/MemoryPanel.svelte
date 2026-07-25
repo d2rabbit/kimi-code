@@ -7,6 +7,10 @@
   import { getKimiWebApi } from '../../api';
   import { invoke as tauriInvoke } from '@tauri-apps/api/core';
   import Icon from '../ui/Icon.svelte';
+  import Button from '../ui/Button.svelte';
+  import Card from '../ui/Card.svelte';
+  import Spinner from '../ui/Spinner.svelte';
+  import Textarea from '../ui/Textarea.svelte';
 
   const isTauri = '__TAURI_INTERNALS__' in globalThis;
 
@@ -190,9 +194,9 @@
             <div class="bento-label">当前模型</div>
             <div class="bento-value mono">{sessionStatus || '默认'}</div>
           </div>
-          <button class="bento-compact-btn" onclick={handleCompact} disabled={compacting} type="button">
+          <Button size="sm" variant="primary" onclick={handleCompact} disabled={compacting}>
             {compacting ? '压缩中…' : '⧉ 压缩对话'}
-          </button>
+          </Button>
         </div>
       </div>
     {:else}
@@ -206,28 +210,31 @@
   <!-- Section 2: Conversation Compaction -->
   <section class="memory-section">
     <h3>对话压缩</h3>
-    <div class="compact-card glass-panel">
+    <Card variant="raised" padding="none">
+      <div class="compact-card">
       <div class="compact-info">
         <p>压缩会将当前对话历史总结为一条摘要消息，释放上下文窗口空间。</p>
         <p class="compact-hint">适合在上下文使用率超过 80% 时执行。</p>
       </div>
-      <button
-        class="compact-action-btn"
+      <span class="compact-action"><Button
+        size="sm"
+        icon="contract"
         onclick={handleCompact}
         disabled={compacting || !client.activeSessionId()}
       >
         {#if compacting}
-          <div class="mini-spinner"></div> 压缩中…
+          压缩中…
         {:else}
-          <Icon name="contract" size="sm" /> 压缩对话
+          压缩对话
         {/if}
-      </button>
+      </Button></span>
       {#if compactMsg}
         <div class="compact-msg" class:error={compactMsg.type === 'error'}>
           {compactMsg.text}
         </div>
       {/if}
-    </div>
+      </div>
+    </Card>
   </section>
 
   <!-- Section 3: AGENTS.md Editor -->
@@ -237,29 +244,29 @@
       {#if agentsDirty && !agentsSaving}
         <span class="dirty-badge">未保存</span>
       {/if}
-      <button class="agents-save-btn" onclick={saveAgentsMd} disabled={!agentsDirty || agentsSaving || !isTauri}>
-        {#if agentsSaving}<div class="mini-spinner"></div>{/if}
-        保存
-      </button>
+      <span class="agents-save"><Button size="sm" onclick={saveAgentsMd} disabled={!agentsDirty || agentsSaving || !isTauri}>
+        {agentsSaving ? '保存中…' : '保存'}
+      </Button></span>
     </div>
     <p class="agents-path mono" title={agentsPath}>{agentsPath || '未确定路径'}</p>
 
     {#if agentsLoading}
-      <div class="agents-loading"><div class="spinner"></div><p>加载 AGENTS.md…</p></div>
+      <div class="agents-loading"><Spinner size="lg" /><p>加载 AGENTS.md…</p></div>
     {:else if agentsError && !agentsContent}
       <div class="agents-error">
         <Icon name="error-warning" size="md" />
         <p>{agentsError}</p>
-        <button class="retry-btn" onclick={loadAgentsMd}>重试</button>
+        <Button size="sm" onclick={loadAgentsMd}>重试</Button>
       </div>
     {:else}
-      <textarea
-        class="agents-editor"
-        bind:value={agentsContent}
-        oninput={onContentChange}
-        spellcheck="false"
-        placeholder="# AGENTS.md — Agent 指南文件&#10;&#10;在此编写项目特定的 Agent 指令、代码规范、架构说明等。"
-      ></textarea>
+      <div class="agents-editor">
+        <Textarea
+          bind:value={agentsContent}
+          oninput={onContentChange}
+          rows={12}
+          placeholder="# AGENTS.md — Agent 指南文件&#10;&#10;在此编写项目特定的 Agent 指令、代码规范、架构说明等。"
+        />
+      </div>
       {#if !isTauri}
         <p class="browser-notice">
           <Icon name="information" size="sm" />
@@ -291,9 +298,12 @@
     gap: 10px;
   }
   .bento-cell {
-    border-radius: var(--r-lg, 14px);
-    border: 1px solid var(--bd, rgba(255,255,255,0.06));
-    background: var(--l2);
+    border-radius: var(--g-radius-card, 14px);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd, rgba(255,255,255,0.06)));
+    background: var(--mat-surface-2, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    box-shadow: var(--elev-card, none);
     padding: 12px 14px;
     display: flex;
     flex-direction: column;
@@ -305,7 +315,7 @@
   }
   .bento-cell:hover {
     border-color: var(--bd2);
-    transform: translateY(-1px);
+    transform: var(--motion-hover-lift, none);
   }
   /* Cell sizes — bento asymmetry */
   .bento-lg { grid-column: span 2; grid-row: span 2; }
@@ -340,7 +350,7 @@
   }
   .bento-chip {
     padding: 1px 7px;
-    border-radius: 999px;
+    border-radius: var(--g-radius-chip, 999px);
     font-family: var(--font-mono, monospace);
     font-size: 10px;
     font-weight: 600;
@@ -412,24 +422,6 @@
   }
 
   /* Compact button in wide cell */
-  .bento-compact-btn {
-    padding: 6px 14px;
-    border-radius: var(--r-md);
-    border: 1px solid var(--ac-bd);
-    background: var(--ac-soft);
-    color: var(--ac);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-fast, 120ms) var(--ease, ease);
-    white-space: nowrap;
-  }
-  .bento-compact-btn:hover:not(:disabled) {
-    background: var(--ac);
-    color: var(--color-text-on-accent, #fff);
-  }
-  .bento-compact-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
   .mono {
     font-family: var(--font-mono, monospace);
   }
@@ -437,7 +429,6 @@
   /* Compaction card */
   .compact-card {
     padding: 14px 16px;
-    border-radius: var(--radius-md, 8px);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -452,33 +443,14 @@
     color: var(--color-text-faint, #555) !important;
     font-size: var(--text-xs, 12px) !important;
   }
-  .compact-action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: transparent;
-    color: var(--color-text, #ececec);
-    font-size: var(--text-sm, 13px);
-    cursor: pointer;
+  .compact-action {
     align-self: flex-start;
-    transition: background var(--duration-fast, 120ms) var(--ease), color var(--duration-fast, 120ms) var(--ease);
-  }
-  .compact-action-btn:hover:not(:disabled) {
-    border-color: var(--color-line-strong, #3a3a3a);
-    background: var(--color-hover, rgba(255,255,255,0.04));
-  }
-  .compact-action-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    display: inline-flex;
   }
   .compact-msg {
     font-size: var(--text-xs, 12px);
     padding: 6px 10px;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--g-radius-control, 6px);
     background: rgba(63, 185, 80, 0.1);
     color: var(--color-success, #30d158);
   }
@@ -500,30 +472,14 @@
   .dirty-badge {
     font-size: 10px;
     padding: 1px 6px;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--g-radius-chip, 999px);
     background: var(--color-warning, #d29922);
     color: #000;
     font-weight: 600;
   }
-  .agents-save-btn {
+  .agents-save {
     margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 12px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: transparent;
-    color: var(--color-text, #ececec);
-    font-size: var(--text-xs, 12px);
-    cursor: pointer;
-  }
-  .agents-save-btn:hover:not(:disabled) {
-    background: var(--color-hover, rgba(255,255,255,0.04));
-  }
-  .agents-save-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+    display: inline-flex;
   }
   .agents-path {
     font-size: 10px;
@@ -533,23 +489,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .agents-editor {
-    width: 100%;
+  .agents-editor :global(.ui-textarea) {
     min-height: 240px;
-    padding: 12px 14px;
-    border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: var(--color-surface-sunken, #161616);
-    color: var(--color-text, #ececec);
     font-family: var(--font-mono, monospace);
     font-size: var(--text-xs, 12px);
     line-height: 1.6;
-    resize: vertical;
-    outline: none;
-    box-sizing: border-box;
-  }
-  .agents-editor:focus {
-    border-color: var(--color-line-strong, #3a3a3a);
   }
   .browser-notice {
     display: flex;
@@ -570,33 +514,6 @@
     padding: 30px 20px;
     color: var(--color-text-muted, #999);
     font-size: var(--text-sm, 13px);
-  }
-  .retry-btn {
-    padding: 6px 14px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: transparent;
-    color: var(--color-text, #ececec);
-    font-size: var(--text-sm, 13px);
-    cursor: pointer;
-  }
-
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid rgba(255,255,255,0.1);
-    border-top-color: var(--color-text, #ececec);
-    border-radius: 50%;
-    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
-  }
-  .mini-spinner {
-    width: 12px;
-    height: 12px;
-    border: 1.5px solid rgba(255,255,255,0.1);
-    border-top-color: currentColor;
-    border-radius: 50%;
-    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
-    display: inline-block;
   }
 
   /* Responsive: narrow panels collapse to 2 columns */

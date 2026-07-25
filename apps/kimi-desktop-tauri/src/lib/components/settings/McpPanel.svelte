@@ -5,6 +5,13 @@
   import { getKimiWebApi } from '../../api';
   import { invoke as tauriInvoke } from '@tauri-apps/api/core';
   import Icon from '../ui/Icon.svelte';
+  import Button from '../ui/Button.svelte';
+  import Card from '../ui/Card.svelte';
+  import IconButton from '../ui/IconButton.svelte';
+  import Input from '../ui/Input.svelte';
+  import Select from '../ui/Select.svelte';
+  import Spinner from '../ui/Spinner.svelte';
+  import Textarea from '../ui/Textarea.svelte';
 
   interface McpServer {
     id: string;
@@ -28,7 +35,7 @@
     args: '',
     env: '',
     cwd: '',
-    transport: 'stdio' as 'stdio' | 'http' | 'sse',
+    transport: 'stdio' as string,
     url: '',
     headers: '',
   });
@@ -169,14 +176,8 @@
       <p class="mcp-desc">Model Context Protocol 服务器为 Agent 提供外部工具和数据源。</p>
     </div>
     <div style="display: flex; gap: 6px;">
-      <button class="refresh-btn" onclick={loadServers} disabled={loading}>
-        <Icon name="refresh" size="sm" />
-        刷新
-      </button>
-      <button class="refresh-btn" onclick={openAddForm} style="color: var(--color-accent); border-color: var(--color-accent-bd);">
-        <Icon name="plus" size="sm" />
-        添加
-      </button>
+      <Button size="sm" icon="refresh" onclick={loadServers} disabled={loading}>刷新</Button>
+      <Button size="sm" variant="primary" icon="plus" onclick={openAddForm}>添加</Button>
     </div>
   </div>
 
@@ -184,68 +185,71 @@
     <div class="mcp-form">
       <div class="form-row">
         <label>名称
-          <input bind:value={formData.name} placeholder="my-server" />
+          <Input bind:value={formData.name} placeholder="my-server" size="sm" />
         </label>
       </div>
       <div class="form-row">
         <label>传输方式
-          <select bind:value={formData.transport}>
-            <option value="stdio">stdio (本地进程)</option>
-            <option value="http">http (远程 API)</option>
-            <option value="sse">sse (Server-Sent Events)</option>
-          </select>
+          <Select
+            bind:value={formData.transport}
+            options={[
+              { value: 'stdio', label: 'stdio (本地进程)' },
+              { value: 'http', label: 'http (远程 API)' },
+              { value: 'sse', label: 'sse (Server-Sent Events)' },
+            ]}
+          />
         </label>
       </div>
       {#if formData.transport === 'stdio'}
         <div class="form-row">
           <label>命令
-            <input bind:value={formData.command} placeholder="npx" />
+            <Input bind:value={formData.command} placeholder="npx" size="sm" />
           </label>
         </div>
         <div class="form-row">
           <label>参数 (空格分隔)
-            <input bind:value={formData.args} placeholder="@modelcontextprotocol/server-filesystem /tmp" />
+            <Input bind:value={formData.args} placeholder="@modelcontextprotocol/server-filesystem /tmp" size="sm" />
           </label>
         </div>
         <div class="form-row">
           <label>环境变量 (每行 KEY=VALUE)
-            <textarea bind:value={formData.env} rows="2" placeholder="API_KEY=xxx"></textarea>
+            <Textarea bind:value={formData.env} rows={2} placeholder="API_KEY=xxx" />
           </label>
         </div>
         <div class="form-row">
           <label>工作目录 (可选)
-            <input bind:value={formData.cwd} placeholder="/home/user" />
+            <Input bind:value={formData.cwd} placeholder="/home/user" size="sm" />
           </label>
         </div>
       {:else}
         <div class="form-row">
           <label>URL
-            <input bind:value={formData.url} placeholder="https://api.example.com/mcp" />
+            <Input bind:value={formData.url} placeholder="https://api.example.com/mcp" size="sm" />
           </label>
         </div>
         <div class="form-row">
           <label>Headers (每行 KEY=VALUE)
-            <textarea bind:value={formData.headers} rows="2" placeholder="Authorization=Bearer xxx"></textarea>
+            <Textarea bind:value={formData.headers} rows={2} placeholder="Authorization=Bearer xxx" />
           </label>
         </div>
       {/if}
       <div class="form-actions">
-        <button class="refresh-btn" onclick={() => showForm = false}>取消</button>
-        <button class="refresh-btn" style="color: var(--color-accent); border-color: var(--color-accent-bd);" onclick={saveMcpServer}>保存并重启</button>
+        <Button size="sm" variant="ghost" onclick={() => showForm = false}>取消</Button>
+        <Button size="sm" variant="primary" onclick={saveMcpServer}>保存并重启</Button>
       </div>
     </div>
   {/if}
 
   {#if loading}
     <div class="mcp-loading">
-      <div class="spinner"></div>
+      <Spinner size="lg" />
       <p>加载中…</p>
     </div>
   {:else if error}
     <div class="mcp-error">
       <Icon name="error-warning" size="md" />
       <p>{error}</p>
-      <button class="retry-btn" onclick={loadServers}>重试</button>
+      <Button size="sm" onclick={loadServers}>重试</Button>
     </div>
   {:else if servers.length === 0}
     <div class="mcp-empty">
@@ -256,7 +260,8 @@
   {:else}
     <div class="mcp-list">
       {#each servers as server (server.id)}
-        <div class="mcp-card glass-panel">
+        <Card variant="raised" padding="none">
+          <div class="mcp-card">
           <div class="mcp-card-header">
             <div class="mcp-info">
               <div class="mcp-name-row">
@@ -266,25 +271,24 @@
               <span class="mcp-id">{server.id}</span>
             </div>
             <div style="display: flex; gap: 4px;">
-              <button
-                class="restart-btn"
+              <Button
+                size="sm"
                 onclick={() => handleRestart(server.id)}
                 disabled={restarting === server.id}
               >
                 {#if restarting === server.id}
-                  <div class="mini-spinner"></div>
+                  <Spinner size="sm" />
                 {:else}
                   <Icon name="refresh" size="sm" />
                 {/if}
                 重启
-              </button>
-              <button
-                class="restart-btn"
+              </Button>
+              <IconButton
+                name="close"
+                label="删除"
+                size="sm"
                 onclick={() => { if (confirm(`删除 ${server.name}?`)) deleteMcpServer(server.name); }}
-                style="color: var(--color-danger);"
-              >
-                <Icon name="close" size="sm" />
-              </button>
+              />
             </div>
           </div>
           <div class="mcp-meta">
@@ -296,7 +300,8 @@
             {/if}
             <span class="meta-chip status-{server.status}">{server.status}</span>
           </div>
-        </div>
+          </div>
+        </Card>
       {/each}
     </div>
   {/if}
@@ -329,26 +334,6 @@
     font-size: var(--text-xs, 12px);
     color: var(--color-text-muted, #999);
     margin: 0;
-  }
-  .refresh-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 5px 10px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: transparent;
-    color: var(--color-text-muted, #999);
-    font-size: var(--text-xs, 12px);
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .refresh-btn:hover {
-    color: var(--color-text, #ececec);
-    border-color: var(--color-line-strong, #3a3a3a);
-  }
-  .refresh-btn:disabled {
-    opacity: 0.5;
   }
 
   .mcp-loading,
@@ -390,7 +375,6 @@
 
   .mcp-card {
     padding: 12px 14px;
-    border-radius: var(--radius-md, 8px);
   }
   .mcp-card-header {
     display: flex;
@@ -434,29 +418,6 @@
     color: var(--color-text-faint, #555);
   }
 
-  .restart-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: transparent;
-    color: var(--color-text-muted, #999);
-    font-size: var(--text-xs, 12px);
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background var(--duration-fast, 120ms) var(--ease), color var(--duration-fast, 120ms) var(--ease);
-  }
-  .restart-btn:hover:not(:disabled) {
-    color: var(--color-text, #ececec);
-    border-color: var(--color-line-strong, #3a3a3a);
-    background: var(--color-hover, rgba(255,255,255,0.04));
-  }
-  .restart-btn:disabled {
-    opacity: 0.5;
-  }
-
   .mcp-meta {
     display: flex;
     gap: 6px;
@@ -466,8 +427,8 @@
   .meta-chip {
     font-size: 10px;
     padding: 2px 8px;
-    border-radius: var(--radius-full, 999px);
-    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--g-radius-chip, 999px);
+    background: var(--mat-chip-bg, rgba(255, 255, 255, 0.05));
     color: var(--color-text-muted, #999);
     font-family: var(--font-mono, monospace);
   }
@@ -483,43 +444,17 @@
     align-items: flex-start;
     gap: 8px;
     padding: 10px 12px;
-    border-radius: var(--radius-sm, 6px);
-    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--g-radius-card, 6px);
+    background: var(--mat-surface-1, rgba(255, 255, 255, 0.03));
     color: var(--color-text-muted, #999);
     font-size: var(--text-xs, 12px);
     line-height: 1.5;
   }
 
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-top-color: var(--color-text, #ececec);
-    border-radius: 50%;
-    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
-  }
-  .mini-spinner {
-    width: 12px;
-    height: 12px;
-    border: 1.5px solid rgba(255, 255, 255, 0.1);
-    border-top-color: currentColor;
-    border-radius: 50%;
-    animation: kimi-spin var(--duration-spin, 0.8s) linear infinite;
-  }
-
-  .retry-btn {
-    padding: 6px 14px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, #2e2e2e);
-    background: transparent;
-    color: var(--color-text, #ececec);
-    font-size: var(--text-sm, 13px);
-    cursor: pointer;
-  }
   .mcp-form {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px;
+    background: var(--mat-surface-1, rgba(255,255,255,0.03));
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, rgba(255,255,255,0.06));
+    border-radius: var(--g-radius-card, 10px);
     padding: 14px;
     display: flex;
     flex-direction: column;
@@ -533,19 +468,9 @@
   .mcp-form label {
     font-size: 11px;
     color: var(--color-text-faint);
-  }
-  .mcp-form input, .mcp-form select, .mcp-form textarea {
-    padding: 5px 10px;
-    border-radius: 8px;
-    background: rgba(0,0,0,0.25);
-    border: 1px solid rgba(255,255,255,0.06);
-    color: var(--color-text);
-    font-size: 12px;
-    outline: none;
-    font-family: inherit;
-  }
-  .mcp-form input:focus, .mcp-form select:focus, .mcp-form textarea:focus {
-    border-color: var(--color-accent);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
   .form-actions {
     display: flex;

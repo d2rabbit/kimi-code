@@ -123,24 +123,24 @@
   .list-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 11px; color: var(--tx2); }
   .list-meta .dim-i { color: var(--tx3); font-style: italic; }
 
-  .item-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-radius: 12px; background: var(--l2); border: 1px solid var(--bd); box-shadow: var(--toplight); margin-bottom: 8px; }
+  .item-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-radius: var(--g-radius-card, 12px); background: var(--mat-surface-2, var(--l2)); backdrop-filter: var(--mat-blur, none); -webkit-backdrop-filter: var(--mat-blur, none); border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); box-shadow: var(--elev-card, var(--toplight)); margin-bottom: 8px; }
   .item-row.live { align-items: center; }
-  .isq { width: 28px; height: 28px; border-radius: 8px; background: var(--ac-soft); color: var(--ac); display: flex; align-items: center; justify-content: center; flex: none; }
+  .isq { width: 28px; height: 28px; border-radius: var(--g-radius-control, 8px); background: var(--ac-soft); color: var(--ac); display: flex; align-items: center; justify-content: center; flex: none; }
   .isq.purple { background: var(--color-done-soft); color: var(--color-done); }
 
   .ir { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
   .it { font-size: 13px; font-weight: 500; color: var(--tx); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .role-tag { font-size: 10px; color: var(--tx3); background: var(--l3); padding: 1px 6px; border-radius: 4px; font-weight: 400; }
+  .role-tag { font-size: 10px; color: var(--tx3); background: var(--l3); padding: 1px 6px; border-radius: var(--g-radius-chip, 4px); font-weight: 400; }
   .id { font-size: 11px; color: var(--tx3); line-height: 1.4; }
   .id.mono { font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tool-line { font-size: 10px; color: var(--tx3); opacity: 0.8; }
 
-  .pchip { font-size: 10px; color: var(--color-done); background: var(--color-done-soft); border-radius: 99px; padding: 2px 8px; font-weight: 600; flex: none; }
+  .pchip { font-size: 10px; color: var(--color-done); background: var(--color-done-soft); border-radius: var(--g-radius-chip, 99px); padding: 2px 8px; font-weight: 600; flex: none; }
   .pchip.running { color: var(--ac); background: var(--ac-soft); }
 
   .empty-text { color: var(--tx3); font-size: 13px; }
 
-  .arch-note { display: flex; gap: 8px; align-items: flex-start; margin-top: 20px; padding: 12px 14px; border-radius: var(--r-md); background: var(--ac-soft); border: 1px solid var(--ac-bd); font-size: 11px; color: var(--tx2); line-height: 1.5; }
+  .arch-note { display: flex; gap: 8px; align-items: flex-start; margin-top: 20px; padding: 12px 14px; border-radius: var(--g-radius-card, 4px); background: var(--ac-soft); border: 1px solid var(--ac-bd); font-size: 11px; color: var(--tx2); line-height: 1.5; }
   .arch-note :global(svg) { flex: none; color: var(--ac); margin-top: 1px; }
   .arch-note code { font-family: var(--font-mono); font-size: 10.5px; background: var(--l2); padding: 1px 4px; border-radius: 3px; }
 </style>

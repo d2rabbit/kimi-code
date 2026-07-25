@@ -7,6 +7,8 @@
   import Button from '../ui/Button.svelte';
   import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
+  import Input from '../ui/Input.svelte';
+  import Textarea from '../ui/Textarea.svelte';
 
   let view = $state<'list' | 'edit'>('list');
   let editingName = $state<string>('');
@@ -163,13 +165,9 @@ You can use parameter placeholders:
     </p>
 
     <!-- Search filter -->
-    <input
-      class="skill-search"
-      bind:value={filter}
-      placeholder="搜索 skill…"
-      spellcheck="false"
-      autocomplete="off"
-    />
+    <div class="skill-search">
+      <Input bind:value={filter} placeholder="搜索 skill…" size="sm" />
+    </div>
 
     {#if error}
       <div class="msg-error">{error}</div>
@@ -258,14 +256,13 @@ You can use parameter placeholders:
       </details>
     </div>
 
-    <textarea
-      bind:value={editorContent}
-      class="skill-editor-textarea"
-      spellcheck="false"
-      autocomplete="off"
-      autocapitalize="off"
-      placeholder="输入 SKILL.md 内容..."
-    ></textarea>
+    <div class="editor-area">
+      <Textarea
+        bind:value={editorContent}
+        rows={16}
+        placeholder="输入 SKILL.md 内容..."
+      />
+    </div>
   </div>
 {/if}
 
@@ -281,31 +278,20 @@ You can use parameter placeholders:
   .count-badge {
     font-size: 11px;
     padding: 1px 7px;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--g-radius-chip, 999px);
     background: var(--color-surface-raised, #1a1a1e);
     color: var(--color-text-muted, rgba(235,235,245,0.6));
     font-weight: var(--weight-regular, 400);
   }
 
   .skill-search {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px 12px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
-    background: var(--color-surface-raised, #1a1a1e);
-    color: var(--color-text, rgba(255,255,255,0.92));
-    font-size: var(--text-sm, 13px);
     margin-bottom: 12px;
-    outline: none;
   }
-  .skill-search:focus { border-color: var(--color-accent, #2dd4bf); }
-  .skill-search::placeholder { color: var(--color-text-faint, rgba(235,235,245,0.3)); }
 
   .skill-source {
     font-size: 10px;
     padding: 1px 6px;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--g-radius-chip, 999px);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -341,8 +327,12 @@ You can use parameter placeholders:
     align-items: flex-start;
     justify-content: space-between;
     padding: 12px 14px;
-    border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
+    border-radius: var(--g-radius-card, 8px);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--color-line, rgba(84,84,88,0.65)));
+    background: var(--mat-surface-2, transparent);
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    box-shadow: var(--elev-card, none);
     transition: border-color var(--duration-fast, 120ms);
   }
   .skill-row:hover { border-color: var(--color-line-strong, rgba(84,84,88,0.4)); }
@@ -353,13 +343,13 @@ You can use parameter placeholders:
   .skill-type {
     font-size: 10px;
     padding: 1px 6px;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--g-radius-chip, 999px);
     background: var(--color-surface-raised, #1a1a1e);
     color: var(--color-text-muted, rgba(235,235,245,0.6));
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
-  .skill-badge { font-size: 10px; padding: 1px 6px; border-radius: var(--radius-full, 999px); }
+  .skill-badge { font-size: 10px; padding: 1px 6px; border-radius: var(--g-radius-chip, 999px); }
   .skill-badge.ok { background: var(--color-success-soft, rgba(78,201,176,0.15)); color: var(--color-success, #30d158); }
   .skill-badge.warn { background: var(--color-warning-soft, rgba(255,193,7,0.15)); color: var(--color-warning, #ffc107); }
 
@@ -417,22 +407,10 @@ You can use parameter placeholders:
     border-radius: 3px;
   }
 
-  .skill-editor-textarea {
-    width: 100%;
+  .editor-area :global(.ui-textarea) {
     min-height: 400px;
-    padding: 14px;
-    border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--color-line, rgba(84,84,88,0.65));
-    background: var(--color-surface-raised, #1a1a1e);
-    color: var(--color-text, rgba(255,255,255,0.92));
     font-family: var(--font-mono, monospace);
     font-size: 13px;
     line-height: 1.6;
-    resize: vertical;
-    outline: none;
-    box-sizing: border-box;
-  }
-  .skill-editor-textarea:focus {
-    border-color: var(--color-accent, #2dd4bf);
   }
 </style>

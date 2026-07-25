@@ -2,7 +2,9 @@
      展示设备码与验证地址 → 用户浏览器确认 → 轮询直至登录成功/过期/取消。 -->
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
-  import Icon from '../ui/Icon.svelte';
+  import Button from '../ui/Button.svelte';
+  import IconButton from '../ui/IconButton.svelte';
+  import Spinner from '../ui/Spinner.svelte';
   import * as client from '../../stores/client.svelte';
   import { toast } from '../../stores/toast.svelte';
 
@@ -93,15 +95,15 @@
         <div class="ld-title">登录 Kimi 账号</div>
         <div class="ld-sub">第一方模型 · 订阅额度 · 云同步</div>
       </div>
-      <button class="ld-x" onclick={cancel} aria-label="关闭"><Icon name="close" size="sm" /></button>
+      <span class="ld-x"><IconButton name="close" label="关闭" size="sm" onclick={cancel} /></span>
     </div>
 
     {#if phase === 'starting'}
-      <div class="ld-center"><span class="spin"></span><p>正在发起登录…</p></div>
+      <div class="ld-center"><Spinner /><p>正在发起登录…</p></div>
     {:else if phase === 'error'}
       <div class="ld-center">
         <p class="ld-err">{error}</p>
-        <button class="btn pri" onclick={start} type="button">重试</button>
+        <Button variant="primary" size="sm" onclick={start}>重试</Button>
       </div>
     {:else if phase === 'success'}
       <div class="ld-center">
@@ -111,7 +113,7 @@
     {:else if phase === 'expired'}
       <div class="ld-center">
         <p class="ld-err">登录已过期或被取消</p>
-        <button class="btn pri" onclick={start} type="button">重新发起</button>
+        <Button variant="primary" size="sm" onclick={start}>重新发起</Button>
       </div>
     {:else}
       <div class="ld-body">
@@ -120,10 +122,10 @@
           {userCode}
           <span class="ld-copy">{copied ? '已复制 ✓' : '⧉'}</span>
         </button>
-        <button class="btn pri ld-open" onclick={openVerify} type="button">
+        <div class="ld-open"><Button variant="primary" onclick={openVerify}>
           在浏览器中打开验证页
-        </button>
-        <p class="ld-wait"><span class="spin sm"></span>等待你在浏览器中确认…</p>
+        </Button></div>
+        <p class="ld-wait"><Spinner size="sm" />等待你在浏览器中确认…</p>
       </div>
     {/if}
   </div>
@@ -137,18 +139,19 @@
   }
   .ld-card {
     width: min(400px, 92vw);
-    background: var(--l3);
-    border: 1px solid var(--bd2);
-    border-radius: var(--r-xl);
-    box-shadow: var(--sh-lg);
+    background: var(--mat-surface-3, var(--l3));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-overlay, 6px);
+    box-shadow: var(--elev-overlay, var(--sh-lg));
     overflow: hidden;
   }
   .ld-head { display: flex; align-items: center; gap: 12px; padding: 18px 18px 12px; }
-  .ld-logo { width: 36px; height: 36px; border-radius: var(--r-lg); background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px rgba(79, 168, 255, 0.3); flex: none; }
+  .ld-logo { width: 36px; height: 36px; border-radius: var(--g-radius-control, 4px); background: linear-gradient(135deg, #4fa8ff, #5bc0be); color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px rgba(79, 168, 255, 0.3); flex: none; }
   .ld-title { font-size: 14px; font-weight: 700; color: var(--tx); }
   .ld-sub { font-size: 11px; color: var(--tx3); margin-top: 1px; }
-  .ld-x { margin-left: auto; width: 24px; height: 24px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--tx3); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-  .ld-x:hover { background: var(--ac-soft); color: var(--tx); }
+  .ld-x { margin-left: auto; display: inline-flex; }
 
   .ld-center { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 18px 24px; font-size: 12px; color: var(--tx2); }
   .ld-err { color: var(--err); font-size: 12px; }
@@ -158,20 +161,13 @@
   .ld-guide { font-size: 12px; color: var(--tx2); }
   .ld-code {
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    padding: 12px; border-radius: var(--r-md);
+    padding: 12px; border-radius: var(--g-radius-input, 4px);
     border: 1px dashed var(--ac-bd); background: var(--ac-soft);
     font-family: var(--font-mono); font-size: 17px; font-weight: 700; letter-spacing: 0.08em;
     color: var(--ac); cursor: pointer;
   }
   .ld-copy { font-size: 10px; font-family: var(--font-ui); font-weight: 500; color: var(--tx3); }
-  .ld-open { justify-content: center; }
+  .ld-open { display: flex; }
+  .ld-open :global(.btn) { flex: 1; justify-content: center; }
   .ld-wait { display: flex; align-items: center; gap: 7px; justify-content: center; font-size: 11px; color: var(--tx3); }
-
-  .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--bd); border-top-color: var(--ac); animation: rot 0.8s linear infinite; }
-  .spin.sm { width: 11px; height: 11px; border-width: 1.5px; }
-  @keyframes rot { to { transform: rotate(360deg); } }
-
-  .btn { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px; border-radius: var(--r-md); font-size: 12px; font-weight: 600; border: 1px solid var(--bd2); color: var(--tx2); background: transparent; cursor: pointer; }
-  .btn.pri { background: var(--ac); border-color: transparent; color: #fff; }
-  .btn.pri:hover { background: var(--ac-h); }
 </style>

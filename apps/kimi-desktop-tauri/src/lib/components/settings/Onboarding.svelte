@@ -3,6 +3,7 @@
      Re-openable from settings. All preferences changeable later. -->
 <script lang="ts">
   import Button from '../ui/Button.svelte';
+  import Segmented from '../ui/Segmented.svelte';
   import LoginDialog from './LoginDialog.svelte';
   import * as client from '../../stores/client.svelte';
   import { setLocale, availableLocales, type LocaleCode } from '../../i18n';
@@ -114,11 +115,12 @@
         </div>
         <div class="locale-row">
           <span class="ob-label">语言 / Language</span>
-          <div class="ob-segmented">
-            {#each availableLocales as loc (loc.code)}
-              <button class="ob-seg-btn" class:on={selectedLocale === loc.code} onclick={() => chooseLocale(loc.code)} type="button">{loc.label}</button>
-            {/each}
-          </div>
+          <Segmented
+            size="sm"
+            value={selectedLocale}
+            options={availableLocales.map((l) => ({ value: l.code, label: l.label }))}
+            onchange={(v) => chooseLocale(v as LocaleCode)}
+          />
         </div>
         <div class="ob-dots"><i></i><i></i><i class="on"></i></div>
         <div class="ob-actions">
@@ -143,12 +145,14 @@
   }
   .ob-card {
     width: min(480px, 100%);
-    background: var(--l2);
-    border: 1px solid var(--bd2);
-    border-radius: 16px;
-    box-shadow: var(--toplight), var(--sh-lg);
+    background: var(--mat-surface-3, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-overlay, 16px);
+    box-shadow: var(--elev-overlay, var(--sh-lg));
     overflow: hidden;
-    animation: kimi-fade-in-up var(--duration-slow, 260ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+    animation: kimi-fade-in-up var(--duration-slow, 260ms) var(--motion-ease-enter, var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)));
   }
   .ob-head, .ob-body {
     animation: kimi-fade-in var(--duration-base, 160ms) var(--ease, ease);
@@ -169,9 +173,11 @@
   .ob-body { padding: 20px 28px 24px; display: flex; flex-direction: column; gap: 10px; }
   .ob-feat {
     display: flex; gap: 12px; align-items: flex-start; padding: 11px 13px;
-    border: 1px solid var(--bd); border-radius: var(--r-lg); background: var(--l1);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-radius: var(--g-radius-card, 4px);
+    background: var(--mat-surface-1, var(--l1));
   }
-  .ob-feat .fi { width: 28px; height: 28px; border-radius: var(--r-md); background: var(--ac-soft); color: var(--ac); display: flex; align-items: center; justify-content: center; font-size: 13px; flex: none; }
+  .ob-feat .fi { width: 28px; height: 28px; border-radius: var(--g-radius-control, 4px); background: var(--ac-soft); color: var(--ac); display: flex; align-items: center; justify-content: center; font-size: 13px; flex: none; }
   .ob-feat .ft { font-size: 12.5px; font-weight: 600; color: var(--tx); }
   .ob-feat .fd { font-size: 11px; color: var(--tx3); margin-top: 2px; }
 
@@ -184,22 +190,23 @@
 
   .login-box { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 10px 0 4px; }
   .login-desc { font-size: 12px; color: var(--tx2); }
-  .login-ok { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border: 1px solid var(--ok); border-radius: var(--r-lg); background: var(--ok-soft); color: var(--ok); font-size: 12.5px; font-weight: 600; }
+  .login-ok { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border: 1px solid var(--ok); border-radius: var(--g-radius-card, 4px); background: var(--ok-soft); color: var(--ok); font-size: 12.5px; font-weight: 600; }
 
   .theme-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .theme-card { border: 1px solid var(--bd); border-radius: var(--r-lg); padding: 10px; cursor: pointer; transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease); background: var(--l1); }
+  .theme-card { border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); border-radius: var(--g-radius-card, 4px); padding: 10px; cursor: pointer; transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease); background: var(--mat-surface-1, var(--l1)); }
   .theme-card:hover { border-color: var(--bd2); }
   .theme-card.on { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac); }
-  .theme-card .pv { height: 46px; border-radius: var(--r-md); margin-bottom: 8px; border: 1px solid var(--bd); }
+  .theme-card .pv { height: 46px; border-radius: var(--g-radius-control, 4px); margin-bottom: 8px; border: 1px solid var(--bd); }
   .theme-card .pv.d { background: linear-gradient(135deg, #14161a 60%, #1e2228 60%); }
   .theme-card .pv.l { background: linear-gradient(135deg, #f2f4f8 60%, #ffffff 60%); }
   .theme-card .pv.s { background: linear-gradient(135deg, #14161a 50%, #f2f4f8 50%); }
+  .theme-card .pv.c { background: linear-gradient(135deg, #f5f0e9 55%, #ecc9b8 55%); }
+  .theme-card .pv.b { background: linear-gradient(135deg, #fefae0 55%, #ffd166 55%); }
+  .theme-card .pv.g { background: linear-gradient(135deg, #667eea 0%, #764ba2 55%, #f093fb 100%); }
+  .theme-card .pv.a { background: repeating-linear-gradient(180deg, #f4f6fa 0 3px, #c8cfdb 3px 6px); }
   .theme-card .tn { font-size: 11px; font-weight: 600; text-align: center; color: var(--tx2); }
   .theme-card.on .tn { color: var(--ac); }
 
   .locale-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 2px 0; }
   .ob-label { font-size: 12px; font-weight: 500; color: var(--tx2); }
-  .ob-segmented { display: flex; gap: 2px; background: var(--l1); border: 1px solid var(--bd); border-radius: var(--r-md); padding: 2px; }
-  .ob-seg-btn { padding: 4px 12px; border: none; background: transparent; color: var(--tx2); font-size: 12px; border-radius: var(--r-sm); cursor: pointer; transition: background 0.12s var(--ease), color 0.12s var(--ease); }
-  .ob-seg-btn.on { background: var(--ac); color: #fff; font-weight: 600; }
 </style>
