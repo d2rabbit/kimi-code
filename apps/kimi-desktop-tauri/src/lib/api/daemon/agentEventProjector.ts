@@ -59,6 +59,18 @@ const MAIN_AGENT_TRANSCRIPT_FRAMES = new Set<string>([
   'agent.created',
   'agent.disposed',
   'prompt.completed',
+  'plan_mode.enter',
+  'plan_mode.exit',
+  'plan_mode.cancel',
+  'plan.revision',
+  'swarm_mode.enter',
+  'swarm_mode.exit',
+  'skill.activate',
+  'permission.set_mode',
+  'tools.register_user_tool',
+  'tools.unregister_user_tool',
+  'tools.set_active_tools',
+  'tools.reset_active_tools',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -960,6 +972,85 @@ export function createAgentProjector(): AgentProjector {
         break;
 
       // -----------------------------------------------------------------------
+      // Plan lifecycle — sync planMode state from server-authoritative events.
+      // The agent.status.updated already carries planMode, but these events are
+      // the durable record. We update internal state + emit usageUpdated so the
+      // composer's plan toggle reflects the real state.
+      case 'plan_mode.enter': {
+        out.push({
+          type: 'sessionUsageUpdated',
+          sessionId,
+          usage: buildUsageSnapshot(s),
+          planMode: true,
+        });
+        break;
+      }
+      case 'plan_mode.exit':
+      case 'plan_mode.cancel': {
+        out.push({
+          type: 'sessionUsageUpdated',
+          sessionId,
+          usage: buildUsageSnapshot(s),
+          planMode: false,
+        });
+        break;
+      }
+      case 'plan.revision':
+        // Plan content revision — informational, no UI state change needed.
+        // The transcript plan endpoint (GET /transcript/plan) provides full
+        // plan content when the UI needs it.
+        break;
+
+      // -----------------------------------------------------------------------
+      // Swarm lifecycle — sync swarmMode state.
+      case 'swarm_mode.enter': {
+        out.push({
+          type: 'sessionUsageUpdated',
+          sessionId,
+          usage: buildUsageSnapshot(s),
+          swarmMode: true,
+        });
+        break;
+      }
+      case 'swarm_mode.exit': {
+        out.push({
+          type: 'sessionUsageUpdated',
+          sessionId,
+          usage: buildUsageSnapshot(s),
+          swarmMode: false,
+        });
+        break;
+      }
+
+      // -----------------------------------------------------------------------
+      // Skill activation — informational (the slash menu already shows activation).
+      case 'skill.activate':
+        break;
+
+      // -----------------------------------------------------------------------
+      // Tool lifecycle — informational (tool list changes are fetched via GET /tools).
+      case 'tools.register_user_tool':
+      case 'tools.unregister_user_tool':
+      case 'tools.set_active_tools':
+      case 'tools.reset_active_tools':
+        break;
+
+      // -----------------------------------------------------------------------
+      // Permission mode change — sync from server-authoritative event.
+      case 'permission.set_mode': {
+        const mode = typeof p?.mode === 'string' ? p.mode : undefined;
+        if (mode) {
+          out.push({
+            type: 'sessionUsageUpdated',
+            sessionId,
+            usage: buildUsageSnapshot(s),
+            // Carry nothing — the sessionMetaUpdated path handles title etc.
+          });
+        }
+        break;
+      }
+
+      // -----------------------------------------------------------------------
       case 'turn.ended': {
         const msgId = s.currentAssistantMsgId;
         const reason: string = p?.reason ?? 'completed';
@@ -1339,6 +1430,23 @@ const KNOWN_AGENT_CORE_TYPES = new Set([
   'compaction.completed',
   'compaction.cancelled',
   'goal.updated',
+  // Plan lifecycle (plan model · persisted · toEvent)
+  'plan_mode.enter',
+  'plan_mode.exit',
+  'plan_mode.cancel',
+  'plan.revision',
+  // Swarm lifecycle (swarm model · persisted · toEvent)
+  'swarm_mode.enter',
+  'swarm_mode.exit',
+  // Skill activation (skill model · toEvent)
+  'skill.activate',
+  // Tool lifecycle (userTool / profile.activeTools models)
+  'tools.register_user_tool',
+  'tools.unregister_user_tool',
+  'tools.set_active_tools',
+  'tools.reset_active_tools',
+  // Permission mode changes
+  'permission.set_mode',
   'error',
   'warning',
   'subagent.spawned',
