@@ -10,16 +10,33 @@
   import MenuItem from '../ui/MenuItem.svelte';
   import FilePreview from '../chat/FilePreview.svelte';
   import DiffDrawer from './DiffDrawer.svelte';
+  import SideChatPanel from '../chat/SideChatPanel.svelte';
   import * as client from '../../stores/client.svelte';
   import { getKimiWebApi } from '../../api';
 
   type Mode = 'default' | 'review';
-  type Tool = 'git' | 'tasks';
+  type Tool = 'git' | 'tasks' | 'btw';
   let mode = $state<Mode>('default');
   let activeTool = $state<Tool>('git');
   let collapsed = $state(false);
 
   function toggle() { collapsed = !collapsed; }
+
+  // --- BTW side chat tab ---
+  const btwVisible = $derived(client.sideChatVisible());
+
+  // /btw (or reopening the side chat) asks us to expand + switch to the tab.
+  $effect(() => {
+    if (client.client.consumeOpenBtwPanelRequest()) {
+      collapsed = false;
+      activeTool = 'btw';
+    }
+  });
+
+  // Side chat closed → fall back to the git tab.
+  $effect(() => {
+    if (!btwVisible && activeTool === 'btw') activeTool = 'git';
+  });
 
   // --- Plan (real session tasks → plan steps) ---
   const realTasks = $derived(client.tasks());
@@ -206,6 +223,9 @@
             {:else if activeTool === 'tasks'}
               <Icon name="check-list" size="sm" />
               <span>任务进度</span>
+            {:else if activeTool === 'btw'}
+              <Icon name="message" size="sm" />
+              <span>侧聊</span>
             {/if}
           </div>
           <div class="tool-tabs" role="tablist" aria-label="右侧工具">
@@ -215,6 +235,11 @@
             <button class:active={activeTool === 'tasks'} class="tool-tab" onclick={() => activeTool = 'tasks'} type="button" role="tab" aria-selected={activeTool === 'tasks'}>
               <Icon name="check-list" size="sm" /><span>任务</span>
             </button>
+            {#if btwVisible}
+              <button class:active={activeTool === 'btw'} class="tool-tab" onclick={() => activeTool = 'btw'} type="button" role="tab" aria-selected={activeTool === 'btw'}>
+                <Icon name="message" size="sm" /><span>侧聊</span>
+              </button>
+            {/if}
           </div>
           <IconButton name="panel-collapse" label="折叠右栏" onclick={toggle} />
         </div>
@@ -259,6 +284,10 @@
                 <p class="empty-note">暂无进行中的计划</p>
               {/if}
             </div>
+          </section>
+        {:else if activeTool === 'btw'}
+          <section class="tool-view btw-view">
+            <SideChatPanel />
           </section>
         {:else}
           <section class="tool-view git-view">
@@ -430,6 +459,7 @@
   .tool-tab:active { transform: scale(0.97); }
   .tool-view { flex: 1; min-height: 0; overflow: hidden; }
   .task-view, .git-view { padding: 18px 16px; overflow-y: auto; }
+  .btw-view { display: flex; flex-direction: column; }
   .terminal-view { padding: 0; overflow: hidden; }
   .mono { font-family: var(--font-mono); }
   .mono { font-family: var(--font-mono); }

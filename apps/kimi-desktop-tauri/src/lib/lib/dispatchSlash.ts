@@ -13,6 +13,7 @@ import {
   client,
   activeSessionId,
   planMode,
+  sideChatVisible,
 } from '../stores/client.svelte';
 import { toast } from '../stores/toast.svelte';
 import { shortcut } from './desktopFlag';
@@ -33,6 +34,8 @@ const LOCAL_COMMANDS = new Set([
   // of falling through to sendPrompt (which would just send the literal
   // text as a chat message).
   '/goal', '/swarm',
+  // /btw opens the side chat in the right panel (optionally with a first prompt).
+  '/btw',
 ]);
 
 /** Quick guard: does this input string look like a local slash command? */
@@ -131,6 +134,18 @@ export async function dispatchSlash(
       case '/swarm':
         // GUI surfaces this through the Swarm mini-toggle → SwarmDialog.
         return { handled: true, message: '点击底部 Swarm 按钮派发子智能体任务' };
+
+      case '/btw': {
+        // `/btw <question>` opens (creating if needed) the side chat and asks
+        // it; bare `/btw` just opens/switches to the side-chat tab.
+        if (!activeSessionId()) {
+          return { handled: true, message: '先开始一个会话，再使用 /btw 侧聊' };
+        }
+        const hadTarget = sideChatVisible();
+        await c.openSideChat(arg || undefined);
+        if (arg) return { handled: true };
+        return { handled: true, message: hadTarget ? '已切到侧聊（右栏）' : '侧聊已打开（右栏）' };
+      }
 
       default:
         return { handled: false };
