@@ -1175,8 +1175,8 @@ html[data-color-scheme="glass"] {
   --bd2: rgba(255, 255, 255, 0.28);
 
   --tx: #f0f0ff;
-  --tx2: #c8c8e8;
-  --tx3: #8888b8;
+  --tx2: #d8d8f2;
+  --tx3: #a2a2ce;
 
   --ac: #a78bfa;          /* 紫 */
   --ac-h: #c4b5fd;
@@ -1203,9 +1203,9 @@ html[data-color-scheme="glass"] {
 
   --overlay: rgba(0, 0, 0, 0.55);
 
-  /* 壁纸渐变：紫蓝粉，固定背景 */
+  /* 壁纸渐变：紫蓝粉，固定背景（深一度保证玻璃上文字对比度） */
   --haze:
-    linear-gradient(135deg, #667eea 0%, #764ba2 40%, #f093fb 100%);
+    linear-gradient(135deg, #4650c4 0%, #5d3a92 45%, #b353c6 100%);
   --grain-op: 0.03;
 
   /* 代码高亮（霓虹紫蓝） */
@@ -1627,22 +1627,22 @@ html[data-color-scheme="glass"] {
   --elev-bubble: 0 4px 20px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   --motion-press-shadow: var(--elev-control);
   /* material */
-  --mat-surface-1: rgba(255, 255, 255, 0.05);
-  --mat-surface-2: rgba(255, 255, 255, 0.06);
-  --mat-surface-3: rgba(255, 255, 255, 0.10);
-  --mat-blur: blur(24px) saturate(2.2);
+  --mat-surface-1: rgba(255, 255, 255, 0.07);
+  --mat-surface-2: rgba(255, 255, 255, 0.09);
+  --mat-surface-3: rgba(255, 255, 255, 0.13);
+  --mat-blur: blur(24px) saturate(1.5);
   --mat-sheen: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.85) 50%, transparent 100%) top 6% / 88% 2px no-repeat;
   --mat-texture: none;
-  --mat-control-bg: rgba(255, 255, 255, 0.08);
-  --mat-control-bg-hover: rgba(255, 255, 255, 0.14);
+  --mat-control-bg: rgba(255, 255, 255, 0.10);
+  --mat-control-bg-hover: rgba(255, 255, 255, 0.16);
   --mat-primary-bg: linear-gradient(135deg, rgba(167, 139, 250, 0.45), rgba(196, 181, 253, 0.30));
   --mat-primary-bg-hover: linear-gradient(135deg, rgba(167, 139, 250, 0.60), rgba(196, 181, 253, 0.40));
   --mat-danger-bg: linear-gradient(135deg, rgba(252, 165, 165, 0.40), rgba(252, 165, 165, 0.25));
-  --mat-input-bg: rgba(255, 255, 255, 0.06);
-  --mat-chip-bg: rgba(255, 255, 255, 0.10);
-  --mat-bubble-bg: rgba(167, 139, 250, 0.12);
-  --mat-sidebar-bg: rgba(255, 255, 255, 0.05);
-  --mat-header-bg: rgba(255, 255, 255, 0.06);
+  --mat-input-bg: rgba(255, 255, 255, 0.08);
+  --mat-chip-bg: rgba(255, 255, 255, 0.12);
+  --mat-bubble-bg: rgba(167, 139, 250, 0.14);
+  --mat-sidebar-bg: rgba(16, 12, 36, 0.48);
+  --mat-header-bg: rgba(16, 12, 36, 0.40);
   --mat-primary-bd: rgba(167, 139, 250, 0.45);
   /* motion */
   --motion-press: scale(0.97);
