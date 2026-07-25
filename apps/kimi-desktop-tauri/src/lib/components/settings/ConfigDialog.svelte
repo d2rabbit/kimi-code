@@ -128,7 +128,7 @@
     { value: 'light', label: '浅色' },
     { value: 'dark', label: '深色' },
     { value: 'clay', label: '粘土' },
-    { value: 'brutal', label: '粗野' },
+    { value: 'neon', label: '霓光' },
     { value: 'glass', label: '玻璃' },
     { value: 'aqua', label: '水凝' },
     { value: 'system', label: '跟随系统' },
@@ -291,7 +291,7 @@
     }
   }
 
-  async function setColorScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua') {
+  async function setColorScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua') {
     client.client.setColorScheme(scheme);
   }
 
@@ -568,7 +568,7 @@
         <Segmented
           value={client.colorScheme() || 'dark'}
           options={SCHEME_OPTIONS}
-          onchange={(v) => setColorScheme(v as 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua')}
+          onchange={(v) => setColorScheme(v as 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua')}
         />
       </div>
 

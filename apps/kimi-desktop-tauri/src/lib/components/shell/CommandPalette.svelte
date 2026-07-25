@@ -42,7 +42,7 @@
     { id: 'theme-dark', title: '深色主题', category: 'action', icon: 'star', keywords: 'theme dark', action: () => client.client.setColorScheme('dark') },
     { id: 'theme-light', title: '浅色主题', category: 'action', icon: 'star-outline', keywords: 'theme light', action: () => client.client.setColorScheme('light') },
     { id: 'theme-clay', title: '粘土主题', category: 'action', icon: 'globe', keywords: 'theme clay', action: () => client.client.setColorScheme('clay') },
-    { id: 'theme-brutal', title: '粗野主题', category: 'action', icon: 'tool', keywords: 'theme brutal', action: () => client.client.setColorScheme('brutal') },
+    { id: 'theme-neon', title: '霓光主题', category: 'action', icon: 'tool', keywords: 'theme neon', action: () => client.client.setColorScheme('neon') },
     { id: 'theme-glass', title: '玻璃主题', category: 'action', icon: 'sparkles', keywords: 'theme glass', action: () => client.client.setColorScheme('glass') },
     { id: 'theme-aqua', title: '水凝主题', category: 'action', icon: 'image', keywords: 'theme aqua', action: () => client.client.setColorScheme('aqua') },
     // 模式切换

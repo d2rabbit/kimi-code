@@ -16,7 +16,7 @@
 
 带表面的原语（Card / Button / Dialog / Menu）固定渲染两个伪元素槽：
 
-- `::before` → `background: var(--mat-sheen, none)` —— 顶部高光（glass 新月、aqua 穹顶、Aurora 受光面；clay/brutal 为 `none`）。
+- `::before` → `background: var(--mat-sheen, none)` —— 顶部高光（glass 新月、aqua 穹顶、Aurora/Neon 受光面；clay 为 `none`）。
 - `::after` → `background: var(--mat-texture, none)` —— 纹理叠加（预留；条纹类纹理目前直接放在 `--mat-sidebar-bg` 等表面值里）。
 
 主题用 `none` 关闭不需要的槽，因此**不再需要任何 `html[data-color-scheme] .cls !important` 覆盖**。

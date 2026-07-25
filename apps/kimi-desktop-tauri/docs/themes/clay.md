@@ -34,7 +34,7 @@
 
 - 按压：`scale(0.95)`（比其他主题更软更深）。
 - 入场：`clay-in` 260ms spring——非均匀 scale(0.88, 0.82) 挤压回弹。
-- 无 hover 位移、无 CTA 循环动画（粘土是安静的）。
+- 无 hover 位移；CTA/ambient：`clay-glow` 4s 暖影呼吸脉冲（陶土色外阴影缓慢起伏）。
 
 ## 排版
 

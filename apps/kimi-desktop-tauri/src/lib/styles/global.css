@@ -1,8 +1,7 @@
 /* ============================================================================
-   Kimi Code Desktop — AURORA TILE DESIGN LANGUAGE v5
-   Frutiger Aero (自然有机) × Win8 Metro (磁贴几何) 逐原语融合。
-   动态极光天空背景 + 三层半透明玻璃磁贴表面（backdrop-filter）+ 磁贴硬角 + Aero 液体动画。
-   dark / light / system 三主题同等精工。clay/brutal/glass/aqua DNA 主题不受影响。
+   Kimi Code Desktop — AURORA 设计语言（圆润呼吸玻璃）
+   圆润玻璃表面 + 动态极光天空 + 全主题呼吸感动效。
+   dark / light / system 三主题同等精工。clay/neon/glass/aqua DNA 主题不受影响。
    规范：docs/superpowers/specs/2026-07-22-aurora-tile-ui-language.md
 ============================================================================ */
 
@@ -126,22 +125,20 @@ textarea::placeholder {
    SCHEME-INDEPENDENT TOKENS — radius / spacing / z / motion / type / layout
 ============================================================================ */
 :root {
-  /* -- Aurora Tile radius scale (磁贴硬角系) ------------------------------- */
-  /* Win8 Metro geometry: tight rectangular corners. Only the send button
-     and avatars keep full-round (Aero water-drop accent). */
-  --r-xs: 2px;       /* chip / badge */
-  --r-sm: 4px;       /* buttons / inputs / small cards */
-  --r-md: 4px;       /* unified with sm (tile uniformity) */
-  --r-lg: 4px;       /* cards / panels */
-  --r-xl: 6px;       /* modals / large overlays */
+  /* -- 圆润 radius scale（全主题无直角；各主题契约 --g-* 可再覆盖） ---------- */
+  --r-xs: 4px;       /* 微小元素 */
+  --r-sm: 8px;       /* buttons / inputs / small cards */
+  --r-md: 10px;      /* controls */
+  --r-lg: 14px;      /* cards / panels */
+  --r-xl: 16px;      /* modals / large overlays */
 
-  /* -- legacy radius scale (aliased to tile geometry, zero component change) - */
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 4px;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
-  --radius-2xl: 6px;
+  /* -- legacy radius scale（与上同步） ---------------------------------------- */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 18px;
   --radius-full: 999px;
 
   /* -- spacing (4px grid) -------------------------------------------------- */
@@ -1052,56 +1049,57 @@ html[data-color-scheme="clay"] {
 }
 
 /* ============================================================================
-   BRUTAL — 新粗野主义（第四主题，独立于 dark / light / clay）
-   来源：https://namethatui.com/styles/neobrutalism
-   厚黑边框 + 硬偏移阴影（零模糊）+ 饱和 flat 色块 + 按下推入动画。
-   纯 CSS，不需要 backdrop-filter。纯新增，不改任何现有规则。
+   NEON — 霓光（第四主题，深空霓虹，独立于 dark / light / clay）
+   深空蓝黑 + 青/品红霓虹辉光 + 圆润表面 + 发光呼吸脉冲。
 ============================================================================ */
-html[data-color-scheme="brutal"] {
+html[data-color-scheme="neon"] {
   /* ---- primitives ---- */
-  --bg: #fefae0;          /* 奶油白底 */
-  --l1: #ffffff;          /* 卡片/输入框 */
-  --l2: #ffd166;          /* 高亮黄 */
-  --l3: #fff9e6;
+  --bg: #070a14;          /* 深空蓝黑 */
+  --l1: #0d1220;          /* 深空表面 */
+  --l2: #131a2c;          /* 抬升表面 */
+  --l3: #1a2338;          /* 高亮表面 */
 
-  --bd: #1a1a1a;          /* 纯黑边框（用深灰避免太硬） */
-  --bd2: #1a1a1a;
+  --bd: rgba(148, 163, 216, 0.14);
+  --bd2: rgba(148, 163, 216, 0.24);
 
-  --tx: #1a1a1a;
-  --tx2: #3d3d3d;
-  --tx3: #5c5c5c;
+  --tx: #e6ecff;
+  --tx2: #9aa8d0;
+  --tx3: #5f6c94;
 
-  --ac: #ef476f;          /* 热粉强调 */
-  --ac-h: #d63d61;
-  --ac-soft: rgba(239, 71, 111, 0.15);
-  --ac-bd: #1a1a1a;       /* 强调按钮也是黑边框 */
+  --ac: #22d3ee;          /* 霓虹青 */
+  --ac-h: #67e8f9;
+  --ac-soft: rgba(34, 211, 238, 0.14);
+  --ac-bd: rgba(34, 211, 238, 0.38);
 
-  --ok: #06d6a0;          /* 青柠绿 */
-  --ok-soft: rgba(6, 214, 160, 0.15);
-  --warn: #ffd166;        /* 黄 */
-  --warn-soft: rgba(255, 209, 102, 0.20);
-  --err: #ef476f;         /* 热粉 */
-  --err-soft: rgba(239, 71, 111, 0.15);
-  --amb: #fb8500;         /* 橙 */
-  --amb-soft: rgba(251, 133, 0, 0.15);
+  --ok: #34d399;
+  --ok-soft: rgba(52, 211, 153, 0.14);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.14);
+  --err: #fb7185;
+  --err-soft: rgba(251, 113, 133, 0.14);
+  --amb: #c084fc;
+  --amb-soft: rgba(192, 132, 252, 0.14);
 
-  /* 硬偏移阴影：零模糊，solid black displaced */
-  --toplight: none;       /* 粗野不要顶光 */
-  --sh: 4px 4px 0 #1a1a1a;
-  --sh-lg: 6px 6px 0 #1a1a1a;
+  --toplight: inset 0 1px 0 rgba(230, 236, 255, 0.06);
+  --sh: 0 12px 40px rgba(2, 6, 23, 0.55);
+  --sh-lg: 0 24px 64px rgba(2, 6, 23, 0.65);
 
-  --overlay: rgba(26, 26, 26, 0.35);
+  --overlay: rgba(3, 5, 12, 0.65);
 
-  --haze: none;           /* 粗野不要雾晕 */
-  --grain-op: 0;
+  /* 深空霓虹雾晕：青/品红/紫三色辉光 */
+  --haze:
+    radial-gradient(45% 40% at 12% 18%, rgba(34, 211, 238, 0.16), transparent 70%),
+    radial-gradient(40% 45% at 88% 78%, rgba(244, 114, 182, 0.12), transparent 70%),
+    radial-gradient(35% 35% at 60% 30%, rgba(124, 58, 237, 0.10), transparent 70%);
+  --grain-op: 0.04;
 
-  /* 代码高亮（高饱和） */
-  --syn-k: #ef476f;
-  --syn-s: #06d6a0;
-  --syn-f: #118ab2;
-  --syn-n: #fb8500;
+  /* 代码高亮（霓虹） */
+  --syn-k: #f472b6;
+  --syn-s: #34d399;
+  --syn-f: #22d3ee;
+  --syn-n: #fbbf24;
 
-  /* ---- semantic layer ---- */
+  /* ---- semantic layer（与其它主题完全相同的别名映射） ---- */
   --color-bg: var(--bg);
   --color-surface: var(--l1);
   --color-surface-raised: var(--l2);
@@ -1110,11 +1108,11 @@ html[data-color-scheme="brutal"] {
   --color-text: var(--tx);
   --color-text-muted: var(--tx2);
   --color-text-faint: var(--tx3);
-  --color-text-on-accent: #ffffff;
+  --color-text-on-accent: #04202a;
   --color-line: var(--bd);
   --color-line-strong: var(--bd2);
   --color-selected: var(--ac-soft);
-  --color-hover: rgba(26, 26, 26, 0.06);
+  --color-hover: rgba(148, 163, 216, 0.08);
   --color-accent: var(--ac);
   --color-accent-hover: var(--ac-h);
   --color-accent-soft: var(--ac-soft);
@@ -1122,44 +1120,49 @@ html[data-color-scheme="brutal"] {
   --accent-primary: var(--ac);
   --color-success: var(--ok);
   --color-success-soft: var(--ok-soft);
-  --color-success-bd: #1a1a1a;
-  --color-warning: var(--amb);
-  --color-warning-soft: var(--amb-soft);
-  --color-warning-bd: #1a1a1a;
+  --color-success-bd: rgba(52, 211, 153, 0.30);
+  --color-warning: var(--warn);
+  --color-warning-soft: var(--warn-soft);
+  --color-warning-bd: rgba(251, 191, 36, 0.30);
   --color-danger: var(--err);
   --color-danger-soft: var(--err-soft);
-  --color-danger-bd: #1a1a1a;
-  --color-done: #118ab2;
-  --color-done-soft: rgba(17, 138, 178, 0.15);
-  --color-done-bd: #1a1a1a;
+  --color-danger-bd: rgba(251, 113, 133, 0.30);
+  --color-done: #c084fc;
+  --color-done-soft: rgba(192, 132, 252, 0.14);
+  --color-done-bd: rgba(192, 132, 252, 0.30);
   --color-info: var(--ac);
-  --color-logo-dev: #ef476f;
+  --color-logo-dev: #22d3ee;
   --glass-divider: var(--bd);
 
-  --shadow-xs: 2px 2px 0 #1a1a1a;
-  --shadow-sm: 3px 3px 0 #1a1a1a;
-  --shadow-md: 4px 4px 0 #1a1a1a;
-  --shadow-lg: var(--sh-lg);
-  --shadow-xl: 8px 8px 0 #1a1a1a;
+  --shadow-xs: 0 1px 3px rgba(2, 6, 23, 0.50);
+  --shadow-sm: 0 2px 6px rgba(2, 6, 23, 0.50);
+  --shadow-md: 0 6px 18px rgba(2, 6, 23, 0.55);
+  --shadow-lg: 0 12px 32px rgba(2, 6, 23, 0.60);
+  --shadow-xl: 0 24px 64px rgba(2, 6, 23, 0.70);
 
-  --p-focus-ring: 0 0 0 3px var(--ac);
-  --p-focus-ring-strong: 0 0 0 3px var(--ac), 0 0 0 5px #1a1a1a;
-  --p-selection: rgba(239, 71, 111, 0.25);
+  --p-focus-ring: 0 0 0 3px rgba(34, 211, 238, 0.28);
+  --p-focus-ring-strong: 0 0 0 3px rgba(34, 211, 238, 0.28), 0 0 0 1px var(--ac);
+  --p-selection: rgba(34, 211, 238, 0.26);
 
-  color-scheme: light;
+  color-scheme: dark;
 }
 
-/* ---- Brutal 专属装饰色板 ---- */
-html[data-color-scheme="brutal"] {
-  --brutal-yellow: #ffd166;
-  --brutal-pink: #ef476f;
-  --brutal-lime: #06d6a0;
-  --brutal-cyan: #118ab2;
-  --brutal-cream: #fefae0;
+/* ---- Neon 专属霓虹色板（仅 neon 主题可见） ---- */
+html[data-color-scheme="neon"] {
+  --neon-cyan: #22d3ee;
+  --neon-pink: #f472b6;
+  --neon-violet: #7c3aed;
+  --glow-cyan: 0 0 12px rgba(34, 211, 238, 0.45);
+}
+
+/* ---- clay / neon：把各自的 --haze 接入 body 漂移层（aurora 用 --aurora-bg） ---- */
+html[data-color-scheme="clay"] body::before,
+html[data-color-scheme="neon"] body::before {
+  background: var(--haze);
 }
 
 /* ============================================================================
-   GLASS — 玻璃拟态（第五主题，独立于 dark / light / clay / brutal）
+   GLASS — 玻璃拟态（第五主题，独立于 dark / light / clay / neon）
    来源：https://namethatui.com/styles/glassmorphism
    半透明玻璃面 + backdrop-filter（仅此主题作用域，不污染其它主题）
    + 深色紫蓝壁纸渐变 + 漂浮轻阴影 + 内高光。
@@ -1396,12 +1399,12 @@ html[data-color-scheme="dark"],
 html[data-color-scheme="light"],
 html[data-color-scheme="system"] {
   /* geometry */
-  --g-radius-chip: 2px;
-  --g-radius-control: 4px;
-  --g-radius-input: 4px;
-  --g-radius-card: 4px;
-  --g-radius-overlay: 6px;
-  --g-radius-bubble: 6px;
+  --g-radius-chip: 999px;
+  --g-radius-control: 10px;
+  --g-radius-input: 10px;
+  --g-radius-card: 14px;
+  --g-radius-overlay: 16px;
+  --g-radius-bubble: 16px 16px 16px 4px;
   --g-border-w: 1px;
   --g-border-w-input: 1px;
   --g-border-style: solid;
@@ -1441,6 +1444,7 @@ html[data-color-scheme="system"] {
   --motion-ease-enter: var(--ease-out);
   --motion-enter-anim: aero-drop-in var(--duration-aero-in, 200ms) var(--ease-out) backwards;
   --motion-cta-anim: newtask-glow 3s ease-in-out infinite;
+  --motion-ambient: w-breathe 3s ease-in-out infinite;
   /* type */
   --type-control-transform: none;
   --type-control-tracking: normal;
@@ -1534,7 +1538,8 @@ html[data-color-scheme="clay"] {
   --motion-hover-lift-card: none;
   --motion-ease-enter: var(--ease-spring);
   --motion-enter-anim: clay-in 260ms var(--ease-spring) backwards;
-  --motion-cta-anim: none;
+  --motion-cta-anim: clay-glow 4s ease-in-out infinite;
+  --motion-ambient: clay-glow 4s ease-in-out infinite;
   /* type */
   --type-control-transform: none;
   --type-control-tracking: normal;
@@ -1545,62 +1550,63 @@ html[data-color-scheme="clay"] {
   --type-primary-text-shadow: none;
 }
 
-/* ---- BRUTAL 新粗野 ---- */
-html[data-color-scheme="brutal"] {
+/* ---- NEON 霓光 ---- */
+html[data-color-scheme="neon"] {
   /* geometry */
-  --g-radius-chip: 2px;
-  --g-radius-control: 2px;
-  --g-radius-input: 2px;
-  --g-radius-card: 2px;
-  --g-radius-overlay: 2px;
-  --g-radius-bubble: 2px;
-  --g-border-w: 2px;
-  --g-border-w-input: 2px;
+  --g-radius-chip: 999px;
+  --g-radius-control: 10px;
+  --g-radius-input: 10px;
+  --g-radius-card: 14px;
+  --g-radius-overlay: 16px;
+  --g-radius-bubble: 16px 16px 16px 4px;
+  --g-border-w: 1px;
+  --g-border-w-input: 1px;
   --g-border-style: solid;
-  --g-border-color: #1a1a1a;
+  --g-border-color: var(--bd);
   /* elevation */
-  --elev-control: 3px 3px 0 #1a1a1a;
-  --elev-control-hover: 4px 4px 0 #1a1a1a;
-  --elev-input: 3px 3px 0 #1a1a1a;
-  --elev-card: 4px 4px 0 #1a1a1a;
-  --elev-card-hover: 6px 6px 0 #1a1a1a;
-  --elev-overlay: 8px 8px 0 #1a1a1a;
-  --elev-chip: 2px 2px 0 #1a1a1a;
-  --elev-bubble: 3px 3px 0 #1a1a1a;
-  --motion-press-shadow: 0 0 0 #1a1a1a;
+  --elev-control: 0 2px 10px rgba(2, 6, 23, 0.45), inset 0 1px 0 rgba(230, 236, 255, 0.06);
+  --elev-control-hover: 0 4px 16px rgba(2, 6, 23, 0.50), 0 0 12px rgba(34, 211, 238, 0.12), inset 0 1px 0 rgba(230, 236, 255, 0.08);
+  --elev-input: inset 0 1px 3px rgba(2, 6, 23, 0.50);
+  --elev-card: 0 8px 24px rgba(2, 6, 23, 0.50), inset 0 1px 0 rgba(230, 236, 255, 0.05);
+  --elev-card-hover: 0 12px 32px rgba(2, 6, 23, 0.55), 0 0 20px rgba(34, 211, 238, 0.10), inset 0 1px 0 rgba(230, 236, 255, 0.08);
+  --elev-overlay: var(--shadow-xl);
+  --elev-chip: inset 0 1px 0 rgba(230, 236, 255, 0.05);
+  --elev-bubble: 0 4px 16px rgba(2, 6, 23, 0.45);
+  --motion-press-shadow: var(--elev-control);
   /* material */
-  --mat-surface-1: var(--l1);
-  --mat-surface-2: var(--l1);
-  --mat-surface-3: var(--l3);
-  --mat-blur: none;
-  --mat-sheen: none;
+  --mat-surface-1: rgba(13, 18, 32, 0.72);
+  --mat-surface-2: rgba(19, 26, 44, 0.78);
+  --mat-surface-3: rgba(26, 35, 56, 0.85);
+  --mat-blur: blur(12px) saturate(1.2);
+  --mat-sheen: linear-gradient(180deg, rgba(230, 236, 255, 0.05), transparent 55%);
   --mat-texture: none;
-  --mat-control-bg: var(--l1);
-  --mat-control-bg-hover: var(--brutal-yellow);
-  --mat-primary-bg: var(--brutal-pink);
-  --mat-primary-bg-hover: var(--ac-h);
-  --mat-danger-bg: var(--brutal-pink);
-  --mat-input-bg: var(--l3);
-  --mat-chip-bg: var(--l1);
-  --mat-bubble-bg: var(--l1);
-  --mat-sidebar-bg: var(--l1);
-  --mat-header-bg: var(--l1);
-  --mat-primary-bd: #1a1a1a;
+  --mat-control-bg: rgba(19, 26, 44, 0.80);
+  --mat-control-bg-hover: rgba(26, 35, 56, 0.85);
+  --mat-primary-bg: linear-gradient(135deg, #22d3ee, #0891b2);
+  --mat-primary-bg-hover: linear-gradient(135deg, #67e8f9, #22d3ee);
+  --mat-danger-bg: linear-gradient(135deg, #fb7185, #e11d48);
+  --mat-input-bg: rgba(13, 18, 32, 0.72);
+  --mat-chip-bg: rgba(19, 26, 44, 0.80);
+  --mat-bubble-bg: rgba(19, 26, 44, 0.78);
+  --mat-sidebar-bg: rgba(11, 15, 28, 0.62);
+  --mat-header-bg: rgba(11, 15, 28, 0.55);
+  --mat-primary-bd: rgba(34, 211, 238, 0.45);
   /* motion */
-  --motion-press: translate(3px, 3px);
-  --motion-hover-lift: translate(-1px, -1px);
-  --motion-hover-lift-card: translate(-2px, -2px);
-  --motion-ease-enter: linear;
-  --motion-enter-anim: none;
-  --motion-cta-anim: none;
+  --motion-press: scale(0.97);
+  --motion-hover-lift: translateY(-1px);
+  --motion-hover-lift-card: translateY(-2px);
+  --motion-ease-enter: var(--ease-out);
+  --motion-enter-anim: neon-in 260ms var(--ease-out) backwards;
+  --motion-cta-anim: neon-pulse 3s ease-in-out infinite;
+  --motion-ambient: neon-pulse 3s ease-in-out infinite;
   /* type */
   --type-control-transform: none;
-  --type-control-tracking: 0.02em;
-  --type-control-weight: 700;
-  --type-primary-transform: uppercase;
-  --type-primary-tracking: 0.02em;
-  --type-primary-weight: 800;
-  --type-primary-text-shadow: none;
+  --type-control-tracking: 0.01em;
+  --type-control-weight: 500;
+  --type-primary-transform: none;
+  --type-primary-tracking: 0.01em;
+  --type-primary-weight: 600;
+  --type-primary-text-shadow: 0 0 10px rgba(34, 211, 238, 0.35);
 }
 
 /* ---- GLASS 棱镜玻璃 ---- */
@@ -1650,7 +1656,8 @@ html[data-color-scheme="glass"] {
   --motion-hover-lift-card: translateY(-2px);
   --motion-ease-enter: var(--ease-out);
   --motion-enter-anim: glass-in 300ms var(--ease-out) backwards;
-  --motion-cta-anim: none;
+  --motion-cta-anim: glass-glow 5s ease-in-out infinite;
+  --motion-ambient: glass-glow 5s ease-in-out infinite;
   /* type */
   --type-control-transform: none;
   --type-control-tracking: 0.01em;
@@ -1688,6 +1695,40 @@ html[data-color-scheme="glass"] {
     --mat-bubble-bg: rgba(60, 52, 110, 0.55);
     --mat-sidebar-bg: rgba(22, 22, 36, 0.97);
     --mat-header-bg: rgba(24, 24, 38, 0.97);
+    --mat-blur: none;
+    --mat-sheen: none;
+  }
+}
+
+/* Neon reduced-transparency / no-backdrop-filter：token 级守卫 */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-color-scheme="neon"] {
+    --mat-surface-1: var(--l1);
+    --mat-surface-2: var(--l2);
+    --mat-surface-3: var(--l3);
+    --mat-control-bg: var(--l2);
+    --mat-control-bg-hover: var(--l3);
+    --mat-input-bg: var(--l1);
+    --mat-chip-bg: var(--l2);
+    --mat-bubble-bg: var(--l2);
+    --mat-sidebar-bg: var(--l1);
+    --mat-header-bg: var(--l1);
+    --mat-blur: none;
+    --mat-sheen: none;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-color-scheme="neon"] {
+    --mat-surface-1: var(--l1);
+    --mat-surface-2: var(--l2);
+    --mat-surface-3: var(--l3);
+    --mat-control-bg: var(--l2);
+    --mat-control-bg-hover: var(--l3);
+    --mat-input-bg: var(--l1);
+    --mat-chip-bg: var(--l2);
+    --mat-bubble-bg: var(--l2);
+    --mat-sidebar-bg: var(--l1);
+    --mat-header-bg: var(--l1);
     --mat-blur: none;
     --mat-sheen: none;
   }
@@ -1741,6 +1782,7 @@ html[data-color-scheme="aqua"] {
   --motion-ease-enter: var(--ease-out);
   --motion-enter-anim: aqua-in 240ms var(--ease-out) backwards;
   --motion-cta-anim: aqua-pulse 2.4s ease-in-out infinite;
+  --motion-ambient: aqua-pulse 2.4s ease-in-out infinite;
   /* type */
   --type-control-transform: none;
   --type-control-tracking: normal;
@@ -1764,10 +1806,31 @@ html[data-color-scheme="aqua"] {
   from { opacity: 0; transform: scale(0.96) translateY(3px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
+@keyframes neon-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); filter: brightness(1.6); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+}
+/* ---- 呼吸 keyframes（各主题 --motion-ambient / --motion-cta-anim 引用） ---- */
+/* neon：辉光脉冲（drop-shadow 发光呼吸） */
+@keyframes neon-pulse {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 0 rgba(34, 211, 238, 0)); }
+  50%      { filter: brightness(1.12) drop-shadow(0 0 10px rgba(34, 211, 238, 0.45)); }
+}
+/* clay：暖影脉冲（陶土色外阴影呼吸） */
+@keyframes clay-glow {
+  0%, 100% { box-shadow: 0 4px 14px rgba(200, 97, 46, 0.18), inset 0 -3px 8px rgba(140, 60, 20, 0.10), inset 0 3px 8px rgba(255, 255, 255, 0.40); }
+  50%      { box-shadow: 0 6px 24px rgba(200, 97, 46, 0.32), inset 0 -3px 8px rgba(140, 60, 20, 0.10), inset 0 3px 8px rgba(255, 255, 255, 0.50); }
+}
+/* glass：紫光脉冲（霓虹紫外阴影呼吸） */
+@keyframes glass-glow {
+  0%, 100% { box-shadow: 0 4px 16px rgba(167, 139, 250, 0.20), inset 0 1px 1px rgba(255, 255, 255, 0.25); }
+  50%      { box-shadow: 0 6px 28px rgba(167, 139, 250, 0.40), inset 0 1px 1px rgba(255, 255, 255, 0.35); }
+}
 @media (prefers-reduced-motion: reduce) {
   html[data-color-scheme] {
     --motion-enter-anim: none;
     --motion-cta-anim: none;
+    --motion-ambient: none;
     --motion-press: none;
     --motion-hover-lift: none;
     --motion-hover-lift-card: none;
@@ -1898,13 +1961,13 @@ button,
   box-shadow: var(--p-focus-ring);
 }
 
-/* ---- Welcome logo 呼吸光晕 ---- */
+/* ---- Welcome logo 呼吸光晕（动画由契约 --motion-ambient 决定；Aurora=w-breathe） ---- */
 @keyframes w-breathe {
   0%, 100% { box-shadow: 0 0 24px rgba(79, 168, 255, 0.35); }
   50% { box-shadow: 0 0 36px rgba(79, 168, 255, 0.55); }
 }
 .w-logo .w-mark {
-  animation: w-breathe 3s ease-in-out infinite;
+  animation: var(--motion-ambient, none);
 }
 
 /* ---- 滚动条 hover 扩宽 ---- */

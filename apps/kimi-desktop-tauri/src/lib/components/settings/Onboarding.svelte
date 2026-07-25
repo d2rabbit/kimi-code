@@ -18,7 +18,7 @@
 
   let step = $state(1);
   let selectedLocale = $state<LocaleCode>('zh');
-  let selectedScheme = $state<'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua'>('dark');
+  let selectedScheme = $state<'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua'>('dark');
   let showLogin = $state(false);
 
   $effect(() => {
@@ -33,7 +33,7 @@
     setLocale(code);
   }
 
-  function chooseScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua') {
+  function chooseScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua') {
     selectedScheme = scheme;
     client.client.setColorScheme(scheme);
   }
@@ -106,8 +106,8 @@
       </div>
       <div class="ob-body">
         <div class="theme-cards">
-          {#each [['dark', '深色磨砂', 'd'], ['light', '浅色磨砂', 'l'], ['clay', '粘土风格', 'c'], ['brutal', '粗野主义', 'b'], ['glass', '玻璃拟态', 'g'], ['aqua', '水凝糖果', 'a'], ['system', '跟随系统', 's']] as [val, label, cls]}
-            <button class="theme-card" class:on={selectedScheme === val} onclick={() => chooseScheme(val as 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua')} type="button">
+          {#each [['dark', '深色极光', 'd'], ['light', '浅色极光', 'l'], ['clay', '粘土陶土', 'c'], ['neon', '霓光夜景', 'n'], ['glass', '棱镜玻璃', 'g'], ['aqua', '水凝糖果', 'a'], ['system', '跟随系统', 's']] as [val, label, cls]}
+            <button class="theme-card" class:on={selectedScheme === val} onclick={() => chooseScheme(val as 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua')} type="button">
               <div class="pv {cls}"></div>
               <div class="tn">{label}</div>
             </button>
@@ -201,7 +201,7 @@
   .theme-card .pv.l { background: linear-gradient(135deg, #f2f4f8 60%, #ffffff 60%); }
   .theme-card .pv.s { background: linear-gradient(135deg, #14161a 50%, #f2f4f8 50%); }
   .theme-card .pv.c { background: linear-gradient(135deg, #f5f0e9 55%, #ecc9b8 55%); }
-  .theme-card .pv.b { background: linear-gradient(135deg, #fefae0 55%, #ffd166 55%); }
+  .theme-card .pv.n { background: radial-gradient(80% 90% at 30% 20%, rgba(34, 211, 238, 0.5), transparent 60%), radial-gradient(70% 80% at 80% 90%, rgba(244, 114, 182, 0.35), transparent 60%), #070a14; }
   .theme-card .pv.g { background: linear-gradient(135deg, #667eea 0%, #764ba2 55%, #f093fb 100%); }
   .theme-card .pv.a { background: repeating-linear-gradient(180deg, #f4f6fa 0 3px, #c8cfdb 3px 6px); }
   .theme-card .tn { font-size: 11px; font-weight: 600; text-align: center; color: var(--tx2); }

@@ -28,7 +28,7 @@
 
 - 按压：`scale(0.97)`；hover：`translateY(-1px)` / `-2px`。
 - 入场：`glass-in` 300ms——上浮 + 由模糊到清晰（折射对焦感）。
-- 无 CTA 循环动画（玻璃是冷静的）。
+- CTA/ambient：`glass-glow` 5s 紫光呼吸脉冲（霓虹紫外阴影缓慢起伏）。
 
 ## 排版
 

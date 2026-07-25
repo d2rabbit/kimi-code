@@ -152,7 +152,7 @@ apps/kimi-desktop-tauri/
 
 ### 5.6 设计 Token
 - 复制完整 token 体系（颜色双套、间距 4px 网格、圆角 7 档、z-index 7 档、阴影、运动、字体、字号、字重、行高、特殊原语）。
-- **主题契约（2026-07 起）**：在既有 token 之上叠加一层「主题契约」（`--g-*` 几何 / `--elev-*` elevation / `--mat-*` 材质 / `--motion-*` 动效 / `--type-*` 排版签名），每个主题块填满全量契约，UI 原语（`src/lib/components/ui/`，见 `docs/PRIMITIVES.md`）只消费契约 token。五种设计语言规范见 `docs/themes/`（aurora-tile / clay / brutal / glass / aqua）。
+- **主题契约（2026-07 起）**：在既有 token 之上叠加一层「主题契约」（`--g-*` 几何 / `--elev-*` elevation / `--mat-*` 材质 / `--motion-*` 动效 / `--type-*` 排版签名），每个主题块填满全量契约，UI 原语（`src/lib/components/ui/`，见 `docs/PRIMITIVES.md`）只消费契约 token。五种设计语言规范见 `docs/themes/`（aurora-tile / clay / neon / glass / aqua）。
 
 ## 6. "更优雅"的布局设计（核心差异化）
 

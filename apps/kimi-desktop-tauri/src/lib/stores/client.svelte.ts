@@ -70,7 +70,7 @@ const ui = $state({
   goalMode: false,
 
   // Appearance
-  colorScheme: 'system' as 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua',
+  colorScheme: 'system' as 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua',
   accent: 'blue' as string,
   uiFontSize: 14 as number,
 
@@ -1135,7 +1135,7 @@ async function logout(): Promise<void> {
 }
 
 /** Set the color scheme (appearance — frontend local, not daemon config). */
-function setColorScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'brutal' | 'glass' | 'aqua'): void {
+function setColorScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua'): void {
   ui.colorScheme = scheme;
   try {
     document.documentElement.dataset.colorScheme = scheme;

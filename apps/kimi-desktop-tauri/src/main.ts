@@ -12,7 +12,7 @@ import App from './App.svelte';
 
 // Apply the persisted color scheme before mounting the app to avoid a flash.
 // Default to dark if no preference is stored. All 7 themes are recognized.
-const VALID_SCHEMES = ['light', 'dark', 'system', 'clay', 'brutal', 'glass', 'aqua'];
+const VALID_SCHEMES = ['light', 'dark', 'system', 'clay', 'neon', 'glass', 'aqua'];
 try {
   const scheme = localStorage.getItem('kimi-web.color-scheme');
   document.documentElement.dataset.colorScheme =
