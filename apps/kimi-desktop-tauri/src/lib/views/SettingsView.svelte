@@ -16,6 +16,7 @@
   import SkillsPanel from '../components/settings/SkillsPanel.svelte';
   import McpPanel from '../components/settings/McpPanel.svelte';
   import MemoryPanel from '../components/settings/MemoryPanel.svelte';
+  import CronPanel from '../components/settings/CronPanel.svelte';
   import LoginDialog from '../components/settings/LoginDialog.svelte';
   import ProviderModelDialog from '../components/settings/ProviderModelDialog.svelte';
   import SubagentsSection from '../components/settings/SubagentsSection.svelte';
@@ -28,7 +29,7 @@
 
   let { onnavigate = () => {} }: { onnavigate?: () => void } = $props();
 
-  type Section = 'general' | 'preview' | 'models' | 'subagents' | 'plugins' | 'skills' | 'mcp' | 'memory' | 'commands' | 'index' | 'usage' | 'guide';
+  type Section = 'general' | 'preview' | 'models' | 'subagents' | 'plugins' | 'skills' | 'mcp' | 'memory' | 'cron' | 'commands' | 'index' | 'usage' | 'guide';
   let active = $state<Section>('general');
 
   // 索引库：codegraph 持久索引重建（Tauri IPC；浏览器模式不可用）。
@@ -62,6 +63,7 @@
     { id: 'skills', label: '技能', icon: 'sparkles' },
     { id: 'mcp', label: 'MCP', icon: 'globe' },
     { id: 'memory', label: '记忆', icon: 'file-text' },
+    { id: 'cron', label: '定时任务', icon: 'check-list' },
     { id: 'commands', label: '命令', icon: 'bolt' },
     { id: 'index', label: '索引库', icon: 'server' },
     { id: 'usage', label: '使用统计', icon: 'check-list' },
@@ -384,6 +386,9 @@
 
       {:else if active === 'memory'}
         <MemoryPanel />
+
+      {:else if active === 'cron'}
+        <CronPanel />
 
       {:else if active === 'commands'}
         <h2>命令</h2>

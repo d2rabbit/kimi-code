@@ -7,6 +7,7 @@ import { getCredential } from './serverAuth';
 import type {
   AppConfig,
   AppConnection,
+  AppCronTask,
   AppGoal,
   AppManagedUsage,
   AppMessage,
@@ -80,6 +81,10 @@ import type {
   WirePage,
   WirePromptSubmitResult,
   WirePromptSteerResult,
+  WireCronDeleteResult,
+  WireCronTask,
+  WireCronTaskListResponse,
+  WireCronTaskResult,
   WirePromptItem,
   WirePromptListResponse,
   WireProvider,
@@ -254,6 +259,18 @@ function isCompactionReason(reason: string): boolean {
 // ---------------------------------------------------------------------------
 // DaemonKimiWebApi
 // ---------------------------------------------------------------------------
+
+function toAppCronTask(t: WireCronTask): AppCronTask {
+  return {
+    id: t.id,
+    cron: t.cron,
+    prompt: t.prompt,
+    createdAt: t.created_at,
+    recurring: t.recurring ?? false,
+    lastFiredAt: t.last_fired_at,
+  };
+}
+
 
 export class DaemonKimiWebApi implements KimiWebApi {
   private readonly http: DaemonHttpClient;
@@ -434,6 +451,32 @@ export class DaemonKimiWebApi implements KimiWebApi {
       `/sessions/${encodeURIComponent(sessionId)}/goal`,
     );
     return toAppGoal(data);
+  }
+
+  // GET/POST /sessions/{id}/cron + DELETE /sessions/{id}/cron/{task_id}.
+  async listCronTasks(sessionId: string): Promise<AppCronTask[]> {
+    const data = await this.http.get<WireCronTaskListResponse>(
+      `/sessions/${encodeURIComponent(sessionId)}/cron`,
+    );
+    return (data.tasks ?? []).map(toAppCronTask);
+  }
+
+  async createCronTask(
+    sessionId: string,
+    input: { cron: string; prompt: string; recurring?: boolean },
+  ): Promise<AppCronTask> {
+    const data = await this.http.post<WireCronTaskResult>(
+      `/sessions/${encodeURIComponent(sessionId)}/cron`,
+      input,
+    );
+    return toAppCronTask(data.task);
+  }
+
+  async deleteCronTask(sessionId: string, taskId: string): Promise<{ deleted: boolean }> {
+    const data = await this.http.delete<WireCronDeleteResult>(
+      `/sessions/${encodeURIComponent(sessionId)}/cron/${encodeURIComponent(taskId)}`,
+    );
+    return { deleted: data.deleted };
   }
 
   /** POST /sessions/{id}/export — download a diagnostic archive (tar.gz). */

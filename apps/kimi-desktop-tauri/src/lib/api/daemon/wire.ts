@@ -121,6 +121,28 @@ export interface WireSessionWarningsResponse {
   warnings: WireSessionWarning[];
 }
 
+// GET/POST /sessions/{id}/cron + DELETE /sessions/{id}/cron/{task_id}.
+export interface WireCronTask {
+  id: string;
+  cron: string;
+  prompt: string;
+  created_at: number;
+  recurring?: boolean;
+  last_fired_at?: number;
+}
+
+export interface WireCronTaskListResponse {
+  tasks: WireCronTask[];
+}
+
+export interface WireCronTaskResult {
+  task: WireCronTask;
+}
+
+export interface WireCronDeleteResult {
+  deleted: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Workspace + daemon folder browser wire DTOs
 // PRESUMED — not in the live daemon yet; isolated here, swap when backend ships.

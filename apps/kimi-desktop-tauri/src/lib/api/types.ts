@@ -747,6 +747,17 @@ export interface AppPromptItem {
   createdAt: string;
 }
 
+/** A cron task scheduled in a session. */
+export interface AppCronTask {
+  id: string;
+  /** 5-field cron expression (minute hour day-of-month month day-of-week). */
+  cron: string;
+  prompt: string;
+  createdAt: number;
+  recurring: boolean;
+  lastFiredAt?: number;
+}
+
 export interface KimiWebApi {
   getHealth(): Promise<{ status: 'ok'; uptimeSec: number }>;
   getMeta(): Promise<{ serverVersion: string; serverId: string; startedAt: string; capabilities: Record<string, boolean>; openInApps: string[]; dangerousBypassAuth: boolean }>;
@@ -759,6 +770,12 @@ export interface KimiWebApi {
   getSessionWarnings(sessionId: string): Promise<AppSessionWarning[]>;
   /** Current goal snapshot for a session (null when none is active). */
   getSessionGoal(sessionId: string): Promise<AppGoal | null>;
+  /** List cron tasks scheduled in a session. */
+  listCronTasks(sessionId: string): Promise<AppCronTask[]>;
+  /** Create a cron task in a session. */
+  createCronTask(sessionId: string, input: { cron: string; prompt: string; recurring?: boolean }): Promise<AppCronTask>;
+  /** Delete a cron task (idempotent — false when already absent). */
+  deleteCronTask(sessionId: string, taskId: string): Promise<{ deleted: boolean }>;
   archiveSession(sessionId: string): Promise<{ archived: true }>;
   restoreSession(sessionId: string): Promise<AppSession>;
   listMessages(sessionId: string, input?: PageRequest & { role?: AppMessageRole }): Promise<Page<AppMessage>>;
