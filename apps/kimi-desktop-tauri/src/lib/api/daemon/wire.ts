@@ -143,6 +143,21 @@ export interface WireCronDeleteResult {
   deleted: boolean;
 }
 
+// GET /sessions/{id}/agent-profiles.
+export interface WireAgentProfileDescriptor {
+  name: string;
+  description?: string;
+  when_to_use?: string;
+  tools?: string[];
+  disallowed_tools?: string[];
+  subagents?: string[];
+  model_preference?: 'primary' | 'secondary';
+}
+
+export interface WireAgentProfileListResponse {
+  profiles: WireAgentProfileDescriptor[];
+}
+
 // ---------------------------------------------------------------------------
 // Workspace + daemon folder browser wire DTOs
 // PRESUMED — not in the live daemon yet; isolated here, swap when backend ships.

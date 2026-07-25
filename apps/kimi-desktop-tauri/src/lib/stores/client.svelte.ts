@@ -1269,6 +1269,24 @@ function consumeSkillCreateRequest(): boolean {
   return v;
 }
 
+// Composer prefill intent: cross-view requests (e.g. 子智能体 委派入口) drop
+// text into the chat composer. ChatArea applies it when mounted; the flag
+// persists until consumed so switching views/modules never loses it.
+let composerPrefill = $state<string | null>(null);
+
+function requestComposerPrefill(text: string): void {
+  composerPrefill = text;
+}
+
+function consumeComposerPrefill(): string | null {
+  const v = composerPrefill;
+  composerPrefill = null;
+  return v;
+}
+
+/** Peek without consuming (ChatArea effect keys on this). */
+export const pendingComposerPrefill = () => composerPrefill;
+
 // Right-panel intent: /btw (or reopening an existing side chat) asks the
 // shell to expand the right rail and switch to the 侧聊 tab.
 let btwPanelRequested = $state(false);
@@ -1604,6 +1622,8 @@ export const client = {
   requestSkillCreate,
   consumeSkillCreateRequest,
   consumeOpenBtwPanelRequest,
+  requestComposerPrefill,
+  consumeComposerPrefill,
   refreshPromptQueue,
   abortQueuedPrompt,
   openSideChat,

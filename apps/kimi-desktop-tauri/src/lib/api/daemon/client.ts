@@ -7,6 +7,7 @@ import { getCredential } from './serverAuth';
 import type {
   AppConfig,
   AppConnection,
+  AppAgentProfile,
   AppCronTask,
   AppGoal,
   AppManagedUsage,
@@ -81,6 +82,8 @@ import type {
   WirePage,
   WirePromptSubmitResult,
   WirePromptSteerResult,
+  WireAgentProfileDescriptor,
+  WireAgentProfileListResponse,
   WireCronDeleteResult,
   WireCronTask,
   WireCronTaskListResponse,
@@ -259,6 +262,18 @@ function isCompactionReason(reason: string): boolean {
 // ---------------------------------------------------------------------------
 // DaemonKimiWebApi
 // ---------------------------------------------------------------------------
+
+function toAppAgentProfile(p: WireAgentProfileDescriptor): AppAgentProfile {
+  return {
+    name: p.name,
+    description: p.description,
+    whenToUse: p.when_to_use,
+    tools: p.tools,
+    disallowedTools: p.disallowed_tools,
+    subagents: p.subagents,
+    modelPreference: p.model_preference,
+  };
+}
 
 function toAppCronTask(t: WireCronTask): AppCronTask {
   return {
@@ -477,6 +492,14 @@ export class DaemonKimiWebApi implements KimiWebApi {
       `/sessions/${encodeURIComponent(sessionId)}/cron/${encodeURIComponent(taskId)}`,
     );
     return { deleted: data.deleted };
+  }
+
+  // GET /sessions/{id}/agent-profiles — merged catalog (builtin + file agents).
+  async listAgentProfiles(sessionId: string): Promise<AppAgentProfile[]> {
+    const data = await this.http.get<WireAgentProfileListResponse>(
+      `/sessions/${encodeURIComponent(sessionId)}/agent-profiles`,
+    );
+    return (data.profiles ?? []).map(toAppAgentProfile);
   }
 
   /** POST /sessions/{id}/export — download a diagnostic archive (tar.gz). */

@@ -20,6 +20,7 @@ import { registerApprovalsRoutes } from './approvals';
 import { registerAuthRoute } from './auth';
 import { registerConfigRoutes } from './config';
 import { registerConnectionsRoutes } from './connections';
+import { registerAgentProfilesRoutes } from './agentProfiles';
 import { registerCronRoutes } from './cron';
 import { registerFilesRoutes } from './files';
 import { registerFsRoutes } from './fs';
@@ -119,6 +120,7 @@ export async function registerApiV1Routes(
       );
       registerSkillsRoutes(apiV1 as unknown as Parameters<typeof registerSkillsRoutes>[0], core);
       registerCronRoutes(apiV1 as unknown as Parameters<typeof registerCronRoutes>[0], core);
+      registerAgentProfilesRoutes(apiV1 as unknown as Parameters<typeof registerAgentProfilesRoutes>[0], core);
       registerMessagesRoutes(
         apiV1 as unknown as Parameters<typeof registerMessagesRoutes>[0],
         core,

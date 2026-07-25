@@ -747,6 +747,19 @@ export interface AppPromptItem {
   createdAt: string;
 }
 
+/** An agent profile spawnable in a session (builtin or file-defined). */
+export interface AppAgentProfile {
+  name: string;
+  description?: string;
+  whenToUse?: string;
+  /** Tool allowlist; absent = every tool. */
+  tools?: string[];
+  disallowedTools?: string[];
+  /** Subagent profile names this agent may delegate to; absent = any type. */
+  subagents?: string[];
+  modelPreference?: 'primary' | 'secondary';
+}
+
 /** A cron task scheduled in a session. */
 export interface AppCronTask {
   id: string;
@@ -776,6 +789,8 @@ export interface KimiWebApi {
   createCronTask(sessionId: string, input: { cron: string; prompt: string; recurring?: boolean }): Promise<AppCronTask>;
   /** Delete a cron task (idempotent — false when already absent). */
   deleteCronTask(sessionId: string, taskId: string): Promise<{ deleted: boolean }>;
+  /** List the agent profiles (builtin + file-defined) spawnable in a session. */
+  listAgentProfiles(sessionId: string): Promise<AppAgentProfile[]>;
   archiveSession(sessionId: string): Promise<{ archived: true }>;
   restoreSession(sessionId: string): Promise<AppSession>;
   listMessages(sessionId: string, input?: PageRequest & { role?: AppMessageRole }): Promise<Page<AppMessage>>;

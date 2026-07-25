@@ -19,6 +19,14 @@
   let scrollEl: HTMLElement | null = $state(null);
   let stickToBottom = $state(true);
 
+  // Composer prefill intents (e.g. 子智能体 委派入口) — apply and clear.
+  $effect(() => {
+    if (client.pendingComposerPrefill() !== null) {
+      const v = client.client.consumeComposerPrefill();
+      if (v) text = v;
+    }
+  });
+
   // ---- Session warnings (server: oversized AGENTS.md, secondary-model issues) ----
   let sessionWarnings = $state<AppSessionWarning[]>([]);
   let dismissedWarnings = $state<string[]>([]);
