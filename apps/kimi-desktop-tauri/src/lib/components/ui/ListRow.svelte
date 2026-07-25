@@ -22,28 +22,31 @@
   } = $props();
 </script>
 
-<div
-  class="ui-row {active ? 'active' : ''} {disabled ? 'disabled' : ''} {cls}"
-  role={onclick ? 'button' : undefined}
-  tabindex={onclick ? 0 : undefined}
-  {onclick}
-  onkeydown={onclick
-    ? (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          e.currentTarget.click();
-        }
-      }
-    : undefined}
->
-  {#if leading}
-    <span class="ui-row-leading">{@render leading()}</span>
-  {/if}
-  <span class="ui-row-body">{@render children?.()}</span>
-  {#if trailing}
-    <span class="ui-row-trailing">{@render trailing()}</span>
-  {/if}
-</div>
+{#if onclick}
+  <button
+    type="button"
+    class="ui-row {active ? 'active' : ''} {disabled ? 'disabled' : ''} {cls}"
+    {onclick}
+  >
+    {#if leading}
+      <span class="ui-row-leading">{@render leading()}</span>
+    {/if}
+    <span class="ui-row-body">{@render children?.()}</span>
+    {#if trailing}
+      <span class="ui-row-trailing">{@render trailing()}</span>
+    {/if}
+  </button>
+{:else}
+  <div class="ui-row {active ? 'active' : ''} {disabled ? 'disabled' : ''} {cls}">
+    {#if leading}
+      <span class="ui-row-leading">{@render leading()}</span>
+    {/if}
+    <span class="ui-row-body">{@render children?.()}</span>
+    {#if trailing}
+      <span class="ui-row-trailing">{@render trailing()}</span>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .ui-row {
@@ -52,6 +55,12 @@
     align-items: center;
     gap: var(--space-3, 12px);
     padding: 8px 12px;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-ui, inherit);
+    font-size: var(--text-base, 14px);
+    background: transparent;
+    border: none;
     border-radius: var(--g-radius-control, 4px);
     color: var(--color-text, inherit);
     cursor: default;
@@ -59,10 +68,10 @@
       background var(--duration-fast, 120ms) var(--ease, ease),
       color var(--duration-fast, 120ms) var(--ease, ease);
   }
-  .ui-row[role='button'] {
+  button.ui-row {
     cursor: pointer;
   }
-  .ui-row[role='button']:hover {
+  button.ui-row:hover {
     background: var(--color-hover, rgba(255, 255, 255, 0.06));
   }
   .ui-row.active {
