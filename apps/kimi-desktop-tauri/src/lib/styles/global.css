@@ -629,19 +629,14 @@ button,
 }
 button:active,
 [role="button"]:active {
-  transform: scale(0.97);
+  transform: var(--motion-press, scale(0.97));
 }
 
 /* ---- 浮层生长原点：从触发点长出，而非中心无中生有 ---- */
 /* composer 向上弹出的菜单（模型/思考档位/斜杠/@） */
 .pop,
-.composer-card .glass-menu,
 .mention-menu {
   transform-origin: bottom right;
-}
-/* 光标处右键菜单 */
-.glass-menu[style*="position: fixed"] {
-  transform-origin: top left;
 }
 
 /* ---- 首屏 stagger：列表/卡片级联出现（Aero entrance，纯装饰不阻塞交互） ---- */
@@ -669,86 +664,6 @@ button:active,
 
 ::selection {
   background: var(--p-selection, rgba(79, 168, 255, 0.22));
-}
-
-/* ============================================================================
-   SURFACE UTILITIES — Aurora Tile 玻璃磁贴表面（沿用旧类名，零组件改动）
-============================================================================ */
-/* 卡片/面板：L2 半透明玻璃 + backdrop-filter + 磁贴硬角 + 顶光 + 光泽渐隐 */
-.glass-panel {
-  background: var(--l2-glass);
-  backdrop-filter: blur(24px) saturate(1.5);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  border: 1px solid var(--bd-glass);
-  border-radius: var(--r-lg);
-  box-shadow: var(--toplight-strong), var(--shadow-md);
-  position: relative;
-  overflow: hidden;
-}
-.glass-panel::before {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; top: 0; height: 45%;
-  background: linear-gradient(180deg, var(--shine-overlay), transparent);
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-/* 顶栏条：L1 玻璃 + 底部发丝线 */
-.glass-header {
-  background: var(--l1-glass);
-  backdrop-filter: blur(24px) saturate(1.5);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  border-bottom: 1px solid var(--bd);
-  position: relative;
-}
-.glass-header::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; top: 0; height: 50%;
-  background: linear-gradient(180deg, var(--shine-overlay), transparent);
-  pointer-events: none;
-}
-
-/* 浮层菜单：L3 玻璃 + 大投影 + 最强模糊 */
-.glass-menu {
-  background: var(--l3-glass);
-  backdrop-filter: blur(32px) saturate(1.6);
-  -webkit-backdrop-filter: blur(32px) saturate(1.6);
-  border: 1px solid var(--bd2);
-  border-radius: var(--r-sm);
-  box-shadow: var(--toplight-modal), var(--sh-lg);
-  padding: 4px;
-  min-width: 160px;
-  position: relative;
-  overflow: hidden;
-}
-.glass-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: var(--r-sm);
-  font-size: var(--text-sm);
-  color: var(--tx2);
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  width: 100%;
-  text-align: left;
-  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
-}
-.glass-menu-item:hover {
-  background: var(--ac-soft);
-  color: var(--tx);
-}
-.glass-menu-item.danger {
-  color: var(--err);
-}
-.glass-menu-divider {
-  height: 1px;
-  background: var(--bd);
-  margin: 4px 6px;
 }
 
 /* -- icon primitive --------------------------------------------------------- */
@@ -1129,23 +1044,6 @@ html[data-color-scheme="clay"] {
   --shadow-lav: 38, 22, 48;
 }
 
-/* ---- Clay 交互状态阴影（仅 clay 主题生效） ---- */
-html[data-color-scheme="clay"] .clay-hover {
-  transition: box-shadow var(--duration-base) var(--ease);
-}
-html[data-color-scheme="clay"] .clay-hover:hover {
-  box-shadow:
-    0 20px 36px rgba(55, 28, 10, 0.20),
-    inset 0 -8px 16px rgba(55, 28, 10, 0.14),
-    inset 0 6px 14px rgba(255, 255, 255, 0.55);
-}
-html[data-color-scheme="clay"] .clay-hover:active {
-  box-shadow:
-    0 4px 8px rgba(55, 28, 10, 0.08),
-    inset 0 -4px 10px rgba(55, 28, 10, 0.22),
-    inset 0 4px 10px rgba(255, 255, 255, 0.35);
-}
-
 /* ---- 全局动画增强 token（所有主题受益，新增不改既有） ---- */
 :root {
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* 轻度过冲，弹窗/卡片入场 */
@@ -1260,21 +1158,6 @@ html[data-color-scheme="brutal"] {
   --brutal-cream: #fefae0;
 }
 
-/* ---- Brutal 按下动画：推入阴影 ---- */
-html[data-color-scheme="brutal"] .brutal-press {
-  transition: transform var(--duration-fast) var(--ease),
-    box-shadow var(--duration-fast) var(--ease);
-}
-html[data-color-scheme="brutal"] .brutal-press:active {
-  transform: translate(4px, 4px);
-  box-shadow: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  html[data-color-scheme="brutal"] .brutal-press:active {
-    transform: none;
-  }
-}
-
 /* ============================================================================
    GLASS — 玻璃拟态（第五主题，独立于 dark / light / clay / brutal）
    来源：https://namethatui.com/styles/glassmorphism
@@ -1379,20 +1262,10 @@ html[data-color-scheme="glass"] {
   color-scheme: dark;
 }
 
-/* ---- Glass 专属：backdrop-filter + 壁纸背景层（仅此主题） ---- */
+/* ---- Glass 专属：壁纸背景层（仅此主题；表面模糊由契约 --mat-blur 驱动） ---- */
 html[data-color-scheme="glass"] body {
   background: var(--haze);
   background-attachment: fixed;
-}
-html[data-color-scheme="glass"] .glass-panel,
-html[data-color-scheme="glass"] .plugin-card,
-html[data-color-scheme="glass"] .scard,
-html[data-color-scheme="glass"] .item-row,
-html[data-color-scheme="glass"] .task-item,
-html[data-color-scheme="glass"] .header,
-html[data-color-scheme="glass"] .modal-content {
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
 }
 
 /* ============================================================================
@@ -1501,34 +1374,14 @@ html[data-color-scheme="aqua"] {
   color-scheme: light;
 }
 
-/* ---- Aqua 专属：条纹背景 + 凝胶按钮渐变 ---- */
+/* ---- Aqua 专属：条纹背景（仅此主题；凝胶材质由契约 --mat-* 驱动） ---- */
 html[data-color-scheme="aqua"] body {
   background: var(--haze);
 }
-/* 凝胶蓝按钮渐变（顶部高光 + 内发光 + 深底） */
-html[data-color-scheme="aqua"] .newtask,
-html[data-color-scheme="aqua"] .btn.primary,
-html[data-color-scheme="aqua"] .seg-btn.on {
-  background:
-    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 50%),
-    linear-gradient(180deg, #6aa6f8 0%, #1862d8 55%, #0c4cc0 100%);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.60),
-    inset 0 -3px 6px rgba(255, 255, 255, 0.35),
-    0 1px 3px rgba(0, 30, 90, 0.40);
-}
-/* 默认按钮微脉动动画 */
+/* 默认按钮微脉动动画（契约 --motion-cta-anim 引用） */
 @keyframes aqua-pulse {
   0%, 100% { filter: brightness(1) saturate(1); }
   50% { filter: brightness(1.15) saturate(1.12); }
-}
-html[data-color-scheme="aqua"] .newtask {
-  animation: aqua-pulse 2.4s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  html[data-color-scheme="aqua"] .newtask {
-    animation: none;
-  }
 }
 
 /* ============================================================================
@@ -1934,26 +1787,16 @@ html[data-color-scheme="aqua"] {
 button:not(:disabled):active,
 [role="button"]:not(:disabled):active,
 [role="tab"]:not(:disabled):active,
-.btn:not(:disabled):active,
-.seg-btn:not(:disabled):active,
-.refresh-btn:not(:disabled):active,
-.term-btn:not(:disabled):active,
-.theme-card:not(:disabled):active,
-.gs-btn:not(:disabled):active {
-  transform: scale(0.97);
+.theme-card:not(:disabled):active {
+  transform: var(--motion-press, scale(0.97));
 }
 button,
 [role="button"],
-.btn,
-.seg-btn,
-.refresh-btn,
-.term-btn,
-.theme-card,
-.gs-btn {
+.theme-card {
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
-/* ---- 卡片 hover 上浮 + 光泽（Aero glass lift） ---- */
+/* ---- 卡片 hover 上浮（位移由契约 --motion-hover-lift-card 决定） ---- */
 /* @media (hover: hover)：触屏不在 tap 时错误触发 hover 动画 */
 .tool-card,
 .plugin-card,
@@ -1969,19 +1812,14 @@ button,
   .plugin-card:hover,
   .item-row:hover,
   .task-item:hover {
-    transform: translateY(-2px);
+    transform: var(--motion-hover-lift-card, translateY(-2px));
   }
 }
 
-/* ---- 消息/卡片入场（Aero entrance: subtle scale + opacity, no blur for perf） ---- */
+/* ---- 消息/卡片入场（动画由契约 --motion-enter-anim 决定；Aurora=aero-drop-in） ---- */
 /* 用 transition 而非 keyframes：消息在流式输出时持续新增，keyframes 会从头重播导致抖动。
    transition 可中断、可重定向，适合高频动态 UI。 */
 @keyframes aero-drop-in {
-  from { opacity: 0; transform: scale(0.92) translateY(4px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-/* 保留旧名兼容 */
-@keyframes msg-in {
   from { opacity: 0; transform: scale(0.92) translateY(4px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
@@ -1989,28 +1827,8 @@ button,
 .msg.agent,
 .tool-card,
 .compact {
-  animation: aero-drop-in var(--duration-aero-in, 200ms) var(--ease-out) backwards;
+  animation: var(--motion-enter-anim, none);
 }
-
-/* ---- Sidebar 会话项 hover 左侧 accent 竖条 ---- */
-.s-row {
-  position: relative;
-  transition: background var(--duration-fast) var(--ease);
-}
-.s-row::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 2px;
-  height: 0;
-  background: var(--ac);
-  border-radius: 0 2px 2px 0;
-  transform: translateY(-50%);
-  transition: height var(--duration-base) var(--ease);
-}
-.s-row:hover::before { height: 40%; }
-.s-row.active::before { height: 60%; }
 
 /* ---- 模块导航项 hover 左侧竖条 ---- */
 .mod {
@@ -2137,11 +1955,9 @@ button,
   box-shadow: 0 4px 12px var(--ac-soft);
 }
 
-/* ---- Dialog/Modal 入场增强（用 spring 曲线） ---- */
-.glass-menu,
-.modal-content,
+/* ---- Dialog/Modal 入场增强（缓动由契约 --motion-ease-enter 决定） ---- */
 .theme-card {
-  animation: dialog-in 0.22s var(--ease-spring, var(--ease));
+  animation: dialog-in 0.22s var(--motion-ease-enter, var(--ease-spring));
 }
 @keyframes dialog-in {
   from { opacity: 0; transform: translateY(-8px) scale(0.97); }
@@ -2162,8 +1978,6 @@ button,
   .w-logo .w-mark,
   .empty-ic,
   .avatar,
-  .glass-menu,
-  .modal-content,
   .theme-card,
   .spinner {
     animation: none;
@@ -2190,13 +2004,10 @@ button,
   animation: avatar-breathe 3.5s ease-in-out infinite;
 }
 
-/* ---- 新建任务按钮光晕呼吸 ---- */
+/* ---- 新建任务按钮光晕呼吸（Aurora 契约 --motion-cta-anim 引用） ---- */
 @keyframes newtask-glow {
   0%, 100% { box-shadow: 0 1px 6px rgba(79, 168, 255, 0.22); }
   50% { box-shadow: 0 2px 12px rgba(79, 168, 255, 0.38); }
-}
-.newtask {
-  animation: newtask-glow 3s ease-in-out infinite;
 }
 
 /* ---- 运行中 chip 呼吸（标题栏的"运行中"徽章） ---- */
@@ -2208,17 +2019,25 @@ button,
   animation: chip-run-breathe 1.8s ease-in-out infinite;
 }
 
-/* ---- Welcome chips 集合呼吸（错峰，波浪感） ---- */
+/* ---- Welcome chips 集合呼吸（错峰，波浪感；仅 Aurora 的有机签名） ---- */
 @keyframes chip-breathe {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2px); }
 }
-.chip {
+html[data-color-scheme="dark"] .chip,
+html[data-color-scheme="light"] .chip,
+html[data-color-scheme="system"] .chip {
   animation: chip-breathe 4s ease-in-out infinite;
 }
-.chip:nth-child(2) { animation-delay: 0.5s; }
-.chip:nth-child(3) { animation-delay: 1s; }
-.chip:nth-child(4) { animation-delay: 1.5s; }
+html[data-color-scheme="dark"] .chip:nth-child(2),
+html[data-color-scheme="light"] .chip:nth-child(2),
+html[data-color-scheme="system"] .chip:nth-child(2) { animation-delay: 0.5s; }
+html[data-color-scheme="dark"] .chip:nth-child(3),
+html[data-color-scheme="light"] .chip:nth-child(3),
+html[data-color-scheme="system"] .chip:nth-child(3) { animation-delay: 1s; }
+html[data-color-scheme="dark"] .chip:nth-child(4),
+html[data-color-scheme="light"] .chip:nth-child(4),
+html[data-color-scheme="system"] .chip:nth-child(4) { animation-delay: 1.5s; }
 
 /* ---- body 背景层极慢色彩偏移（雾晕呼吸，~10s 周期） ---- */
 @keyframes haze-drift {
@@ -2261,7 +2080,6 @@ body {
 /* ---- reduced-motion 守护（呼吸感） ---- */
 @media (prefers-reduced-motion: reduce) {
   .avatar.a,
-  .newtask,
   .chip-run,
   .chip,
   body,
@@ -2274,512 +2092,11 @@ body {
 }
 
 /* ============================================================================
-   主题专属组件覆盖（让新主题真正呈现各自的设计语言）
-   之前只改了 token，组件继承的 border-width/shadow/filter 没变，
-   导致 brutal 没有厚黑边框、glass 没有毛玻璃、aqua 没有凝胶质感。
-============================================================================ */
-
-/* ===========================
-   BRUTAL — 组件级硬边框 + 硬阴影
-   =========================== */
-html[data-color-scheme="brutal"] .tool-card,
-html[data-color-scheme="brutal"] .plugin-card,
-html[data-color-scheme="brutal"] .item-row,
-html[data-color-scheme="brutal"] .task-item,
-html[data-color-scheme="brutal"] .scard,
-html[data-color-scheme="brutal"] .card,
-html[data-color-scheme="brutal"] .composer-card,
-html[data-color-scheme="brutal"] .glass-panel,
-html[data-color-scheme="brutal"] .approval-card,
-html[data-color-scheme="brutal"] .modal-content,
-html[data-color-scheme="brutal"] .panel,
-html[data-color-scheme="brutal"] .theme-card,
-html[data-color-scheme="brutal"] .empty {
-  border: 2px solid #1a1a1a !important;
-  box-shadow: 4px 4px 0 #1a1a1a !important;
-  border-radius: 4px !important;
-  background: var(--l1) !important;
-}
-html[data-color-scheme="brutal"] .tool-card:hover,
-html[data-color-scheme="brutal"] .plugin-card:hover,
-html[data-color-scheme="brutal"] .item-row:hover,
-html[data-color-scheme="brutal"] .card:hover,
-html[data-color-scheme="brutal"] .scard:hover {
-  box-shadow: 6px 6px 0 #1a1a1a !important;
-  transform: translate(-2px, -2px);
-}
-/* Primary CTA buttons: saturated hot-pink fill + black border + hard shadow */
-html[data-color-scheme="brutal"] .btn.primary,
-html[data-color-scheme="brutal"] .newtask,
-html[data-color-scheme="brutal"] .seg-btn.on,
-html[data-color-scheme="brutal"] .gs-btn.primary,
-html[data-color-scheme="brutal"] .action-btn.approve,
-html[data-color-scheme="brutal"] .stop-btn {
-  background: var(--brutal-pink) !important;
-  color: #fff !important;
-}
-/* Input fields: cream fill + thick black border */
-html[data-color-scheme="brutal"] input,
-html[data-color-scheme="brutal"] textarea,
-html[data-color-scheme="brutal"] .input,
-html[data-color-scheme="brutal"] .input-row {
-  border: 2px solid #1a1a1a !important;
-  box-shadow: 3px 3px 0 #1a1a1a !important;
-  background: var(--l3) !important;
-  border-radius: 4px !important;
-}
-html[data-color-scheme="brutal"] .btn,
-html[data-color-scheme="brutal"] .seg-btn,
-html[data-color-scheme="brutal"] .refresh-btn,
-html[data-color-scheme="brutal"] .term-btn,
-html[data-color-scheme="brutal"] .empty-btn,
-html[data-color-scheme="brutal"] .gs-btn,
-html[data-color-scheme="brutal"] .stop-btn {
-  border: 2px solid #1a1a1a !important;
-  box-shadow: 3px 3px 0 #1a1a1a !important;
-  border-radius: 4px !important;
-  font-weight: 700 !important;
-  transition: transform 80ms linear, box-shadow 80ms linear !important;
-}
-html[data-color-scheme="brutal"] .btn:active,
-html[data-color-scheme="brutal"] .seg-btn:active,
-html[data-color-scheme="brutal"] .newtask:active,
-html[data-color-scheme="brutal"] .tool-tab:active {
-  transform: translate(3px, 3px) !important;
-  box-shadow: none !important;
-}
-html[data-color-scheme="brutal"] .newtask {
-  border: 2px solid #1a1a1a !important;
-  box-shadow: 4px 4px 0 #1a1a1a !important;
-  animation: none !important;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-html[data-color-scheme="brutal"] .chip {
-  border: 2px solid #1a1a1a !important;
-  box-shadow: 2px 2px 0 #1a1a1a !important;
-  animation: none !important;
-  font-weight: 600;
-}
-html[data-color-scheme="brutal"] .tool-tab {
-  border: 2px solid transparent;
-  font-weight: 700;
-}
-html[data-color-scheme="brutal"] .tool-tab.active {
-  border: 2px solid #1a1a1a !important;
-  box-shadow: 3px 3px 0 #1a1a1a !important;
-  background: var(--brutal-yellow) !important;
-  color: #1a1a1a !important;
-}
-html[data-color-scheme="brutal"] .tool-tab::after { display: none; }
-html[data-color-scheme="brutal"] .bubble {
-  border: 2px solid #1a1a1a !important;
-  box-shadow: 3px 3px 0 #1a1a1a !important;
-}
-html[data-color-scheme="brutal"] .s-row::before,
-html[data-color-scheme="brutal"] .mod::before { display: none; }
-html[data-color-scheme="brutal"] .s-row,
-html[data-color-scheme="brutal"] .mod {
-  border-left: 3px solid transparent;
-  border-radius: 0 !important;
-}
-html[data-color-scheme="brutal"] .s-row:hover,
-html[data-color-scheme="brutal"] .mod:hover {
-  border-left-color: var(--brutal-pink);
-  background: var(--brutal-yellow) !important;
-  color: #1a1a1a !important;
-}
-html[data-color-scheme="brutal"] .s-row.active {
-  border-left-color: var(--brutal-pink);
-  background: var(--brutal-yellow) !important;
-}
-html[data-color-scheme="brutal"] .header,
-html[data-color-scheme="brutal"] .sidebar,
-html[data-color-scheme="brutal"] .rail {
-  border: 2px solid #1a1a1a !important;
-  border-radius: 0 !important;
-}
-html[data-color-scheme="brutal"] .header { border-bottom-width: 2px !important; }
-html[data-color-scheme="brutal"] .sidebar { border-right-width: 2px !important; }
-html[data-color-scheme="brutal"] .rail { border-left-width: 2px !important; }
-
-/* ===========================
-   GLASS — 组件级毛玻璃覆盖
-   =========================== */
-html[data-color-scheme="glass"] .tool-card,
-html[data-color-scheme="glass"] .plugin-card,
-html[data-color-scheme="glass"] .item-row,
-html[data-color-scheme="glass"] .task-item,
-html[data-color-scheme="glass"] .scard,
-html[data-color-scheme="glass"] .card,
-html[data-color-scheme="glass"] .composer-card,
-html[data-color-scheme="glass"] .glass-panel,
-html[data-color-scheme="glass"] .approval-card,
-html[data-color-scheme="glass"] .modal-content,
-html[data-color-scheme="glass"] .panel,
-html[data-color-scheme="glass"] .theme-card,
-html[data-color-scheme="glass"] .goal-strip,
-html[data-color-scheme="glass"] .empty {
-  background: rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(24px) saturate(2.2) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(2.2) !important;
-  /* MAX contrast border — 2px solid white, near-opaque */
-  border: 2px solid rgba(255, 255, 255, 0.95) !important;
-  /* Sharp top + bottom rim with strong contrast = unmistakable glass thickness */
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.50),
-    inset 0 2px 0 rgba(255, 255, 255, 1),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.45) !important;
-}
-/* Extra-bright top crescent via pseudo-element overlay — the specular highlight
-   that makes glass unmistakable even without content behind to blur. */
-html[data-color-scheme="glass"] .tool-card::before,
-html[data-color-scheme="glass"] .plugin-card::before,
-html[data-color-scheme="glass"] .item-row::before,
-html[data-color-scheme="glass"] .task-item::before,
-html[data-color-scheme="glass"] .scard::before,
-html[data-color-scheme="glass"] .card::before,
-html[data-color-scheme="glass"] .composer-card::before,
-html[data-color-scheme="glass"] .glass-panel::before,
-html[data-color-scheme="glass"] .approval-card::before,
-html[data-color-scheme="glass"] .modal-content::before,
-html[data-color-scheme="glass"] .panel::before,
-html[data-color-scheme="glass"] .theme-card::before,
-html[data-color-scheme="glass"] .goal-strip::before,
-html[data-color-scheme="glass"] .empty::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 6%;
-  right: 6%;
-  height: 3px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 1) 50%,
-    transparent 100%);
-  border-radius: 3px;
-  pointer-events: none;
-  z-index: 1;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
-}
-/* Ensure positioned context for ::before */
-html[data-color-scheme="glass"] .tool-card,
-html[data-color-scheme="glass"] .plugin-card,
-html[data-color-scheme="glass"] .scard,
-html[data-color-scheme="glass"] .card,
-html[data-color-scheme="glass"] .glass-panel,
-html[data-color-scheme="glass"] .modal-content,
-html[data-color-scheme="glass"] .panel,
-html[data-color-scheme="glass"] .theme-card,
-html[data-color-scheme="glass"] .composer-card,
-html[data-color-scheme="glass"] .approval-card {
-  position: relative;
-}
-/* Glass inputs: frosted translucency */
-html[data-color-scheme="glass"] input,
-html[data-color-scheme="glass"] textarea,
-html[data-color-scheme="glass"] .input,
-html[data-color-scheme="glass"] .input-row {
-  background: rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  color: var(--tx) !important;
-}
-html[data-color-scheme="glass"] input::placeholder,
-html[data-color-scheme="glass"] textarea::placeholder {
-  color: rgba(240, 240, 255, 0.45) !important;
-}
-html[data-color-scheme="glass"] .sidebar,
-html[data-color-scheme="glass"] .rail {
-  background: rgba(255, 255, 255, 0.05) !important;
-  backdrop-filter: blur(16px) saturate(1.5) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.5) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-html[data-color-scheme="glass"] .header {
-  background: rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(16px) saturate(1.5) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.5) !important;
-}
-html[data-color-scheme="glass"] .newtask {
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.35), rgba(196, 181, 253, 0.25)) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
-  animation: none !important;
-}
-html[data-color-scheme="glass"] .chip {
-  background: rgba(255, 255, 255, 0.10) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.20) !important;
-  animation: none !important;
-}
-html[data-color-scheme="glass"] .tool-tab.active {
-  background: rgba(167, 139, 250, 0.20) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-}
-html[data-color-scheme="glass"] .bubble {
-  background: rgba(167, 139, 250, 0.12) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(167, 139, 250, 0.25) !important;
-}
-html[data-color-scheme="glass"] .btn,
-html[data-color-scheme="glass"] .seg-btn,
-html[data-color-scheme="glass"] .refresh-btn {
-  background: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-}
-
-/* ===========================
-   AQUA — 组件级凝胶质感覆盖
-   =========================== */
-html[data-color-scheme="aqua"] .newtask,
-html[data-color-scheme="aqua"] .btn.primary,
-html[data-color-scheme="aqua"] .seg-btn.on {
-  background:
-    radial-gradient(150% 80% at 50% -15%, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 45%),
-    linear-gradient(180deg, #7ab4f9 0%, #1862d8 55%, #0a3fa8 100%) !important;
-  box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.85),
-    inset 0 -4px 8px rgba(0, 30, 90, 0.30),
-    0 2px 6px rgba(0, 30, 90, 0.40),
-    0 4px 12px rgba(24, 98, 216, 0.25) !important;
-  color: #fff !important;
-  font-weight: 600;
-  text-shadow: 0 1px 1px rgba(0, 30, 90, 0.30);
-  border: 1px solid rgba(0, 30, 90, 0.25) !important;
-  border-radius: 10px !important;
-}
-/* Only .newtask gets the signature aqua-pulse (kept here, after the gradient
-   rule, so it wins without !important wars). The .btn.primary / .seg-btn.on
-   are steady gel. */
-html[data-color-scheme="aqua"] .newtask {
-  animation: aqua-pulse 2.4s ease-in-out infinite !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  html[data-color-scheme="aqua"] .newtask {
-    animation: none !important;
-  }
-}
-html[data-color-scheme="aqua"] .btn,
-html[data-color-scheme="aqua"] .seg-btn,
-html[data-color-scheme="aqua"] .refresh-btn,
-html[data-color-scheme="aqua"] .term-btn {
-  background:
-    radial-gradient(100% 80% at 50% -10%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 50%),
-    linear-gradient(180deg, #f8fafc 0%, #dee3eb 100%) !important;
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.80),
-    inset 0 -2px 4px rgba(0, 30, 90, 0.08),
-    0 1px 2px rgba(0, 30, 90, 0.12) !important;
-  border: 1px solid rgba(0, 30, 90, 0.15) !important;
-  color: var(--tx) !important;
-  font-weight: 500;
-}
-html[data-color-scheme="aqua"] .tool-card,
-html[data-color-scheme="aqua"] .plugin-card,
-html[data-color-scheme="aqua"] .item-row,
-html[data-color-scheme="aqua"] .scard,
-html[data-color-scheme="aqua"] .card,
-html[data-color-scheme="aqua"] .glass-panel,
-html[data-color-scheme="aqua"] .approval-card,
-html[data-color-scheme="aqua"] .modal-content,
-html[data-color-scheme="aqua"] .panel,
-html[data-color-scheme="aqua"] .theme-card,
-html[data-color-scheme="aqua"] .empty {
-  background:
-    radial-gradient(100% 60% at 50% 0%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 40%),
-    linear-gradient(180deg, #ffffff 0%, #eef1f5 100%) !important;
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.70),
-    0 4px 12px rgba(0, 30, 90, 0.12) !important;
-  border: 1px solid rgba(0, 30, 90, 0.10) !important;
-  border-radius: 10px !important;
-}
-/* Aqua inputs: gel pill */
-html[data-color-scheme="aqua"] input,
-html[data-color-scheme="aqua"] textarea,
-html[data-color-scheme="aqua"] .input,
-html[data-color-scheme="aqua"] .input-row {
-  background:
-    radial-gradient(100% 60% at 50% 0%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 50%),
-    linear-gradient(180deg, #ffffff 0%, #e8edf4 100%) !important;
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.80),
-    inset 0 -2px 4px rgba(0, 30, 90, 0.06),
-    0 1px 3px rgba(0, 30, 90, 0.10) !important;
-  border: 1px solid rgba(0, 30, 90, 0.15) !important;
-  border-radius: 8px !important;
-}
-html[data-color-scheme="aqua"] .sidebar,
-html[data-color-scheme="aqua"] .rail {
-  background: repeating-linear-gradient(180deg, #f4f6fa 0 2px, #c8cfdb 2px 4px) !important;
-}
-html[data-color-scheme="aqua"] .header {
-  background:
-    radial-gradient(100% 50% at 50% 0%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 60%),
-    linear-gradient(180deg, #eef1f5 0%, #dee3eb 100%) !important;
-  border-bottom: 1px solid rgba(0, 30, 90, 0.10) !important;
-}
-html[data-color-scheme="aqua"] .composer-card {
-  background:
-    radial-gradient(100% 60% at 50% 0%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 40%),
-    linear-gradient(180deg, #ffffff 0%, #eef1f5 100%) !important;
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.70),
-    inset 0 -2px 4px rgba(0, 30, 90, 0.08),
-    0 4px 12px rgba(0, 30, 90, 0.10) !important;
-  border: 1px solid rgba(0, 30, 90, 0.12) !important;
-}
-html[data-color-scheme="aqua"] .chip {
-  background:
-    radial-gradient(100% 80% at 50% -10%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 50%),
-    linear-gradient(180deg, #e8edf4 0%, #d4dae4 100%) !important;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.60), 0 1px 2px rgba(0, 30, 90, 0.10) !important;
-  border: 1px solid rgba(0, 30, 90, 0.10) !important;
-  animation: none !important;
-}
-html[data-color-scheme="aqua"] .bubble {
-  background:
-    radial-gradient(100% 60% at 50% 0%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 40%),
-    linear-gradient(180deg, #e8edf4 0%, #d4dae4 100%) !important;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.60), 0 2px 8px rgba(0, 30, 90, 0.10) !important;
-  border: 1px solid rgba(0, 30, 90, 0.08) !important;
-}
-html[data-color-scheme="aqua"] .tool-tab {
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-}
-html[data-color-scheme="aqua"] .tool-tab.active {
-  background:
-    radial-gradient(100% 80% at 50% -10%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 50%),
-    linear-gradient(180deg, #6aa6f8 0%, #1862d8 100%) !important;
-  color: #fff !important;
-  box-shadow: inset 0 1px 1px rgba(255,255,255,0.50), 0 1px 3px rgba(0,30,90,0.25) !important;
-  border: 1px solid rgba(0, 30, 90, 0.15) !important;
-}
-
-/* ===========================
-   CLAY — 组件级粘土质感覆盖
-   补齐 clay 主题的立体阴影 + 厚圆角 + 柔和受光
-   =========================== */
-html[data-color-scheme="clay"] .tool-card,
-html[data-color-scheme="clay"] .plugin-card,
-html[data-color-scheme="clay"] .item-row,
-html[data-color-scheme="clay"] .task-item,
-html[data-color-scheme="clay"] .scard,
-html[data-color-scheme="clay"] .card,
-html[data-color-scheme="clay"] .glass-panel,
-html[data-color-scheme="clay"] .approval-card,
-html[data-color-scheme="clay"] .modal-content,
-html[data-color-scheme="clay"] .panel,
-html[data-color-scheme="clay"] .theme-card,
-html[data-color-scheme="clay"] .empty {
-  border-radius: 18px !important;
-  border: 1px solid rgba(55, 28, 10, 0.15) !important;
-  /* Visible puffy clay: bright top rim + dark bottom rim + outer drop */
-  box-shadow:
-    0 2px 4px rgba(55, 28, 10, 0.12),
-    0 14px 32px rgba(55, 28, 10, 0.20),
-    inset 0 -5px 12px rgba(55, 28, 10, 0.18),
-    inset 0 4px 8px rgba(255, 255, 255, 0.95) !important;
-  background: linear-gradient(180deg, var(--l1) 0%, var(--bg) 100%) !important;
-}
-/* Clay inputs: pillowy rounded + soft inset */
-html[data-color-scheme="clay"] input,
-html[data-color-scheme="clay"] textarea,
-html[data-color-scheme="clay"] .input,
-html[data-color-scheme="clay"] .input-row {
-  border-radius: 12px !important;
-  border: 1px solid rgba(55, 28, 10, 0.12) !important;
-  background: var(--bg) !important;
-  box-shadow:
-    inset 0 2px 4px rgba(55, 28, 10, 0.08),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.35) !important;
-}
-html[data-color-scheme="clay"] .composer-card {
-  border-radius: 16px !important;
-  border: 1px solid rgba(55, 28, 10, 0.10) !important;
-  box-shadow:
-    0 8px 20px rgba(55, 28, 10, 0.10),
-    inset 0 -4px 10px rgba(55, 28, 10, 0.06),
-    inset 0 4px 10px rgba(255, 255, 255, 0.45) !important;
-}
-html[data-color-scheme="clay"] .newtask {
-  border-radius: 12px !important;
-  border: 1px solid rgba(200, 97, 46, 0.20) !important;
-  box-shadow:
-    0 4px 12px rgba(200, 97, 46, 0.18),
-    inset 0 -3px 8px rgba(140, 60, 20, 0.10),
-    inset 0 3px 8px rgba(255, 255, 255, 0.40) !important;
-  animation: none !important;
-}
-html[data-color-scheme="clay"] .btn,
-html[data-color-scheme="clay"] .seg-btn,
-html[data-color-scheme="clay"] .refresh-btn,
-html[data-color-scheme="clay"] .term-btn {
-  border-radius: 10px !important;
-  border: 1px solid rgba(55, 28, 10, 0.08) !important;
-  box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.50),
-    inset 0 -1px 2px rgba(55, 28, 10, 0.06) !important;
-  font-weight: 500;
-}
-html[data-color-scheme="clay"] .chip {
-  border-radius: 999px !important;
-  border: 1px solid rgba(55, 28, 10, 0.08) !important;
-  box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.45),
-    0 2px 6px rgba(55, 28, 10, 0.06) !important;
-  animation: none !important;
-}
-html[data-color-scheme="clay"] .bubble {
-  border-radius: 14px 14px 4px 14px !important;
-  border: 1px solid rgba(55, 28, 10, 0.08) !important;
-  box-shadow:
-    inset 0 2px 6px rgba(255, 255, 255, 0.40),
-    0 3px 10px rgba(55, 28, 10, 0.06) !important;
-}
-html[data-color-scheme="clay"] .tool-tab {
-  border-radius: 8px !important;
-  border: 1px solid transparent;
-}
-html[data-color-scheme="clay"] .tool-tab.active {
-  border-radius: 8px !important;
-  border: 1px solid rgba(200, 97, 46, 0.15) !important;
-  box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.40),
-    inset 0 -1px 2px rgba(200, 97, 46, 0.08) !important;
-}
-html[data-color-scheme="clay"] .header,
-html[data-color-scheme="clay"] .sidebar,
-html[data-color-scheme="clay"] .rail {
-  border-color: rgba(55, 28, 10, 0.08) !important;
-}
-html[data-color-scheme="clay"] .sidebar {
-  background: var(--l1) !important;
-  box-shadow: inset -2px 0 6px rgba(55, 28, 10, 0.03) !important;
-}
-html[data-color-scheme="clay"] .rail {
-  background: var(--l1) !important;
-  box-shadow: inset 2px 0 6px rgba(55, 28, 10, 0.03) !important;
-}
-
-/* ============================================================================
    UI 设计原语迭代 — 汲取 namethatui.com 的呼吸感与现代感
    micro-animations + hover glow + staggered entry
    ============================================================================ */
 
-/* ---- 卡片 staggered 入场（Aero entrance） ---- */
+/* ---- 卡片 staggered 入场（入场动画由契约 --motion-enter-anim 决定） ---- */
 @keyframes bento-enter {
   from { opacity: 0; transform: scale(0.94) translateY(6px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
@@ -2788,7 +2105,7 @@ html[data-color-scheme="clay"] .rail {
 .tool-card,
 .plugin-card,
 .scard {
-  animation: bento-enter var(--duration-aero-in, 200ms) var(--ease-out) backwards;
+  animation: var(--motion-enter-anim, none);
 }
 /* Stagger: each child delays slightly more */
 .bento-grid > .bento-cell:nth-child(1) { animation-delay: 0ms; }
@@ -2797,17 +2114,6 @@ html[data-color-scheme="clay"] .rail {
 .bento-grid > .bento-cell:nth-child(4) { animation-delay: 120ms; }
 .bento-grid > .bento-cell:nth-child(5) { animation-delay: 160ms; }
 .bento-grid > .bento-cell:nth-child(6) { animation-delay: 200ms; }
-
-/* ---- Hover glow（按钮/卡片 hover 时发光感） ---- */
-@keyframes hover-glow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--ac-soft); }
-  50%      { box-shadow: 0 0 12px 2px var(--ac-soft); }
-}
-.btn.primary:hover:not(:disabled),
-.newtask:hover,
-.bento-compact-btn:hover:not(:disabled) {
-  animation: hover-glow 1.5s ease-in-out infinite;
-}
 
 /* ---- 微脉动呼吸（状态指示器/active 元素） ---- */
 @keyframes soft-breathe {
@@ -2829,11 +2135,11 @@ html[data-color-scheme="clay"] .rail {
   transition: color 0.3s var(--ease);
 }
 
-/* ---- bento-cell hover（Aero glass lift，仅精确指针设备） ---- */
+/* ---- bento-cell hover（仅精确指针设备；位移/阴影由契约决定） ---- */
 @media (hover: hover) and (pointer: fine) {
   .bento-cell:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), var(--toplight-strong);
+    transform: var(--motion-hover-lift-card, translateY(-2px));
+    box-shadow: var(--elev-card-hover, 0 8px 24px rgba(0, 0, 0, 0.12));
   }
 }
 
@@ -2859,9 +2165,6 @@ html[data-color-scheme="clay"] .rail {
   .tool-card,
   .plugin-card,
   .scard,
-  .btn.primary:hover:not(:disabled),
-  .newtask:hover,
-  .bento-compact-btn:hover:not(:disabled),
   .s-status-dot[data-status="running"],
   .dot-run {
     animation: none !important;
@@ -2914,69 +2217,9 @@ html[data-color-scheme="clay"] .rail {
   /* 无额外样式，仅语义标记 */
 }
 
-/* ---- Glassmorphism: @supports fallback（namethatui /glassmorphism accessibility）
-   没有 backdrop-filter 的环境降级为近不透明 ---- */
-@supports not (backdrop-filter: blur(1px)) {
-  html[data-color-scheme="glass"] .tool-card,
-  html[data-color-scheme="glass"] .plugin-card,
-  html[data-color-scheme="glass"] .item-row,
-  html[data-color-scheme="glass"] .task-item,
-  html[data-color-scheme="glass"] .scard,
-  html[data-color-scheme="glass"] .card,
-  html[data-color-scheme="glass"] .composer-card,
-  html[data-color-scheme="glass"] .glass-panel,
-  html[data-color-scheme="glass"] .approval-card,
-  html[data-color-scheme="glass"] .modal-content,
-  html[data-color-scheme="glass"] .panel,
-  html[data-color-scheme="glass"] .theme-card,
-  html[data-color-scheme="glass"] .empty {
-    background: rgba(30, 30, 40, 0.85) !important;
-  }
-}
-
-/* ---- prefers-reduced-transparency（namethatui /glassmorphism accessibility） ---- */
-@media (prefers-reduced-transparency: reduce) {
-  html[data-color-scheme="glass"] .tool-card,
-  html[data-color-scheme="glass"] .plugin-card,
-  html[data-color-scheme="glass"] .item-row,
-  html[data-color-scheme="glass"] .task-item,
-  html[data-color-scheme="glass"] .scard,
-  html[data-color-scheme="glass"] .card,
-  html[data-color-scheme="glass"] .composer-card,
-  html[data-color-scheme="glass"] .glass-panel,
-  html[data-color-scheme="glass"] .approval-card,
-  html[data-color-scheme="glass"] .modal-content,
-  html[data-color-scheme="glass"] .panel,
-  html[data-color-scheme="glass"] .theme-card,
-  html[data-color-scheme="glass"] .empty,
-  html[data-color-scheme="glass"] .sidebar,
-  html[data-color-scheme="glass"] .rail,
-  html[data-color-scheme="glass"] .header {
-    background: rgba(30, 30, 40, 0.95) !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-}
-
-/* ---- Aurora Tile: dark/light/system backdrop-filter fallback ---- */
-/* 没有 backdrop-filter 支持的环境（旧 WebView）降级为近不透明表面 */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  html[data-color-scheme="dark"] .glass-panel,
-  html[data-color-scheme="dark"] .glass-header,
-  html[data-color-scheme="dark"] .glass-menu,
-  html[data-color-scheme="light"] .glass-panel,
-  html[data-color-scheme="light"] .glass-header,
-  html[data-color-scheme="light"] .glass-menu {
-    background: var(--l2) !important;
-  }
-  html[data-color-scheme="system"] .glass-panel,
-  html[data-color-scheme="system"] .glass-header,
-  html[data-color-scheme="system"] .glass-menu {
-    background: var(--l2) !important;
-  }
-}
-
 /* ---- Aurora Tile: prefers-reduced-transparency (dark/light/system) ---- */
+/* token 级守卫：--mat-* 在 THEME CONTRACT 一节整体替换为不透明；
+   这里同步把 legacy --l*-glass 拉成近不透明并隐藏极光漂移层 */
 @media (prefers-reduced-transparency: reduce) {
   html[data-color-scheme="dark"],
   html[data-color-scheme="light"],
@@ -2996,18 +2239,5 @@ html[data-color-scheme="clay"] .rail {
   html[data-color-scheme="light"] body::before,
   html[data-color-scheme="system"] body::before {
     display: none;
-  }
-  /* backdrop-filter 降级为极轻模糊 */
-  html[data-color-scheme="dark"] .glass-panel,
-  html[data-color-scheme="dark"] .glass-header,
-  html[data-color-scheme="dark"] .glass-menu,
-  html[data-color-scheme="light"] .glass-panel,
-  html[data-color-scheme="light"] .glass-header,
-  html[data-color-scheme="light"] .glass-menu,
-  html[data-color-scheme="system"] .glass-panel,
-  html[data-color-scheme="system"] .glass-header,
-  html[data-color-scheme="system"] .glass-menu {
-    backdrop-filter: blur(4px) saturate(1);
-    -webkit-backdrop-filter: blur(4px) saturate(1);
   }
 }

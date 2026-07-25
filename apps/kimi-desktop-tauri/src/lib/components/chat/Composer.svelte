@@ -444,10 +444,10 @@
         <SlashMenu query={slashQuery} skills={client.skills()} activeIndex={slashIndex} onselect={handleSlashSelect} />
       {/if}
       {#if showMention && mentionResults.length > 0}
-        <div class="mention-menu glass-menu animate-spring-in" role="listbox" aria-label="文件引用">
+        <div class="mention-menu" role="listbox" aria-label="文件引用">
           {#each mentionResults as item, i (item.path)}
             <button
-              class="mention-item glass-menu-item"
+              class="mention-item"
               class:selected={i === mentionIndex}
               onclick={() => insertMention(item.path)}
               onmouseenter={() => { mentionIndex = i; }}
@@ -703,7 +703,22 @@
   .mention-menu {
     position: absolute; bottom: 100%; left: 0; right: 0; z-index: 200;
     max-height: 240px; overflow-y: auto; margin-bottom: 4px; min-width: 280px;
+    padding: 4px;
+    background: var(--mat-surface-3, var(--l3));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-overlay, 6px);
+    box-shadow: var(--elev-overlay, var(--sh-lg));
   }
+  .mention-item {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 7px 10px; border: none; text-align: left; cursor: pointer;
+    background: transparent; color: var(--tx2);
+    border-radius: calc(var(--g-radius-control, 4px) - 2px);
+    font-family: var(--font-ui); font-size: 12px;
+  }
+  .mention-item:hover { background: var(--color-hover); color: var(--tx); }
   .mention-item.selected { background: var(--ac-soft); color: var(--tx); }
   .mention-path { font-family: var(--font-mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
