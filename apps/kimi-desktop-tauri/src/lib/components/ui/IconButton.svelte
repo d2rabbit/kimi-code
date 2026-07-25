@@ -40,8 +40,8 @@
     justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: var(--r-sm, 4px);
-    border: 1px solid transparent;
+    border-radius: var(--g-radius-control, 4px);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) transparent;
     cursor: pointer;
     background: transparent;
     color: var(--color-text-muted, rgba(235,235,245,0.6));
@@ -63,13 +63,26 @@
     color: var(--color-text, rgba(255,255,255,0.92));
   }
   .icon-btn:not(:disabled):active {
-    transform: scale(0.97);
+    transform: var(--motion-press, scale(0.97));
+    box-shadow: var(--motion-press-shadow, none);
   }
   .icon-btn-default {
-    background: var(--l2-glass, transparent);
-    backdrop-filter: blur(12px) saturate(1.3);
-    -webkit-backdrop-filter: blur(12px) saturate(1.3);
-    border-color: var(--bd-glass, var(--color-line, transparent));
-    box-shadow: inset 0 1px 0 var(--shine-overlay, transparent);
+    background: var(--mat-control-bg, transparent);
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border-color: var(--g-border-color, var(--color-line, transparent));
+    box-shadow: var(--elev-control, none);
+  }
+  .icon-btn-default:not(:disabled):hover {
+    background: var(--mat-control-bg-hover, var(--color-hover, rgba(255, 255, 255, 0.08)));
+    box-shadow: var(--elev-control-hover, var(--elev-control, none));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .icon-btn {
+      transition: none;
+    }
+    .icon-btn:not(:disabled):active {
+      transform: none;
+    }
   }
 </style>
