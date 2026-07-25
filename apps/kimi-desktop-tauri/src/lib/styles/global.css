@@ -1632,6 +1632,293 @@ html[data-color-scheme="system"] {
   }
 }
 
+/* ---- CLAY 粘土 ---- */
+html[data-color-scheme="clay"] {
+  /* geometry */
+  --g-radius-chip: 999px;
+  --g-radius-control: 10px;
+  --g-radius-input: 12px;
+  --g-radius-card: 18px;
+  --g-radius-overlay: 20px;
+  --g-radius-bubble: 14px 14px 4px 14px;
+  --g-border-w: 1px;
+  --g-border-w-input: 1px;
+  --g-border-style: solid;
+  --g-border-color: rgba(55, 28, 10, 0.15);
+  /* elevation */
+  --elev-control: inset 0 1px 2px rgba(255, 255, 255, 0.50), inset 0 -1px 2px rgba(55, 28, 10, 0.06);
+  --elev-control-hover: 0 8px 18px rgba(55, 28, 10, 0.14), inset 0 -4px 10px rgba(55, 28, 10, 0.10), inset 0 3px 8px rgba(255, 255, 255, 0.50);
+  --elev-input: inset 0 2px 4px rgba(55, 28, 10, 0.08), inset 0 -1px 2px rgba(255, 255, 255, 0.35);
+  --elev-card: 0 2px 4px rgba(55, 28, 10, 0.12), 0 14px 32px rgba(55, 28, 10, 0.20), inset 0 -5px 12px rgba(55, 28, 10, 0.18), inset 0 4px 8px rgba(255, 255, 255, 0.95);
+  --elev-card-hover: 0 20px 36px rgba(55, 28, 10, 0.20), inset 0 -8px 16px rgba(55, 28, 10, 0.14), inset 0 6px 14px rgba(255, 255, 255, 0.55);
+  --elev-overlay: var(--shadow-xl);
+  --elev-chip: inset 0 1px 2px rgba(255, 255, 255, 0.45), 0 2px 6px rgba(55, 28, 10, 0.06);
+  --elev-bubble: inset 0 2px 6px rgba(255, 255, 255, 0.40), 0 3px 10px rgba(55, 28, 10, 0.06);
+  --motion-press-shadow: 0 4px 8px rgba(55, 28, 10, 0.08), inset 0 -4px 10px rgba(55, 28, 10, 0.22), inset 0 4px 10px rgba(255, 255, 255, 0.35);
+  /* material */
+  --mat-surface-1: var(--l1);
+  --mat-surface-2: linear-gradient(180deg, var(--l1) 0%, var(--bg) 100%);
+  --mat-surface-3: var(--l1);
+  --mat-blur: none;
+  --mat-sheen: none;
+  --mat-texture: none;
+  --mat-control-bg: var(--l1);
+  --mat-control-bg-hover: var(--l3);
+  --mat-primary-bg: linear-gradient(180deg, #d9713a 0%, var(--ac) 100%);
+  --mat-primary-bg-hover: linear-gradient(180deg, var(--ac) 0%, var(--ac-h) 100%);
+  --mat-danger-bg: linear-gradient(180deg, #b4546a 0%, var(--err) 100%);
+  --mat-input-bg: var(--bg);
+  --mat-chip-bg: var(--l1);
+  --mat-bubble-bg: linear-gradient(180deg, var(--l1) 0%, var(--bg) 100%);
+  --mat-sidebar-bg: var(--l1);
+  --mat-header-bg: var(--l1);
+  --mat-primary-bd: rgba(200, 97, 46, 0.20);
+  /* motion */
+  --motion-press: scale(0.95);
+  --motion-hover-lift: none;
+  --motion-hover-lift-card: none;
+  --motion-ease-enter: var(--ease-spring);
+  --motion-enter-anim: clay-in 260ms var(--ease-spring) backwards;
+  --motion-cta-anim: none;
+  /* type */
+  --type-control-transform: none;
+  --type-control-tracking: normal;
+  --type-control-weight: 500;
+  --type-primary-transform: none;
+  --type-primary-tracking: normal;
+  --type-primary-weight: 600;
+  --type-primary-text-shadow: none;
+}
+
+/* ---- BRUTAL 新粗野 ---- */
+html[data-color-scheme="brutal"] {
+  /* geometry */
+  --g-radius-chip: 2px;
+  --g-radius-control: 2px;
+  --g-radius-input: 2px;
+  --g-radius-card: 2px;
+  --g-radius-overlay: 2px;
+  --g-radius-bubble: 2px;
+  --g-border-w: 2px;
+  --g-border-w-input: 2px;
+  --g-border-style: solid;
+  --g-border-color: #1a1a1a;
+  /* elevation */
+  --elev-control: 3px 3px 0 #1a1a1a;
+  --elev-control-hover: 4px 4px 0 #1a1a1a;
+  --elev-input: 3px 3px 0 #1a1a1a;
+  --elev-card: 4px 4px 0 #1a1a1a;
+  --elev-card-hover: 6px 6px 0 #1a1a1a;
+  --elev-overlay: 8px 8px 0 #1a1a1a;
+  --elev-chip: 2px 2px 0 #1a1a1a;
+  --elev-bubble: 3px 3px 0 #1a1a1a;
+  --motion-press-shadow: 0 0 0 #1a1a1a;
+  /* material */
+  --mat-surface-1: var(--l1);
+  --mat-surface-2: var(--l1);
+  --mat-surface-3: var(--l3);
+  --mat-blur: none;
+  --mat-sheen: none;
+  --mat-texture: none;
+  --mat-control-bg: var(--l1);
+  --mat-control-bg-hover: var(--brutal-yellow);
+  --mat-primary-bg: var(--brutal-pink);
+  --mat-primary-bg-hover: var(--ac-h);
+  --mat-danger-bg: var(--brutal-pink);
+  --mat-input-bg: var(--l3);
+  --mat-chip-bg: var(--l1);
+  --mat-bubble-bg: var(--l1);
+  --mat-sidebar-bg: var(--l1);
+  --mat-header-bg: var(--l1);
+  --mat-primary-bd: #1a1a1a;
+  /* motion */
+  --motion-press: translate(3px, 3px);
+  --motion-hover-lift: translate(-1px, -1px);
+  --motion-hover-lift-card: translate(-2px, -2px);
+  --motion-ease-enter: linear;
+  --motion-enter-anim: none;
+  --motion-cta-anim: none;
+  /* type */
+  --type-control-transform: none;
+  --type-control-tracking: 0.02em;
+  --type-control-weight: 700;
+  --type-primary-transform: uppercase;
+  --type-primary-tracking: 0.02em;
+  --type-primary-weight: 800;
+  --type-primary-text-shadow: none;
+}
+
+/* ---- GLASS 棱镜玻璃 ---- */
+html[data-color-scheme="glass"] {
+  /* geometry */
+  --g-radius-chip: 999px;
+  --g-radius-control: 10px;
+  --g-radius-input: 10px;
+  --g-radius-card: 14px;
+  --g-radius-overlay: 16px;
+  --g-radius-bubble: 14px;
+  --g-border-w: 1px;
+  --g-border-w-input: 1px;
+  --g-border-style: solid;
+  --g-border-color: rgba(255, 255, 255, 0.22);
+  /* elevation */
+  --elev-control: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --elev-control-hover: 0 6px 20px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  --elev-input: inset 0 1px 2px rgba(0, 0, 0, 0.20);
+  --elev-card: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --elev-card-hover: 0 16px 48px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  --elev-overlay: var(--shadow-xl);
+  --elev-chip: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --elev-bubble: 0 4px 20px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --motion-press-shadow: var(--elev-control);
+  /* material */
+  --mat-surface-1: rgba(255, 255, 255, 0.05);
+  --mat-surface-2: rgba(255, 255, 255, 0.06);
+  --mat-surface-3: rgba(255, 255, 255, 0.10);
+  --mat-blur: blur(24px) saturate(2.2);
+  --mat-sheen: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.85) 50%, transparent 100%) top 6% / 88% 2px no-repeat;
+  --mat-texture: none;
+  --mat-control-bg: rgba(255, 255, 255, 0.08);
+  --mat-control-bg-hover: rgba(255, 255, 255, 0.14);
+  --mat-primary-bg: linear-gradient(135deg, rgba(167, 139, 250, 0.45), rgba(196, 181, 253, 0.30));
+  --mat-primary-bg-hover: linear-gradient(135deg, rgba(167, 139, 250, 0.60), rgba(196, 181, 253, 0.40));
+  --mat-danger-bg: linear-gradient(135deg, rgba(252, 165, 165, 0.40), rgba(252, 165, 165, 0.25));
+  --mat-input-bg: rgba(255, 255, 255, 0.06);
+  --mat-chip-bg: rgba(255, 255, 255, 0.10);
+  --mat-bubble-bg: rgba(167, 139, 250, 0.12);
+  --mat-sidebar-bg: rgba(255, 255, 255, 0.05);
+  --mat-header-bg: rgba(255, 255, 255, 0.06);
+  --mat-primary-bd: rgba(167, 139, 250, 0.45);
+  /* motion */
+  --motion-press: scale(0.97);
+  --motion-hover-lift: translateY(-1px);
+  --motion-hover-lift-card: translateY(-2px);
+  --motion-ease-enter: var(--ease-out);
+  --motion-enter-anim: glass-in 300ms var(--ease-out) backwards;
+  --motion-cta-anim: none;
+  /* type */
+  --type-control-transform: none;
+  --type-control-tracking: 0.01em;
+  --type-control-weight: 500;
+  --type-primary-transform: none;
+  --type-primary-tracking: 0.01em;
+  --type-primary-weight: 600;
+  --type-primary-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
+}
+
+/* Glass reduced-transparency / no-backdrop-filter：token 级守卫 */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-color-scheme="glass"] {
+    --mat-surface-1: rgba(24, 24, 38, 0.95);
+    --mat-surface-2: rgba(28, 28, 44, 0.95);
+    --mat-surface-3: rgba(34, 34, 52, 0.97);
+    --mat-control-bg: rgba(255, 255, 255, 0.10);
+    --mat-input-bg: rgba(255, 255, 255, 0.08);
+    --mat-chip-bg: rgba(255, 255, 255, 0.12);
+    --mat-bubble-bg: rgba(60, 52, 110, 0.55);
+    --mat-sidebar-bg: rgba(22, 22, 36, 0.97);
+    --mat-header-bg: rgba(24, 24, 38, 0.97);
+    --mat-blur: none;
+    --mat-sheen: none;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-color-scheme="glass"] {
+    --mat-surface-1: rgba(24, 24, 38, 0.95);
+    --mat-surface-2: rgba(28, 28, 44, 0.95);
+    --mat-surface-3: rgba(34, 34, 52, 0.97);
+    --mat-control-bg: rgba(255, 255, 255, 0.10);
+    --mat-input-bg: rgba(255, 255, 255, 0.08);
+    --mat-chip-bg: rgba(255, 255, 255, 0.12);
+    --mat-bubble-bg: rgba(60, 52, 110, 0.55);
+    --mat-sidebar-bg: rgba(22, 22, 36, 0.97);
+    --mat-header-bg: rgba(24, 24, 38, 0.97);
+    --mat-blur: none;
+    --mat-sheen: none;
+  }
+}
+
+/* ---- AQUA 凝胶 ---- */
+html[data-color-scheme="aqua"] {
+  /* geometry */
+  --g-radius-chip: 999px;
+  --g-radius-control: 10px;
+  --g-radius-input: 8px;
+  --g-radius-card: 10px;
+  --g-radius-overlay: 12px;
+  --g-radius-bubble: 10px;
+  --g-border-w: 1px;
+  --g-border-w-input: 1px;
+  --g-border-style: solid;
+  --g-border-color: rgba(0, 30, 90, 0.15);
+  /* elevation */
+  --elev-control: inset 0 1px 1px rgba(255, 255, 255, 0.80), inset 0 -2px 4px rgba(0, 30, 90, 0.08), 0 1px 2px rgba(0, 30, 90, 0.12);
+  --elev-control-hover: inset 0 1px 1px rgba(255, 255, 255, 0.85), inset 0 -2px 4px rgba(0, 30, 90, 0.10), 0 2px 5px rgba(0, 30, 90, 0.18);
+  --elev-input: inset 0 1px 3px rgba(0, 30, 90, 0.12), inset 0 -1px 1px rgba(255, 255, 255, 0.60);
+  --elev-card: inset 0 1px 1px rgba(255, 255, 255, 0.70), 0 4px 12px rgba(0, 30, 90, 0.12);
+  --elev-card-hover: inset 0 1px 1px rgba(255, 255, 255, 0.75), 0 8px 20px rgba(0, 30, 90, 0.16);
+  --elev-overlay: var(--shadow-xl);
+  --elev-chip: inset 0 1px 1px rgba(255, 255, 255, 0.60), 0 1px 2px rgba(0, 30, 90, 0.10);
+  --elev-bubble: inset 0 1px 1px rgba(255, 255, 255, 0.60), 0 2px 8px rgba(0, 30, 90, 0.10);
+  --motion-press-shadow: inset 0 2px 5px rgba(0, 30, 90, 0.20), 0 1px 1px rgba(0, 30, 90, 0.10);
+  /* material */
+  --mat-surface-1: var(--l1);
+  --mat-surface-2: linear-gradient(180deg, #ffffff 0%, #eef1f5 100%);
+  --mat-surface-3: #ffffff;
+  --mat-blur: none;
+  --mat-sheen: radial-gradient(100% 60% at 50% 0%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 40%);
+  --mat-texture: none;
+  --mat-control-bg: radial-gradient(100% 80% at 50% -10%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 50%), linear-gradient(180deg, #f8fafc 0%, #dee3eb 100%);
+  --mat-control-bg-hover: radial-gradient(100% 80% at 50% -10%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 50%), linear-gradient(180deg, #ffffff 0%, #e6eaf2 100%);
+  --mat-primary-bg: radial-gradient(150% 80% at 50% -15%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 45%), linear-gradient(180deg, #7ab4f9 0%, #1862d8 55%, #0a3fa8 100%);
+  --mat-primary-bg-hover: radial-gradient(150% 80% at 50% -15%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 40%), linear-gradient(180deg, #8ec0fa 0%, #2b6fe0 55%, #1450b8 100%);
+  --mat-danger-bg: radial-gradient(150% 80% at 50% -15%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 45%), linear-gradient(180deg, #e86a64 0%, #c4302b 55%, #a02420 100%);
+  --mat-input-bg: linear-gradient(180deg, #ffffff 0%, #e8edf4 100%);
+  --mat-chip-bg: linear-gradient(180deg, #e8edf4 0%, #d4dae4 100%);
+  --mat-bubble-bg: linear-gradient(180deg, #e8edf4 0%, #d4dae4 100%);
+  --mat-sidebar-bg: repeating-linear-gradient(180deg, #f4f6fa 0 2px, #e2e7ef 2px 4px);
+  --mat-header-bg: radial-gradient(100% 50% at 50% 0%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 60%), linear-gradient(180deg, #eef1f5 0%, #dee3eb 100%);
+  --mat-primary-bd: rgba(0, 30, 90, 0.25);
+  /* motion */
+  --motion-press: scale(0.96);
+  --motion-hover-lift: none;
+  --motion-hover-lift-card: none;
+  --motion-ease-enter: var(--ease-out);
+  --motion-enter-anim: aqua-in 240ms var(--ease-out) backwards;
+  --motion-cta-anim: aqua-pulse 2.4s ease-in-out infinite;
+  /* type */
+  --type-control-transform: none;
+  --type-control-tracking: normal;
+  --type-control-weight: 500;
+  --type-primary-transform: none;
+  --type-primary-tracking: normal;
+  --type-primary-weight: 600;
+  --type-primary-text-shadow: 0 1px 1px rgba(0, 30, 90, 0.30);
+}
+
+/* ---- 契约 keyframes（各主题 --motion-enter-anim 引用；未引用的主题无开销） ---- */
+@keyframes clay-in {
+  from { opacity: 0; transform: scale(0.88, 0.82) translateY(6px); }
+  to   { opacity: 1; transform: scale(1, 1) translateY(0); }
+}
+@keyframes glass-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes aqua-in {
+  from { opacity: 0; transform: scale(0.96) translateY(3px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-color-scheme] {
+    --motion-enter-anim: none;
+    --motion-cta-anim: none;
+    --motion-press: none;
+    --motion-hover-lift: none;
+    --motion-hover-lift-card: none;
+  }
+}
+
 /* ============================================================================
    全局交互动画增强 — Aurora Tile Aero 液体动画体系
    全 Aero 液体：弹性回弹、光泽流动、气泡漂浮。磁贴只贡献静态几何。
