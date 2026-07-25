@@ -31,6 +31,28 @@
   type Section = 'general' | 'preview' | 'models' | 'subagents' | 'plugins' | 'skills' | 'mcp' | 'memory' | 'commands' | 'index' | 'usage' | 'guide';
   let active = $state<Section>('general');
 
+  // 索引库：codegraph 持久索引重建（Tauri IPC；浏览器模式不可用）。
+  const isTauri = '__TAURI_INTERNALS__' in globalThis;
+  let indexingWs = $state<string | null>(null);
+
+  async function rebuildIndex(ws: { id: string; root: string; name: string }) {
+    if (indexingWs) return;
+    indexingWs = ws.id;
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const status = await invoke<string>('update_codegraph_index', { cwd: ws.root });
+      if (status.includes('not installed')) {
+        toast.info('未安装 codegraph CLI，已跳过');
+      } else {
+        toast.ok(`${ws.name}：索引已更新`);
+      }
+    } catch (e) {
+      toast.err(`索引重建失败：${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      indexingWs = null;
+    }
+  }
+
   const navItems: { id: Section; label: string; icon: IconName }[] = [
     { id: 'general', label: '常规', icon: 'settings' },
     { id: 'preview', label: '代码预览', icon: 'file-text' },
@@ -380,7 +402,7 @@
 
       {:else if active === 'index'}
         <h2>索引库</h2>
-        <p class="sub-desc">工作区文件索引，支撑 @ 提及与语义搜索</p>
+        <p class="sub-desc">工作区文件索引，支撑 @ 提及与语义搜索；可选安装 codegraph CLI 启用持久索引</p>
         <div class="list-controls">
           <div class="searchbox"><Icon name="search" size="sm" /><span>搜索工作区…</span></div>
         </div>
@@ -389,9 +411,11 @@
             <span class="isq"><Icon name="folder-solid" size="sm" /></span>
             <span class="ir">
               <span class="it">{ws.name}</span>
-              <span class="id mono">@ 提及当前基于实时文件搜索（无持久索引）</span>
+              <span class="id mono">@ 提及当前基于实时文件搜索{isTauri ? '；可重建 codegraph 持久索引' : '（无持久索引）'}</span>
             </span>
-            <Button size="sm" disabled>重建索引</Button>
+            <Button size="sm" disabled={!isTauri || indexingWs === ws.id} onclick={() => rebuildIndex(ws)}>
+              {indexingWs === ws.id ? '索引中…' : '重建索引'}
+            </Button>
           </div>
         {/each}
 
