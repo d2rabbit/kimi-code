@@ -737,6 +737,16 @@ export interface AppSessionWarning {
   severity: 'info' | 'warning' | 'error';
 }
 
+/** One prompt in the session's prompt list (active or queued). */
+export interface AppPromptItem {
+  promptId: string;
+  userMessageId: string;
+  status: 'running' | 'queued' | 'blocked';
+  /** Plain-text projection of the prompt content (non-text parts as [type]). */
+  text: string;
+  createdAt: string;
+}
+
 export interface KimiWebApi {
   getHealth(): Promise<{ status: 'ok'; uptimeSec: number }>;
   getMeta(): Promise<{ serverVersion: string; serverId: string; startedAt: string; capabilities: Record<string, boolean>; openInApps: string[]; dangerousBypassAuth: boolean }>;
@@ -756,7 +766,10 @@ export interface KimiWebApi {
   getTranscriptPlan(sessionId: string, agentId: string, toolCallId?: string): Promise<AppTranscriptPlanResponse>;
   submitPrompt(sessionId: string, input: PromptSubmission): Promise<PromptSubmitResult>;
   /** Steer daemon-queued prompts into the active turn (TUI ctrl+s). */
+  /** Steer daemon-queued prompts into the active turn (TUI ctrl+s). */
   steerPrompts(sessionId: string, promptIds: string[]): Promise<{ steered: boolean; promptIds: string[] }>;
+  /** List the active prompt and queued prompts for a session. */
+  listPrompts(sessionId: string): Promise<{ active: AppPromptItem | null; queued: AppPromptItem[] }>;
   abortPrompt(sessionId: string, promptId: string): Promise<{ aborted: boolean; atSeq?: number }>;
   /** Cancel whatever is running in the session, including skill activations. */
   abortSession(sessionId: string): Promise<{ aborted: boolean }>;

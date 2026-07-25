@@ -16,6 +16,7 @@ import type {
   AppEvent,
   AppMessage,
   AppMessageContent,
+  AppPromptItem,
   AppWorkspace,
   AppModel,
   AppProvider,
@@ -463,6 +464,14 @@ function connectEvents(): void {
         notifyDesktop('需要审批', 'Agent 请求你的确认');
       } else if (event.type === 'questionRequested') {
         notifyDesktop('Agent 提问', 'Agent 需要你的回答');
+      } else if (
+        event.type === 'promptSubmitted' ||
+        event.type === 'promptCompleted' ||
+        event.type === 'promptAborted' ||
+        event.type === 'promptSteered'
+      ) {
+        // Prompt queue changed on the daemon — re-read the authoritative list.
+        void refreshPromptQueue();
       }
     },
     onResync(sessionId: string, _currentSeq: number, _epoch?: string) {
@@ -506,6 +515,7 @@ async function selectSession(sessionId: string): Promise<void> {
   const myToken = ++selectToken;
   rawState.activeSessionId = sessionId;
   ui.sessionLoading = true;
+  void refreshPromptQueue();
 
   try {
     const a = getApi();
@@ -950,6 +960,16 @@ async function steerPrompt(promptIds: string[]): Promise<void> {
   if (!sid) return;
   const a = getApi();
   await a.steerPrompts(sid, promptIds);
+  await refreshPromptQueue();
+}
+
+/** Abort one queued prompt by id. */
+async function abortQueuedPrompt(promptId: string): Promise<void> {
+  const sid = rawState.activeSessionId;
+  if (!sid) return;
+  const a = getApi();
+  await a.abortPrompt(sid, promptId);
+  await refreshPromptQueue();
 }
 
 /** Dismiss a warning. */
@@ -1220,6 +1240,31 @@ function consumeSkillCreateRequest(): boolean {
   return v;
 }
 
+// ---------------------------------------------------------------------------
+// Prompt queue (daemon-parked prompts awaiting steer).
+// ---------------------------------------------------------------------------
+
+let queuedPrompts = $state<AppPromptItem[]>([]);
+
+/** Queued prompts for the active session (daemon-parked, steerable). */
+export const promptQueue = () => queuedPrompts;
+
+async function refreshPromptQueue(): Promise<void> {
+  const sid = rawState.activeSessionId;
+  if (!sid) {
+    queuedPrompts = [];
+    return;
+  }
+  try {
+    const a = getApi();
+    const r = await a.listPrompts(sid);
+    // Guard against a session switch mid-flight.
+    if (rawState.activeSessionId === sid) queuedPrompts = r.queued;
+  } catch {
+    // Best-effort — queue strip just stays stale until the next event.
+  }
+}
+
 async function loadArchivedSessions(): Promise<void> {
   archivedLoading = true;
   try {
@@ -1320,6 +1365,8 @@ export const client = {
   loadArchivedSessions,
   requestSkillCreate,
   consumeSkillCreateRequest,
+  refreshPromptQueue,
+  abortQueuedPrompt,
   restoreSession,
 
   // Deep integration: previously-unused upstream capabilities.

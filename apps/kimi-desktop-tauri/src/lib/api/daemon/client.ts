@@ -35,6 +35,7 @@ import type {
   PageRequest,
   PromptSubmission,
   PromptSubmitResult,
+  AppPromptItem,
   QuestionResponse,
 } from '../types';
 import { createAgentProjector } from './agentEventProjector';
@@ -77,6 +78,8 @@ import type {
   WirePage,
   WirePromptSubmitResult,
   WirePromptSteerResult,
+  WirePromptItem,
+  WirePromptListResponse,
   WireProvider,
   WireProviderRefreshResult,
   WireSession,
@@ -579,6 +582,30 @@ export class DaemonKimiWebApi implements KimiWebApi {
       { prompt_ids: promptIds },
     );
     return { steered: data.steered, promptIds: data.prompt_ids };
+  }
+
+  // GET /sessions/{id}/prompts — active + queued prompt list.
+  async listPrompts(
+    sessionId: string,
+  ): Promise<{ active: AppPromptItem | null; queued: AppPromptItem[] }> {
+    const data = await this.http.get<WirePromptListResponse>(
+      `/sessions/${encodeURIComponent(sessionId)}/prompts`,
+    );
+    const map = (p: WirePromptItem): AppPromptItem => ({
+      promptId: p.prompt_id,
+      userMessageId: p.user_message_id,
+      status: p.status,
+      text: (p.content ?? [])
+        .map((c) => (c.type === 'text' ? c.text : `[${c.type}]`))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
+      createdAt: p.created_at,
+    });
+    return {
+      active: data.active ? map(data.active) : null,
+      queued: (data.queued ?? []).map(map),
+    };
   }
 
   async abortPrompt(

@@ -265,6 +265,19 @@
     </div>
   </div>
 
+  {#if client.promptQueue().length > 0}
+    <div class="queue-strip" aria-label="排队中的消息">
+      <span class="qs-label">排队 {client.promptQueue().length}</span>
+      {#each client.promptQueue() as p (p.promptId)}
+        <span class="qs-item" title={p.text}>
+          <span class="qs-text">{p.text || '(空消息)'}</span>
+          <button class="qs-act steer" type="button" title="插入当前轮（steer）" onclick={() => client.client.steerPrompt([p.promptId])}>插入</button>
+          <button class="qs-act" type="button" title="取消该排队消息" onclick={() => client.client.abortQueuedPrompt(p.promptId)}>✕</button>
+        </span>
+      {/each}
+    </div>
+  {/if}
+
   <Composer bind:text {running} onsubmit={submit} />
 </div>
 
@@ -298,6 +311,57 @@
     background: var(--color-danger-soft, var(--err-soft));
   }
   .sw-text { flex: 1; min-width: 0; line-height: 1.5; }
+
+  /* 排队 prompt 条（daemon prompt queue + steer） */
+  .queue-strip {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 20px;
+    overflow-x: auto;
+    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-surface-1, var(--l1));
+  }
+  .qs-label {
+    flex: none;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tx3);
+  }
+  .qs-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 320px;
+    padding: 3px 6px 3px 10px;
+    border-radius: var(--g-radius-chip, 999px);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-chip-bg, var(--l2));
+    box-shadow: var(--elev-chip, none);
+    font-size: 11px;
+    color: var(--tx2);
+  }
+  .qs-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .qs-act {
+    flex: none;
+    border: none;
+    background: transparent;
+    color: var(--tx3);
+    font-size: 10.5px;
+    cursor: pointer;
+    padding: 1px 4px;
+    border-radius: var(--g-radius-control, 4px);
+  }
+  .qs-act:hover { color: var(--tx); background: var(--color-hover); }
+  .qs-act.steer { color: var(--ac); font-weight: 600; }
+  .qs-act.steer:hover { background: var(--ac-soft); }
 
   .msgs { flex: 1; overflow-y: auto; position: relative; }
   .msgs-inner { max-width: 920px; margin: 0 auto; padding: 24px 32px 12px; display: flex; flex-direction: column; gap: 18px; }

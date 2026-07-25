@@ -217,6 +217,20 @@ export interface WirePromptSteerResult {
   prompt_ids: string[];
 }
 
+// GET /sessions/{id}/prompts — active + queued prompt list.
+export interface WirePromptItem {
+  prompt_id: string;
+  user_message_id: string;
+  status: 'running' | 'queued' | 'blocked';
+  content: WireMessageContent[];
+  created_at: string;
+}
+
+export interface WirePromptListResponse {
+  active: WirePromptItem | null;
+  queued: WirePromptItem[];
+}
+
 // ---------------------------------------------------------------------------
 // Approval
 // ---------------------------------------------------------------------------
