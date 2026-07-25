@@ -9,9 +9,11 @@
   let {
     open = $bindable(false),
     onnavigate = () => {},
+    onsearch = () => {},
   }: {
     open?: boolean;
     onnavigate?: () => void;
+    onsearch?: () => void;
   } = $props();
 
   let query = $state('');
@@ -33,7 +35,7 @@
   const commands = $derived<CommandItem[]>([
     // 会话操作
     { id: 'new', title: '新建对话', category: 'action', icon: 'chat-new', shortcut: shortcut('N'), action: () => client.client.clearActiveSession() },
-    { id: 'search', title: '搜索会话', category: 'action', icon: 'search', keywords: 'sessions find', action: () => {} },
+    { id: 'search', title: '搜索会话', category: 'action', icon: 'search', keywords: 'sessions find', action: () => onsearch() },
     { id: 'fork', title: 'Fork 当前会话', category: 'action', icon: 'git-branch', action: () => client.client.forkSession() },
     { id: 'compact', title: '压缩对话', category: 'action', icon: 'contract', keywords: 'compress', action: () => client.client.compact() },
     { id: 'undo', title: '撤销上一轮', category: 'action', icon: 'arrow-left', keywords: 'rollback revert', action: () => client.client.undo() },

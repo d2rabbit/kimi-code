@@ -13,6 +13,9 @@
   import type { IconName } from '../lib/icon-types';
   import { shortcut } from '../lib/desktopFlag';
   import PluginsSection from '../components/settings/PluginsSection.svelte';
+  import SkillsPanel from '../components/settings/SkillsPanel.svelte';
+  import McpPanel from '../components/settings/McpPanel.svelte';
+  import MemoryPanel from '../components/settings/MemoryPanel.svelte';
   import LoginDialog from '../components/settings/LoginDialog.svelte';
   import ProviderModelDialog from '../components/settings/ProviderModelDialog.svelte';
   import SubagentsSection from '../components/settings/SubagentsSection.svelte';
@@ -25,7 +28,7 @@
 
   let { onnavigate = () => {} }: { onnavigate?: () => void } = $props();
 
-  type Section = 'general' | 'preview' | 'models' | 'subagents' | 'plugins' | 'commands' | 'index' | 'usage' | 'guide';
+  type Section = 'general' | 'preview' | 'models' | 'subagents' | 'plugins' | 'skills' | 'mcp' | 'memory' | 'commands' | 'index' | 'usage' | 'guide';
   let active = $state<Section>('general');
 
   const navItems: { id: Section; label: string; icon: IconName }[] = [
@@ -34,6 +37,9 @@
     { id: 'models', label: '模型设置', icon: 'sparkles' },
     { id: 'subagents', label: '子智能体', icon: 'git-branch' },
     { id: 'plugins', label: '插件管理', icon: 'plugin' },
+    { id: 'skills', label: '技能', icon: 'sparkles' },
+    { id: 'mcp', label: 'MCP', icon: 'globe' },
+    { id: 'memory', label: '记忆', icon: 'file-text' },
     { id: 'commands', label: '命令', icon: 'bolt' },
     { id: 'index', label: '索引库', icon: 'server' },
     { id: 'usage', label: '使用统计', icon: 'check-list' },
@@ -347,6 +353,15 @@
 
       {:else if active === 'plugins'}
         <PluginsSection />
+
+      {:else if active === 'skills'}
+        <SkillsPanel />
+
+      {:else if active === 'mcp'}
+        <McpPanel />
+
+      {:else if active === 'memory'}
+        <MemoryPanel />
 
       {:else if active === 'commands'}
         <h2>命令</h2>

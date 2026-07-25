@@ -115,7 +115,7 @@
 
   <SearchSessions bind:open={showSearch} />
   <Toasts />
-  <CommandPalette bind:open={showPalette} onnavigate={() => navigate('settings')} />
+  <CommandPalette bind:open={showPalette} onnavigate={() => navigate('settings')} onsearch={() => showSearch = true} />
 </div>
 
 <style>

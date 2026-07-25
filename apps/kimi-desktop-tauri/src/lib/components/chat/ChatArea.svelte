@@ -12,10 +12,31 @@
   import ConversationToc, { type TocItem } from './ConversationToc.svelte';
   import { tryDispatchSlash } from '../../lib/dispatchSlash';
   import type { ToolCall, TurnBlock } from '../../types';
+  import { getKimiWebApi } from '../../api';
+  import type { AppSessionWarning } from '../../api/types';
 
   let text = $state('');
   let scrollEl: HTMLElement | null = $state(null);
   let stickToBottom = $state(true);
+
+  // ---- Session warnings (server: oversized AGENTS.md, secondary-model issues) ----
+  let sessionWarnings = $state<AppSessionWarning[]>([]);
+  let dismissedWarnings = $state<string[]>([]);
+
+  $effect(() => {
+    const sid = client.activeSessionId();
+    sessionWarnings = [];
+    dismissedWarnings = [];
+    if (!sid) return;
+    getKimiWebApi()
+      .getSessionWarnings(sid)
+      .then((w) => { sessionWarnings = w; })
+      .catch(() => { /* warnings are best-effort */ });
+  });
+
+  const visibleWarnings = $derived(
+    sessionWarnings.filter((w) => !dismissedWarnings.includes(w.code)),
+  );
 
   // Track whether the user is scrolled to the bottom. If they scrolled up
   // to read history, don't yank them back down on every new delta — only
@@ -160,6 +181,13 @@
 
   <GoalStrip />
 
+  {#each visibleWarnings as w (w.code)}
+    <div class="sess-warn" class:warn-err={w.severity === 'error'} role="alert">
+      <span class="sw-text">{w.message}</span>
+      <IconButton name="close" label="忽略" size="sm" onclick={() => { dismissedWarnings = [...dismissedWarnings, w.code]; }} />
+    </div>
+  {/each}
+
   <div class="msgs" bind:this={scrollEl} onscroll={onScroll}>
     <ConversationToc items={tocItems} activeId={activeTurnId} onselect={scrollToTurn} />
     <div class="msgs-inner">
@@ -250,6 +278,26 @@
   .hdr-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
   .stop-btn { padding: 3px 10px; border-radius: var(--r-sm); border: 1px solid var(--color-danger-bd); background: transparent; color: var(--err); font-size: 11px; cursor: pointer; }
   .stop-btn:hover { background: var(--err-soft); }
+
+  /* 会话警告 banner（服务端 /sessions/:id/warnings） */
+  .sess-warn {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 20px 0;
+    padding: 8px 12px;
+    border-radius: var(--g-radius-card, 4px);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--color-warning-bd, var(--amb));
+    background: var(--color-warning-soft, var(--amb-soft));
+    color: var(--tx2);
+    font-size: 12px;
+  }
+  .sess-warn.warn-err {
+    border-color: var(--color-danger-bd, var(--err));
+    background: var(--color-danger-soft, var(--err-soft));
+  }
+  .sw-text { flex: 1; min-width: 0; line-height: 1.5; }
 
   .msgs { flex: 1; overflow-y: auto; position: relative; }
   .msgs-inner { max-width: 920px; margin: 0 auto; padding: 24px 32px 12px; display: flex; flex-direction: column; gap: 18px; }
