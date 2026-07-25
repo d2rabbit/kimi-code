@@ -65,7 +65,7 @@ CI: `.github/workflows/desktop-tauri-build.yml` builds on 4 runners (macos-arm64
 
 - **CSP**: `tauri.conf.json` restricts `connect-src` to `127.0.0.1` and `localhost`. If the daemon binds a different host, update the CSP.
 - **`titleBarStyle: "Overlay"`** in `tauri.conf.json` hides the native title bar on macOS — the Svelte UI must reserve space for traffic lights (left ~72px in the header).
-- **Design tokens** live in `src/lib/styles/global.css` (copied from kimi-web's `style.css`). Keep the token names identical for future sync.
+- **Design tokens** live in `src/lib/styles/global.css` (copied from kimi-web's `style.css`). Keep the token names identical for future sync. The **theme contract** tokens (`--g-*` / `--elev-*` / `--mat-*` / `--motion-*` / `--type-*`) and the UI primitives (`src/lib/components/ui/`, see `docs/PRIMITIVES.md` + `docs/themes/`) are this app's own layer — not synced back to kimi-web.
 - **i18n keys** must stay in sync between `en/` and `zh/` (same manual responsibility as kimi-web).
 
 ## Observability
