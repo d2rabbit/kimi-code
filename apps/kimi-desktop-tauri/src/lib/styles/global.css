@@ -1530,6 +1530,109 @@ html[data-color-scheme="aqua"] .newtask {
 }
 
 /* ============================================================================
+   THEME CONTRACT — 主题契约（每主题必填的全量 token 清单）
+   原语组件只消费以下契约 token；主题之间的一切视觉差异都通过契约值表达，
+   不允许再出现 html[data-color-scheme] .cls { … !important } 组件覆盖。
+   分组与顺序固定：geometry → elevation → material → motion → type。
+============================================================================ */
+
+/* ---- AURORA TILE（dark / light / system 共用，值引用各自 primitives） ---- */
+html[data-color-scheme="dark"],
+html[data-color-scheme="light"],
+html[data-color-scheme="system"] {
+  /* geometry */
+  --g-radius-chip: 2px;
+  --g-radius-control: 4px;
+  --g-radius-input: 4px;
+  --g-radius-card: 4px;
+  --g-radius-overlay: 6px;
+  --g-radius-bubble: 6px;
+  --g-border-w: 1px;
+  --g-border-w-input: 1px;
+  --g-border-style: solid;
+  --g-border-color: var(--bd-glass);
+  /* elevation */
+  --elev-control: var(--toplight), var(--shadow-sm);
+  --elev-control-hover: var(--toplight), var(--shadow-sm);
+  --elev-input: none;
+  --elev-card: var(--shadow-md);
+  --elev-card-hover: var(--shadow-lg);
+  --elev-overlay: var(--shadow-xl);
+  --elev-chip: none;
+  --elev-bubble: var(--shadow-sm);
+  --motion-press-shadow: var(--elev-control);
+  /* material */
+  --mat-surface-1: var(--l1-glass);
+  --mat-surface-2: var(--l2-glass);
+  --mat-surface-3: var(--l3-glass);
+  --mat-blur: blur(16px) saturate(1.4);
+  --mat-sheen: linear-gradient(180deg, var(--shine-overlay), transparent 55%);
+  --mat-texture: none;
+  --mat-control-bg: var(--l2-glass);
+  --mat-control-bg-hover: var(--color-hover);
+  --mat-primary-bg: var(--ac-gradient);
+  --mat-primary-bg-hover: var(--ac-gradient-hover);
+  --mat-danger-bg: var(--danger-gradient);
+  --mat-input-bg: var(--l1-glass);
+  --mat-chip-bg: var(--l2-glass);
+  --mat-bubble-bg: var(--l2-glass);
+  --mat-sidebar-bg: var(--l1-glass);
+  --mat-header-bg: var(--l1-glass);
+  --mat-primary-bd: var(--ac-bd);
+  /* motion */
+  --motion-press: scale(0.97);
+  --motion-hover-lift: translateY(-1px);
+  --motion-hover-lift-card: translateY(-2px);
+  --motion-ease-enter: var(--ease-out);
+  --motion-enter-anim: aero-drop-in var(--duration-aero-in, 200ms) var(--ease-out) backwards;
+  --motion-cta-anim: newtask-glow 3s ease-in-out infinite;
+  /* type */
+  --type-control-transform: none;
+  --type-control-tracking: normal;
+  --type-control-weight: 500;
+  --type-primary-transform: none;
+  --type-primary-tracking: normal;
+  --type-primary-weight: 600;
+  --type-primary-text-shadow: none;
+}
+
+/* ---- Aurora reduced-transparency / no-backdrop-filter：token 级守卫 ---- */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-color-scheme="dark"],
+  html[data-color-scheme="light"],
+  html[data-color-scheme="system"] {
+    --mat-surface-1: var(--l1);
+    --mat-surface-2: var(--l2);
+    --mat-surface-3: var(--l3);
+    --mat-control-bg: var(--l2);
+    --mat-input-bg: var(--l1);
+    --mat-chip-bg: var(--l2);
+    --mat-bubble-bg: var(--l2);
+    --mat-sidebar-bg: var(--l1);
+    --mat-header-bg: var(--l1);
+    --mat-blur: none;
+    --mat-sheen: none;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-color-scheme="dark"],
+  html[data-color-scheme="light"],
+  html[data-color-scheme="system"] {
+    --mat-surface-1: var(--l1);
+    --mat-surface-2: var(--l2);
+    --mat-surface-3: var(--l3);
+    --mat-control-bg: var(--l2);
+    --mat-input-bg: var(--l1);
+    --mat-chip-bg: var(--l2);
+    --mat-bubble-bg: var(--l2);
+    --mat-sidebar-bg: var(--l1);
+    --mat-header-bg: var(--l1);
+    --mat-blur: none;
+    --mat-sheen: none;
+  }
+}
+
+/* ============================================================================
    全局交互动画增强 — Aurora Tile Aero 液体动画体系
    全 Aero 液体：弹性回弹、光泽流动、气泡漂浮。磁贴只贡献静态几何。
    - 按钮按压弹性回弹（scale 0.95 + spring easing）
