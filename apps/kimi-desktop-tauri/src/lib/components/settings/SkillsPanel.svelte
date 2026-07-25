@@ -17,9 +17,11 @@
   let error = $state<string | null>(null);
   let filter = $state('');
 
-  // Load skills on mount.
+  // Load skills on mount; honor a pending create intent (e.g. from the
+  // 命令 section's ＋ 新建 button).
   onMount(() => {
     void client.client.refreshUserSkills();
+    if (client.client.consumeSkillCreateRequest()) startCreate();
   });
 
   // Combined skill list: user-level files (editable) + daemon skills (read-only,

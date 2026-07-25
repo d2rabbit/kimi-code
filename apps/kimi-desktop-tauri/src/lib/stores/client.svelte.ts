@@ -1203,6 +1203,23 @@ async function deleteUserSkill(name: string): Promise<void> {
 let archivedSessions = $state<AppSession[]>([]);
 let archivedLoading = $state(false);
 
+// ---------------------------------------------------------------------------
+// Cross-section UI intents (ephemeral, not persisted). Settings' 命令 section
+// uses this to deep-link into the 技能 section's create view.
+// ---------------------------------------------------------------------------
+
+let skillCreateRequested = $state(false);
+
+function requestSkillCreate(): void {
+  skillCreateRequested = true;
+}
+
+function consumeSkillCreateRequest(): boolean {
+  const v = skillCreateRequested;
+  skillCreateRequested = false;
+  return v;
+}
+
 async function loadArchivedSessions(): Promise<void> {
   archivedLoading = true;
   try {
@@ -1301,6 +1318,8 @@ export const client = {
   get archivedSessions() { return archivedSessions; },
   get archivedLoading() { return archivedLoading; },
   loadArchivedSessions,
+  requestSkillCreate,
+  consumeSkillCreateRequest,
   restoreSession,
 
   // Deep integration: previously-unused upstream capabilities.

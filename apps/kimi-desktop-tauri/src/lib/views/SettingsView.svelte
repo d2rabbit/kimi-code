@@ -373,9 +373,9 @@
           <span class="isq"><Icon name="bolt" size="sm" /></span>
           <span class="ir">
             <span class="it">自定义命令</span>
-            <span class="id">命令文件位于项目 <code>.kimi/commands/</code> 与全局 <code>commands/</code> 目录，直接编辑 Markdown 即可创建</span>
+            <span class="id">命令文件位于项目 <code>.kimi/commands/</code> 与全局 <code>commands/</code> 目录；技能即斜杠命令，可在「技能」页直接创建</span>
           </span>
-          <Button size="sm" disabled>＋ 新建</Button>
+          <Button size="sm" onclick={() => { client.client.requestSkillCreate(); active = 'skills'; }}>＋ 新建</Button>
         </div>
 
       {:else if active === 'index'}
