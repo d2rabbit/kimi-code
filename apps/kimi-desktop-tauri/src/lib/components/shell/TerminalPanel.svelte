@@ -15,6 +15,7 @@
   import type { FitAddon as FitAddonType } from '@xterm/addon-fit';
   import { useTerminal } from '../../composables/useTerminal.svelte';
   import * as client from '../../stores/client.svelte';
+  import Button from '../ui/Button.svelte';
 
   // xterm's fontFamily is a literal string — it does NOT resolve CSS vars, so
   // passing var(--font-mono) silently falls back to courier. Use the real
@@ -220,9 +221,9 @@
       <span class="term-cwd mono" title={term.terminal()!.cwd}>{term.terminal()!.cwd}</span>
     {/if}
     <div class="term-actions">
-      <button class="term-btn" title="重置自适应" type="button" onclick={() => fitAndResize()}>适配</button>
-      <button class="term-btn" title="关闭终端" type="button" onclick={() => void term.close()}>关闭</button>
-      <button class="term-btn primary" title="新建 shell" type="button" onclick={() => { xterm?.reset(); void term.restart(); }}>新建</button>
+      <Button size="sm" onclick={() => fitAndResize()}>适配</Button>
+      <Button size="sm" onclick={() => void term.close()}>关闭</Button>
+      <Button size="sm" variant="primary" onclick={() => { xterm?.reset(); void term.restart(); }}>新建</Button>
     </div>
   </div>
   <div class="terminal-surface">
@@ -251,8 +252,8 @@
     gap: 10px;
     height: 34px;
     padding: 0 12px;
-    border-bottom: 1px solid var(--bd);
-    background: var(--l1);
+    border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-header-bg, var(--l1));
     font-size: 11px;
     color: var(--tx2);
   }
@@ -278,21 +279,7 @@
     font-size: 10.5px;
   }
 
-  .term-actions { display: flex; gap: 4px; flex: none; }
-  .term-btn {
-    padding: 3px 9px;
-    border: 1px solid var(--bd2);
-    border-radius: var(--r-sm);
-    background: transparent;
-    color: var(--tx2);
-    font: inherit;
-    font-size: 10.5px;
-    cursor: pointer;
-    transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
-  }
-  .term-btn:hover { background: var(--l2); color: var(--tx); }
-  .term-btn.primary { color: var(--ac); border-color: var(--ac-bd); }
-  .term-btn.primary:hover { background: var(--ac-soft); }
+  .term-actions { display: flex; gap: 4px; flex: none; align-items: center; }
 
   .terminal-surface { flex: 1; min-height: 0; position: relative; overflow: hidden; }
   .terminal-host { width: 100%; height: 100%; padding: 8px 10px; }

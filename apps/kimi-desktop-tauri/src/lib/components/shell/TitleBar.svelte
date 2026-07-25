@@ -59,8 +59,10 @@
     padding: 0 12px;
     /* macOS: extra left padding to clear the native traffic light overlay */
     padding-left: var(--titlebar-pad-left, 12px);
-    background: var(--l1);
-    border-bottom: 1px solid var(--bd);
+    background: var(--mat-header-bg, var(--l1));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
     user-select: none;
     z-index: 100;
   }
@@ -74,7 +76,7 @@
   .wc {
     width: 30px; height: 26px;
     border: none;
-    border-radius: var(--r-sm);
+    border-radius: var(--g-radius-control, var(--r-sm));
     background: transparent;
     color: var(--tx2);
     cursor: pointer;

@@ -92,7 +92,7 @@
     role="presentation"
   >
     <div
-      class="glass-panel search-dialog animate-spring-in"
+      class="search-dialog animate-spring-in"
       onclick={(e) => e.stopPropagation()}
       onkeydown={(e) => e.stopPropagation()}
       role="dialog"
@@ -165,11 +165,13 @@
     max-height: 60vh;
     display: flex;
     flex-direction: column;
-    border-radius: var(--r-xl);
     overflow: hidden;
-    background: var(--l3);
-    border: 1px solid var(--bd2);
-    box-shadow: var(--sh-lg);
+    background: var(--mat-surface-3, var(--l3));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-overlay, var(--r-xl));
+    box-shadow: var(--elev-overlay, var(--sh-lg));
   }
 
   .search-input-row {
@@ -196,8 +198,8 @@
     font-family: var(--font-mono, monospace);
     font-size: 11px;
     padding: 2px 6px;
-    border-radius: var(--radius-xs, 4px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--g-radius-chip, var(--radius-xs, 4px));
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, rgba(255, 255, 255, 0.1));
     color: var(--color-text-faint, #666);
   }
 
@@ -215,14 +217,14 @@
     width: 100%;
     padding: 8px 12px;
     border: none;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--g-radius-control, var(--radius-sm, 6px));
     background: transparent;
     cursor: pointer;
     text-align: left;
     transition: background var(--duration-fast, 120ms);
   }
   .search-result.selected {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--color-selected, var(--color-hover, rgba(255, 255, 255, 0.08)));
   }
   .result-info {
     display: flex;

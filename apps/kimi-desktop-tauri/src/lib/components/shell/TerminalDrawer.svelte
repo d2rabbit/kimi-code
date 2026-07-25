@@ -72,8 +72,8 @@
     height: 28px;
     padding: 0 14px;
     border: none;
-    border-top: 1px solid var(--bd);
-    background: var(--l1);
+    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-header-bg, var(--l1));
     color: var(--tx3);
     font-size: 11px;
     font-weight: 500;
@@ -82,12 +82,12 @@
     user-select: none;
   }
   .term-toggle:hover {
-    background: var(--l2);
+    background: var(--mat-control-bg-hover, var(--l2));
     color: var(--tx);
   }
   .term-toggle.open {
     color: var(--ac);
-    background: var(--l2);
+    background: var(--mat-control-bg-hover, var(--l2));
   }
   .term-toggle-label { flex: 1; text-align: left; }
 
@@ -96,8 +96,8 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    background: var(--l1);
-    border-top: 1px solid var(--bd2);
+    background: var(--mat-surface-1, var(--l1));
+    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
     overflow: hidden;
   }
 

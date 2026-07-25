@@ -2,6 +2,10 @@
      面包屑 + 目录列表（git 标记）+ 上溯 + 选定，代替无意义的"添加工作区"。 -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
+  import IconButton from '../ui/IconButton.svelte';
+  import Button from '../ui/Button.svelte';
+  import ListRow from '../ui/ListRow.svelte';
+  import Spinner from '../ui/Spinner.svelte';
   import { getKimiWebApi } from '../../api';
 
   let {
@@ -60,7 +64,7 @@
     <div class="fp-head">
       <span class="fp-title">选择工作文件夹</span>
       <span class="fp-sub">新任务将在此文件夹中进行</span>
-      <button class="fp-x" onclick={oncancel} aria-label="关闭"><Icon name="close" size="sm" /></button>
+      <IconButton class="fp-x" name="close" label="关闭" onclick={oncancel} />
     </div>
 
     <div class="fp-crumbs">
@@ -72,7 +76,7 @@
 
     <div class="fp-list">
       {#if loading}
-        <div class="fp-state"><span class="spin"></span></div>
+        <div class="fp-state"><Spinner size="md" /></div>
       {:else if failed}
         <div class="fp-state">无法浏览此目录</div>
       {:else if entries.length === 0}
@@ -80,34 +84,45 @@
       {:else}
         <div class="fp-up-row">
           {#if parentPath}
-            <button class="fp-up" onclick={() => browse(parentPath!)} type="button">↑ 上一级</button>
+            <Button variant="ghost" size="sm" onclick={() => browse(parentPath!)}>↑ 上一级</Button>
           {/if}
         </div>
         {#each entries as e (e.path)}
-          <button class="fp-item" onclick={() => browse(e.path)} type="button">
-            <span class="fp-ic"><Icon name="folder-solid" size="sm" /></span>
+          <ListRow class="fp-item" onclick={() => browse(e.path)}>
+            {#snippet leading()}
+              <span class="fp-ic"><Icon name="folder-solid" size="sm" /></span>
+            {/snippet}
             <span class="fp-name">{e.name}</span>
-            {#if e.isGitRepo}<span class="fp-git"><Icon name="git-branch" size="sm" />{e.branch}</span>{/if}
-          </button>
+            {#snippet trailing()}
+              {#if e.isGitRepo}<span class="fp-git"><Icon name="git-branch" size="sm" />{e.branch}</span>{/if}
+            {/snippet}
+          </ListRow>
         {/each}
       {/if}
     </div>
 
     <div class="fp-foot">
       <span class="fp-cur" title={currentPath}>{currentPath || '…'}</span>
-      <button class="fp-select" disabled={!currentPath || failed} onclick={() => onselect(currentPath)} type="button">在此文件夹开始 →</button>
+      <Button variant="primary" size="sm" disabled={!currentPath || failed} onclick={() => onselect(currentPath)}>在此文件夹开始 →</Button>
     </div>
   </div>
 </div>
 
 <style>
   .fp-backdrop { position: fixed; inset: 0; z-index: var(--z-modal, 400); display: flex; align-items: center; justify-content: center; background: var(--overlay); }
-  .fp-dialog { width: min(480px, 92vw); max-height: 70vh; display: flex; flex-direction: column; background: var(--l3); border: 1px solid var(--bd2); border-radius: var(--r-xl); box-shadow: var(--sh-lg); overflow: hidden; }
+  .fp-dialog {
+    width: min(480px, 92vw); max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;
+    background: var(--mat-surface-3, var(--l3));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-overlay, var(--r-xl));
+    box-shadow: var(--elev-overlay, var(--sh-lg));
+  }
   .fp-head { display: flex; align-items: baseline; gap: 8px; padding: 14px 16px 10px; }
   .fp-title { font-size: 13.5px; font-weight: 700; color: var(--tx); }
   .fp-sub { font-size: 11px; color: var(--tx3); }
-  .fp-x { margin-left: auto; width: 24px; height: 24px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--tx3); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-  .fp-x:hover { background: var(--ac-soft); color: var(--tx); }
+  .fp-head :global(.fp-x) { margin-left: auto; }
 
   .fp-crumbs { display: flex; align-items: center; gap: 2px; padding: 0 16px 10px; overflow-x: auto; white-space: nowrap; }
   .crumb { border: none; background: transparent; color: var(--tx3); font-size: 11.5px; font-family: var(--font-mono); cursor: pointer; padding: 1px 3px; border-radius: 4px; }
@@ -117,20 +132,12 @@
 
   .fp-list { flex: 1; overflow-y: auto; border-top: 1px solid var(--bd); border-bottom: 1px solid var(--bd); padding: 6px; min-height: 180px; max-height: 320px; }
   .fp-state { display: flex; align-items: center; justify-content: center; padding: 40px 0; color: var(--tx3); font-size: 12px; }
-  .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--bd); border-top-color: var(--ac); animation: rot 0.8s linear infinite; }
-  @keyframes rot { to { transform: rotate(360deg); } }
   .fp-up-row { padding: 2px 4px 4px; }
-  .fp-up { border: none; background: transparent; color: var(--tx3); font-size: 11px; cursor: pointer; padding: 3px 8px; border-radius: var(--r-sm); }
-  .fp-up:hover { color: var(--tx); background: var(--color-hover); }
-  .fp-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: none; border-radius: var(--r-md); background: transparent; color: var(--tx2); font-size: 12.5px; cursor: pointer; text-align: left; transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease); }
-  .fp-item:hover { background: var(--ac-soft); color: var(--tx); }
+  .fp-list :global(.fp-item) { padding: 7px 10px; gap: 8px; font-size: 12.5px; color: var(--tx2); }
   .fp-ic { color: var(--ac); display: flex; flex: none; }
   .fp-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 12px; }
   .fp-git { display: inline-flex; align-items: center; gap: 3px; font-size: 9.5px; color: var(--tx3); font-family: var(--font-mono); flex: none; }
 
   .fp-foot { display: flex; align-items: center; gap: 10px; padding: 10px 16px; }
   .fp-cur { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx3); direction: rtl; text-align: left; }
-  .fp-select { height: 28px; padding: 0 14px; border: none; border-radius: var(--r-md); background: var(--ac); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease); }
-  .fp-select:hover:not(:disabled) { background: var(--ac-h); transform: translateY(-1px); }
-  .fp-select:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

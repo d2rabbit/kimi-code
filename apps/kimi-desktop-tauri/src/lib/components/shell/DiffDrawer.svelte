@@ -10,6 +10,8 @@
 -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
+  import IconButton from '../ui/IconButton.svelte';
+  import Chip from '../ui/Chip.svelte';
   import { getKimiWebApi } from '../../api';
   import { activeSessionId } from '../../stores/client.svelte';
   import { toast } from '../../stores/toast.svelte';
@@ -101,17 +103,13 @@
         <Icon name="file-text" size="sm" />
         <span class="dd-path" title={filePath}>{filePath}</span>
         {#if diffStats}
-          <span class="dd-stat-chip add">+{diffStats.added}</span>
-          <span class="dd-stat-chip del">−{diffStats.removed}</span>
+          <Chip tone="success" size="sm" class="dd-stat-chip">+{diffStats.added}</Chip>
+          <Chip tone="danger" size="sm" class="dd-stat-chip">−{diffStats.removed}</Chip>
         {/if}
       </div>
       <div class="dd-actions">
-        <button class="dd-btn" type="button" onclick={copyDiff} title="复制 diff" disabled={!diff}>
-          <Icon name="copy" size="sm" />
-        </button>
-        <button class="dd-btn" type="button" onclick={() => { open = false; }} aria-label="关闭">
-          <Icon name="close" size="sm" />
-        </button>
+        <IconButton name="copy" label="复制 diff" onclick={copyDiff} disabled={!diff} />
+        <IconButton name="close" label="关闭" onclick={() => { open = false; }} />
       </div>
     </header>
     <div class="dd-body">
@@ -134,13 +132,15 @@
     top: 0; right: 0; bottom: 0;
     width: 540px;
     max-width: 60vw;
-    background: var(--l1);
-    border-left: 1px solid var(--bd2);
-    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.18);
+    background: var(--mat-surface-3, var(--l1));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border-left: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    box-shadow: var(--elev-overlay, -8px 0 32px rgba(0, 0, 0, 0.18));
     display: flex;
     flex-direction: column;
     z-index: 50;
-    animation: dd-slide-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    animation: dd-slide-in 200ms var(--motion-ease-enter, cubic-bezier(0.16, 1, 0.3, 1));
   }
   @keyframes dd-slide-in {
     from { transform: translateX(40px); opacity: 0; }
@@ -151,8 +151,8 @@
     flex: none;
     display: flex; align-items: center; gap: 10px;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--bd);
-    background: var(--l2);
+    border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-header-bg, var(--l2));
   }
   .dd-title-wrap {
     display: flex; align-items: center; gap: 8px;
@@ -163,22 +163,11 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     font-family: var(--font-mono, monospace);
   }
-  .dd-stat-chip {
+  .dd-title-wrap :global(.dd-stat-chip) {
     flex: none;
-    font-size: 10px; font-weight: 700;
-    padding: 1px 7px; border-radius: 999px;
     font-family: var(--font-mono, monospace);
   }
-  .dd-stat-chip.add { background: var(--ok-soft); color: var(--ok); }
-  .dd-stat-chip.del { background: var(--err-soft); color: var(--err); }
-  .dd-actions { display: flex; gap: 4px; }
-  .dd-btn {
-    border: none; background: transparent; color: var(--tx3);
-    padding: 5px 8px; border-radius: 6px; cursor: pointer;
-    display: inline-flex; align-items: center;
-  }
-  .dd-btn:hover:not(:disabled) { background: var(--ac-soft); color: var(--ac); }
-  .dd-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .dd-actions { display: flex; gap: 4px; align-items: center; }
 
   .dd-body { flex: 1; overflow: auto; }
   .dd-pre {

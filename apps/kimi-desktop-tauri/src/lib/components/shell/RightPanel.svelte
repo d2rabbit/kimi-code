@@ -3,6 +3,11 @@
      (wider, ←/✕ back to default). Collapsible to an edge tab. -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
+  import IconButton from '../ui/IconButton.svelte';
+  import Button from '../ui/Button.svelte';
+  import Chip from '../ui/Chip.svelte';
+  import Menu from '../ui/Menu.svelte';
+  import MenuItem from '../ui/MenuItem.svelte';
   import FilePreview from '../chat/FilePreview.svelte';
   import DiffDrawer from './DiffDrawer.svelte';
   import * as client from '../../stores/client.svelte';
@@ -211,7 +216,7 @@
               <Icon name="check-list" size="sm" /><span>任务</span>
             </button>
           </div>
-          <button class="collapse-btn" onclick={toggle} aria-label="折叠右栏" type="button"><Icon name="panel-collapse" size="sm" /></button>
+          <IconButton name="panel-collapse" label="折叠右栏" onclick={toggle} />
         </div>
 
         {#if activeTool === 'tasks'}
@@ -219,7 +224,7 @@
             <div class="task-subtitle">Kimi Code · 当前会话</div>
             <div class="goal-row">
               <span class="goal-label">目标</span>
-              {#if goalStatusLabel}<span class="goal-status"><span class="live-dot"></span>{goalStatusLabel}</span>{:else if client.activity() === 'running'}<span class="goal-status"><span class="live-dot"></span>进行中</span>{/if}
+              {#if goalStatusLabel}<Chip tone="success" size="sm" class="goal-status"><span class="live-dot"></span>{goalStatusLabel}</Chip>{:else if client.activity() === 'running'}<Chip tone="success" size="sm" class="goal-status"><span class="live-dot"></span>进行中</Chip>{/if}
             </div>
             <div class="goal-card">
               <span class="goal-caption">{activeGoal ? '目标模式' : '当前目标'}</span>
@@ -230,7 +235,7 @@
             </div>
             <div class="task-progress-head">
               <span>任务进度</span>
-              <b>{doneCount}/{realTasks.length}</b>
+              <Chip tone="success" size="sm" class="progress-count">{doneCount}/{realTasks.length}</Chip>
             </div>
             <div class="task-progress-track"><span style="width: {taskProgress}%"></span></div>
             <div class="task-list">
@@ -245,8 +250,8 @@
                     {:else}<span class="task-check"></span>{/if}
                     <span class="task-name">{task.description}</span>
                     {#if st === 'run'}
-                      <button class="task-cancel" title="取消任务" type="button"
-                        onclick={() => void client.client.cancelTask(task.id)}>取消</button>
+                      <Button variant="danger" size="sm" class="task-cancel"
+                        onclick={() => void client.client.cancelTask(task.id)}>取消</Button>
                     {/if}
                   </div>
                 {/each}
@@ -258,24 +263,26 @@
         {:else}
           <section class="tool-view git-view">
             <div class="git-stats">
-              <span class="git-stat add">+ {gitData?.additions ?? 0}</span>
-              <span class="git-stat del">− {gitData?.deletions ?? 0}</span>
+              <Chip tone="success" size="md" class="git-stat">+ {gitData?.additions ?? 0}</Chip>
+              <Chip tone="danger" size="md" class="git-stat">− {gitData?.deletions ?? 0}</Chip>
             </div>
             {#if hasActiveSession && gitData}
               <div class="git-actions">
                 <div class="branch-wrap">
-                  <button class="branch-btn" onclick={openBranchMenu} type="button" title="切换分支">
-                    <Icon name="git-branch" size="sm" /><span class="mono">{gitData.branch}</span><span class="chev">▾</span>
-                  </button>
+                  <Button class="branch-btn" icon="git-branch" onclick={openBranchMenu}>
+                    <span class="mono">{gitData.branch}</span><span class="chev">▾</span>
+                  </Button>
                   {#if branchMenuOpen}
-                    <div class="branch-menu glass-menu animate-spring-in" role="menu">
-                      {#each branches as b (b)}
-                        <button class="glass-menu-item" class:on={b === gitData.branch} onclick={() => checkout(b)} type="button">
-                          {b}{#if b === gitData.branch}<span style="margin-left:auto;color:var(--ok)">✓</span>{/if}
-                        </button>
-                      {:else}
-                        <div class="glass-menu-item" style="color:var(--tx3);cursor:default">无本地分支</div>
-                      {/each}
+                    <div class="branch-menu">
+                      <Menu>
+                        {#each branches as b (b)}
+                          <MenuItem class={b === gitData.branch ? 'on' : ''} onclick={() => checkout(b)}>
+                            <span class="br-item">{b}{#if b === gitData.branch}<span class="br-check">✓</span>{/if}</span>
+                          </MenuItem>
+                        {:else}
+                          <MenuItem disabled>无本地分支</MenuItem>
+                        {/each}
+                      </Menu>
                     </div>
                   {/if}
                 </div>
@@ -286,7 +293,7 @@
             {#if hasActiveSession && gitData && Object.keys(gitData.entries).length > 0}
               <div class="wd-heading">
                 <span>工作区改动</span>
-                <b>{Object.keys(gitData.entries).length}</b>
+                <Chip tone="accent" size="sm">{Object.keys(gitData.entries).length}</Chip>
               </div>
               <div class="wd-list">
                 {#each Object.entries(gitData.entries) as [path, status] (path)}
@@ -314,7 +321,7 @@
 
             <div class="timeline-heading">
               <span>提交历史</span>
-              <span class="timeline-count">{gitLog.length}</span>
+              <Chip size="sm">{gitLog.length}</Chip>
             </div>
             <div class="git-timeline">
               {#if gitLogLoading}
@@ -368,9 +375,9 @@
     {:else}
       <!-- Review mode: same rail, wider, ←/✕ back -->
       <div class="rv-head">
-        <button class="x" onclick={closeReview} title="返回 计划/GitTree" type="button">←</button>
+        <IconButton name="arrow-left" label="返回 计划/GitTree" onclick={closeReview} />
         <span class="rv-title">更改审查</span>
-        <button class="x" onclick={closeReview} title="关闭" type="button">✕</button>
+        <IconButton name="close" label="关闭" onclick={closeReview} />
       </div>
       <div class="rv-body">
         <FilePreview />
@@ -390,8 +397,10 @@
   .rail {
     flex: none; width: 438px; height: 100%;
     display: flex; flex-direction: column; overflow: hidden;
-    background: var(--l1);
-    border-left: 1px solid var(--bd);
+    background: var(--mat-sidebar-bg, var(--l1));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border-left: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
     transition: width var(--duration-base, 160ms) var(--ease, ease);
   }
   .rail.review { width: 520px; }
@@ -400,8 +409,8 @@
   .tool-head { flex: none; display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 12px; border-bottom: 1px solid var(--bd); }
   .tool-brand { display: inline-flex; align-items: center; gap: 7px; color: var(--tx); font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
   .tool-brand :global(.icon-wrap) { color: var(--ac); }
-  .tool-tabs { display: flex; align-items: center; gap: 2px; margin-left: auto; padding: 3px; border: 1px solid var(--bd); border-radius: 8px; background: var(--l2); }
-  .tool-tab { display: inline-flex; align-items: center; gap: 5px; height: 27px; padding: 0 8px; border: none; border-radius: 6px; background: transparent; color: var(--tx3); font-size: 11px; cursor: pointer; position: relative; transition: background var(--duration-base) var(--ease), color var(--duration-fast) var(--ease), transform 120ms var(--ease); }
+  .tool-tabs { display: flex; align-items: center; gap: 2px; margin-left: auto; padding: 3px; border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); border-radius: var(--g-radius-control, 8px); background: var(--mat-control-bg, var(--l2)); }
+  .tool-tab { display: inline-flex; align-items: center; gap: 5px; height: 27px; padding: 0 8px; border: none; border-radius: calc(var(--g-radius-control, 8px) - 2px); background: transparent; color: var(--tx3); font-size: 11px; cursor: pointer; position: relative; transition: background var(--duration-base) var(--ease), color var(--duration-fast) var(--ease), transform 120ms var(--ease); }
   .tool-tab:hover { color: var(--tx); background: var(--color-hover); }
   .tool-tab.active { background: var(--ac-soft); color: var(--ac); }
   /* active 下划线从中心展开 */
@@ -425,24 +434,24 @@
   .mono { font-family: var(--font-mono); }
   .mono { font-family: var(--font-mono); }
 
-  .collapse-btn {
-    flex: none; width: 24px; height: 24px; border: none;
-    border-radius: var(--r-sm); background: transparent; color: var(--tx3);
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-  }
-  .collapse-btn:hover { background: var(--color-hover); color: var(--tx2); }
   /* Task progress */
   .task-subtitle { color: var(--tx3); font-size: 11px; margin-bottom: 22px; }
   .goal-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
   .goal-label { color: var(--tx); font-size: 16px; font-weight: 650; }
-  .goal-status { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 7px; background: var(--ok-soft); color: var(--ok); font-family: var(--font-mono); font-size: 11px; }
+  .goal-row :global(.goal-status) { font-family: var(--font-mono); }
   .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); animation: kimi-pulse 1.5s ease-in-out infinite; }
-  .goal-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--bd2); border-radius: 12px; background: var(--l2); margin-bottom: 26px; }
+  .goal-card {
+    display: flex; flex-direction: column; gap: 8px; padding: 14px; margin-bottom: 26px;
+    background: var(--mat-surface-2, var(--l2));
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-card, 12px);
+    box-shadow: var(--elev-card, none);
+  }
   .goal-caption { color: var(--tx3); font-size: 11px; }
   .goal-card strong { color: var(--tx); font-size: 14px; line-height: 1.45; font-weight: 600; }
   .goal-criterion { color: var(--tx3); font-size: 11px; line-height: 1.4; padding-top: 4px; border-top: 1px dashed var(--bd2); }
   .task-progress-head { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 10px; color: var(--tx); font-size: 14px; font-weight: 650; }
-  .task-progress-head b { padding: 5px 9px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-family: var(--font-mono); font-size: 11px; }
+  .task-progress-head :global(.progress-count) { font-family: var(--font-mono); }
   .task-progress-track { height: 6px; overflow: hidden; border-radius: 999px; background: var(--bd); margin-bottom: 20px; }
   .task-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--ok); transform-origin: left center; transition: transform 220ms var(--ease-out, ease); }
   .task-list { display: flex; flex-direction: column; gap: 4px; }
@@ -452,9 +461,8 @@
   .task-item.failing { color: var(--err); }
   .task-item :global(.icon-wrap) { margin-left: auto; color: var(--tx3); }
   .task-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-  .task-cancel { flex: none; padding: 2px 8px; border: 1px solid var(--color-danger-bd); border-radius: var(--r-sm); background: transparent; color: var(--err); font: inherit; font-size: 10.5px; cursor: pointer; opacity: 0; transition: opacity var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease); }
-  .task-item:hover .task-cancel { opacity: 1; }
-  .task-cancel:hover { background: var(--err-soft); }
+  .task-item :global(.task-cancel) { flex: none; opacity: 0; }
+  .task-item:hover :global(.task-cancel) { opacity: 1; }
   .task-check { width: 20px; height: 20px; flex: none; border: 2px solid var(--bd2); border-radius: 50%; }
   .task-check.done { display: flex; align-items: center; justify-content: center; border-color: var(--ok); background: var(--ok); color: #07140c; font-size: 12px; font-weight: 800; }
   .task-check.run { position: relative; border-color: var(--ac); }
@@ -466,19 +474,17 @@
 
   /* Git tool */
   .git-stats { display: flex; gap: 10px; margin-bottom: 16px; }
-  .git-stat { display: inline-flex; align-items: center; min-height: 32px; padding: 0 11px; border-radius: 8px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
-  .git-stat.add { background: var(--ok-soft); color: var(--ok); }
-  .git-stat.del { background: var(--err-soft); color: var(--err); }
+  .git-stats :global(.git-stat) { font-family: var(--font-mono); font-weight: 600; }
   .git-actions { margin-bottom: 20px; }
   .branch-wrap { position: relative; }
-  .branch-btn { display: inline-flex; align-items: center; gap: 6px; width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid var(--bd2); border-radius: 9px; background: var(--l2); color: var(--ac); font: inherit; cursor: pointer; }
-  .branch-btn:hover { border-color: var(--ac-bd); background: var(--ac-soft); }
-  .branch-btn .chev { font-size: 8px; color: var(--tx3); }
+  .branch-wrap :global(.branch-btn) { width: 100%; min-height: 38px; color: var(--ac); }
+  .branch-wrap .chev { font-size: 8px; color: var(--tx3); }
   .branch-menu { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; max-height: 260px; overflow-y: auto; }
-  .branch-menu .glass-menu-item.on { color: var(--ac); font-weight: 600; }
+  .branch-menu :global(.on) { color: var(--ac); font-weight: 600; }
+  .br-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+  .br-check { color: var(--ok); flex: none; }
   .timeline-heading { display: flex; align-items: center; gap: 7px; padding-top: 2px; margin-bottom: 6px; color: var(--tx2); font-size: 12px; font-weight: 650; }
   .wd-heading { display: flex; align-items: center; gap: 7px; padding-top: 2px; margin-bottom: 6px; color: var(--tx2); font-size: 12px; font-weight: 650; }
-  .wd-heading b { min-width: 18px; padding: 2px 5px; border-radius: 999px; background: var(--ac-soft); color: var(--ac); font-family: var(--font-mono); font-size: 9px; text-align: center; }
   .wd-list { margin: 0 -4px 14px; padding-bottom: 3px; border-bottom: 1px solid var(--bd); }
   .wd-file { display: flex; align-items: center; gap: 7px; width: 100%; padding: 5px 6px; border: none; border-radius: 6px; background: transparent; color: var(--tx2); font-size: 11px; cursor: pointer; text-align: left; transition: background var(--duration-fast) var(--ease); }
   .wd-file:hover { background: var(--color-hover); }
@@ -487,7 +493,6 @@
   .wd-dir { color: var(--tx3); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80px; }
   .wd-chevron { flex: none; color: var(--tx3); transition: transform 160ms var(--ease); }
   .wd-diff { max-height: 300px; overflow-y: auto; margin: 0 0 6px 19px; border-radius: 6px; background: var(--l1); font-family: var(--font-mono); font-size: 10px; line-height: 1.5; }
-  .timeline-count { min-width: 18px; padding: 2px 5px; border-radius: 999px; background: var(--l3); color: var(--tx3); font-family: var(--font-mono); font-size: 9px; text-align: center; }
   .git-timeline { position: relative; margin: 0 -4px 18px; padding-bottom: 3px; border-bottom: 1px solid var(--bd); }
   .commit-row { position: relative; display: flex; align-items: stretch; gap: 9px; width: 100%; min-height: 43px; padding: 5px 4px; border: none; border-radius: 7px; background: transparent; color: var(--tx2); text-align: left; cursor: pointer; transition: background var(--duration-fast) var(--ease); }
   .commit-row:hover { background: var(--color-hover); }
@@ -510,7 +515,7 @@
   .del-text { color: var(--err); }
   .commit-file :global(.icon-wrap) { flex: none; color: var(--tx3); transition: transform 160ms var(--ease); }
   .commit-file.expanded :global(.icon-wrap) { transform: rotate(90deg); }
-  .commit-inline-diff { max-height: 260px; margin: 0 0 6px 21px; overflow: auto; border-radius: 5px; background: var(--l1); font-family: var(--font-mono); font-size: 9px; line-height: 1.45; }
+  .commit-inline-diff { max-height: 260px; margin: 0 0 6px 21px; overflow: auto; border-radius: var(--g-radius-card, 5px); background: var(--mat-surface-1, var(--l1)); font-family: var(--font-mono); font-size: 9px; line-height: 1.45; }
   .inline-diff-line { padding: 2px 6px; white-space: pre-wrap; word-break: break-word; }
   .inline-diff-line.diff-add { background: var(--ok-soft); color: var(--ok); }
   .inline-diff-line.diff-del { background: var(--err-soft); color: var(--err); }
@@ -525,18 +530,12 @@
     padding: 0 12px; height: 46px; border-bottom: 1px solid var(--bd);
   }
   .rv-title { font-size: 13px; font-weight: 600; flex: 1; }
-  .x {
-    width: 24px; height: 24px; border: none; border-radius: var(--r-sm);
-    display: flex; align-items: center; justify-content: center;
-    background: transparent; color: var(--tx2); cursor: pointer; font-size: 12px;
-    transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
-  }
-  .x:hover { background: var(--ac-soft); color: var(--tx); }
   .rv-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 
   .expand-tab {
     flex: none; width: 28px; height: 100%; border: none;
-    border-left: 1px solid var(--bd); background: var(--l1);
+    border-left: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    background: var(--mat-sidebar-bg, var(--l1));
     color: var(--tx3); cursor: pointer;
     display: flex; align-items: flex-start; justify-content: center; padding-top: 12px;
     transition: color var(--duration-fast);

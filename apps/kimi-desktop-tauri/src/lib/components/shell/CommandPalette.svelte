@@ -1,6 +1,7 @@
 <!-- CommandPalette.svelte — Cmd/Ctrl+K global command palette overlay. -->
 <script lang="ts">
   import Icon from '../ui/Icon.svelte';
+  import Chip from '../ui/Chip.svelte';
   import type { IconName } from '../../lib/icon-types';
   import * as client from '../../stores/client.svelte';
   import { shortcut } from '../../lib/desktopFlag';
@@ -157,7 +158,7 @@
               <kbd class="kbd-shortcut">{cmd.shortcut}</kbd>
             {/if}
             {#if cmd.category === 'session'}
-              <span class="result-tag">会话</span>
+              <Chip tone="accent" size="sm">会话</Chip>
             {/if}
           </button>
         {:else}
@@ -189,10 +190,12 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--l3);
-    border: 1px solid var(--bd2);
-    border-radius: var(--r-xl);
-    box-shadow: var(--sh-lg);
+    background: var(--mat-surface-3, var(--l3));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
+    border-radius: var(--g-radius-overlay, var(--r-xl));
+    box-shadow: var(--elev-overlay, var(--sh-lg));
   }
 
   .palette-search {
@@ -240,7 +243,7 @@
     height: 36px;
     padding: 0 12px;
     border: none;
-    border-radius: var(--r-md);
+    border-radius: var(--g-radius-control, var(--r-md));
     background: transparent;
     color: var(--tx2);
     font-size: 12.5px;
@@ -279,13 +282,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .result-tag {
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: var(--radius-full, 999px);
-    background: var(--color-accent-soft, rgba(10, 132, 255, 0.16));
-    color: var(--color-accent, #0a84ff);
   }
 
   .palette-empty {
