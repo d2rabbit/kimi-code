@@ -179,7 +179,7 @@ describe('createOriginHook (onRequest hook)', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.headers['access-control-allow-headers']).toBe(
-      'Content-Type, Authorization, X-Kimi-Client-Id, X-Kimi-Client-Name, X-Kimi-Client-Version, X-Kimi-Client-Ui-Mode',
+      'Content-Type, Authorization, X-Request-Id, X-Kimi-Client-Id, X-Kimi-Client-Name, X-Kimi-Client-Version, X-Kimi-Client-Ui-Mode',
     );
   });
 });
