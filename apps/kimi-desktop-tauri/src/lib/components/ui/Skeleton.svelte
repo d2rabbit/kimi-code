@@ -12,7 +12,7 @@
 <style>
   .skl { display: flex; flex-direction: column; gap: 6px; padding: 4px 12px; }
   .skl-row {
-    border-radius: var(--r-sm);
+    border-radius: var(--g-radius-control, var(--r-sm));
     background: linear-gradient(90deg, var(--l2) 25%, var(--l3) 50%, var(--l2) 75%);
     background-size: 200% 100%;
     animation: skl-shimmer 1.4s linear infinite;

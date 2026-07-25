@@ -24,13 +24,15 @@
   }
   .toast {
     padding: 9px 16px;
-    border-radius: 999px;
-    background: var(--l3);
-    border: 1px solid var(--bd2);
+    border-radius: var(--g-radius-chip, 999px);
+    background: var(--mat-surface-3, var(--l3));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
     color: var(--ok);
     font-size: 12px;
     font-weight: 500;
-    box-shadow: var(--sh-lg);
+    box-shadow: var(--elev-overlay, var(--sh-lg));
     animation: toast-in 0.2s var(--ease);
     max-width: min(480px, 80vw);
     overflow: hidden;

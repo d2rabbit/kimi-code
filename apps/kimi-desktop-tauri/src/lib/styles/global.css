@@ -604,16 +604,18 @@ body::before {
   position: fixed;
   z-index: var(--z-toast, 600);
   padding: 4px 9px;
-  border-radius: var(--r-sm);
-  background: var(--l3);
-  border: 1px solid var(--bd2);
+  border-radius: var(--g-radius-control, var(--r-sm));
+  background: var(--mat-surface-3, var(--l3));
+  backdrop-filter: var(--mat-blur, none);
+  -webkit-backdrop-filter: var(--mat-blur, none);
+  border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd2));
   color: var(--tx);
   font-size: 11px;
   font-weight: 500;
   font-family: var(--font-ui);
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: var(--sh);
+  box-shadow: var(--elev-overlay, var(--sh));
   animation: ux-tip-in 0.125s var(--ease);
 }
 @keyframes ux-tip-in {

@@ -59,16 +59,29 @@
     from { opacity: 0; }
   }
   .dialog {
-    background: var(--l3);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-xl, 16px);
+    position: relative;
+    background: var(--mat-surface-3, var(--l3));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid)
+      var(--g-border-color, rgba(255, 255, 255, 0.08));
+    border-radius: var(--g-radius-overlay, 16px);
     width: min(640px, 90vw);
     max-height: 80vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.2);
-    animation: dialogIn var(--duration-slow, 260ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+    box-shadow: var(--elev-overlay, 0 24px 80px rgba(0, 0, 0, 0.4));
+    animation: dialogIn var(--duration-slow, 260ms) var(--motion-ease-enter, var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)));
     will-change: transform, opacity;
+  }
+  /* sheen 槽：玻璃/凝胶主题的顶部高光 */
+  .dialog::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--mat-sheen, none);
+    pointer-events: none;
   }
   @keyframes dialogIn {
     from { transform: scale(0.96) translateY(8px); opacity: 0; }
