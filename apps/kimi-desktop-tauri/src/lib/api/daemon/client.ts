@@ -7,6 +7,7 @@ import { getCredential } from './serverAuth';
 import type {
   AppConfig,
   AppConnection,
+  AppGoal,
   AppManagedUsage,
   AppMessage,
   AppMessageRole,
@@ -45,6 +46,7 @@ import {
   toAppConfig,
   toAppEvent,
   toAppFsEntry,
+  toAppGoal,
   toAppMessage,
   toAppModel,
   toAppProvider,
@@ -424,6 +426,14 @@ export class DaemonKimiWebApi implements KimiWebApi {
       `/sessions/${encodeURIComponent(sessionId)}/warnings`,
     );
     return data.warnings ?? [];
+  }
+
+  // GET /sessions/{id}/goal — current goal snapshot (null when none active).
+  async getSessionGoal(sessionId: string): Promise<AppGoal | null> {
+    const data = await this.http.get<unknown>(
+      `/sessions/${encodeURIComponent(sessionId)}/goal`,
+    );
+    return toAppGoal(data);
   }
 
   /** POST /sessions/{id}/export — download a diagnostic archive (tar.gz). */

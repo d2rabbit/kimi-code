@@ -526,6 +526,20 @@ async function selectSession(sessionId: string): Promise<void> {
       if (myToken !== selectToken) return;
       rawState.messagesBySession[sessionId] = result.items;
     }
+    // Seed the goal from REST — goalBySession is otherwise only fed by live
+    // goalUpdated events, so a goal started before this client connected
+    // would never render (GoalStrip stays hidden).
+    try {
+      const goalSnapshot = await a.getSessionGoal(sessionId);
+      if (myToken !== selectToken) return;
+      if (goalSnapshot) {
+        rawState.goalBySession[sessionId] = goalSnapshot;
+      } else {
+        delete rawState.goalBySession[sessionId];
+      }
+    } catch {
+      // Best-effort — live goalUpdated events will fill it in.
+    }
     // Subscribe to events — only if this selection is still current.
     if (myToken === selectToken && eventConn) {
       eventConn.subscribe(sessionId);

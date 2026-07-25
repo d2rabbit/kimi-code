@@ -757,6 +757,8 @@ export interface KimiWebApi {
   updateSession(sessionId: string, input: { title?: string; cwd?: string; model?: string; permissionMode?: string; planMode?: boolean; swarmMode?: boolean; goalObjective?: string; goalControl?: 'pause' | 'resume' | 'cancel'; thinking?: string }): Promise<AppSession>;
   getSessionStatus(sessionId: string): Promise<AppSessionRuntimeStatus>;
   getSessionWarnings(sessionId: string): Promise<AppSessionWarning[]>;
+  /** Current goal snapshot for a session (null when none is active). */
+  getSessionGoal(sessionId: string): Promise<AppGoal | null>;
   archiveSession(sessionId: string): Promise<{ archived: true }>;
   restoreSession(sessionId: string): Promise<AppSession>;
   listMessages(sessionId: string, input?: PageRequest & { role?: AppMessageRole }): Promise<Page<AppMessage>>;
