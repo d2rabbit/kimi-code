@@ -4,6 +4,7 @@
   import Icon from '../ui/Icon.svelte';
   import Segmented from '../ui/Segmented.svelte';
   import PluginPanel from './PluginPanel.svelte';
+  import MarketplacePanel from './MarketplacePanel.svelte';
 
   let pluginTab = $state('installed');
 
@@ -22,7 +23,7 @@
 {#if pluginTab === 'installed'}
   <PluginPanel />
 {:else}
-  <p class="empty-text">插件市场尚未开放。已安装的插件切换到「已安装」标签查看与管理。</p>
+  <MarketplacePanel />
 {/if}
 
 <style>
@@ -31,5 +32,4 @@
   .beta-badge { font-size: 10px; padding: 2px 8px; border-radius: var(--g-radius-chip, 99px); background: var(--ac-soft); color: var(--ac); vertical-align: middle; font-weight: 600; }
   .list-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
   .searchbox { flex: 1; display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--g-radius-input, 4px); background: var(--mat-input-bg, var(--l1)); border: var(--g-border-w-input, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); box-shadow: var(--elev-input, none); color: var(--tx3); font-size: 12px; }
-  .empty-text { color: var(--tx3); font-size: 13px; }
 </style>

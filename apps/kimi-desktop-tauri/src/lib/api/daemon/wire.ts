@@ -158,6 +158,54 @@ export interface WireAgentProfileListResponse {
   profiles: WireAgentProfileDescriptor[];
 }
 
+// GET /plugins + /plugins/marketplace, POST /plugins:install + /plugins/{id}:toggle, DELETE /plugins/{id}.
+export interface WirePluginSummary {
+  id: string;
+  display_name: string;
+  version?: string;
+  enabled: boolean;
+  state: 'ok' | 'error';
+  skill_count: number;
+  mcp_server_count: number;
+  hook_count: number;
+  command_count: number;
+  has_errors: boolean;
+  source: 'local-path' | 'zip-url' | 'github';
+  original_source?: string;
+}
+
+export interface WirePluginListResponse {
+  plugins: WirePluginSummary[];
+}
+
+export interface WireMarketplaceEntry {
+  id: string;
+  display_name: string;
+  source: string;
+  tier?: 'official' | 'curated';
+  version?: string;
+  description?: string;
+  homepage?: string;
+  keywords?: string[];
+  installed: boolean;
+  installed_version?: string;
+  enabled?: boolean;
+  update_available?: boolean;
+}
+
+export interface WireMarketplaceResponse {
+  source: string;
+  plugins: WireMarketplaceEntry[];
+}
+
+export interface WirePluginInstallResult {
+  plugin: WirePluginSummary;
+}
+
+export interface WirePluginRemoveResult {
+  removed: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Workspace + daemon folder browser wire DTOs
 // PRESUMED — not in the live daemon yet; isolated here, swap when backend ships.

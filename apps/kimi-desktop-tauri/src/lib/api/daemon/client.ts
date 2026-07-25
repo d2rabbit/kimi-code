@@ -9,6 +9,8 @@ import type {
   AppConnection,
   AppAgentProfile,
   AppCronTask,
+  AppMarketplaceEntry,
+  AppPluginSummary,
   AppGoal,
   AppManagedUsage,
   AppMessage,
@@ -84,6 +86,11 @@ import type {
   WirePromptSteerResult,
   WireAgentProfileDescriptor,
   WireAgentProfileListResponse,
+  WireMarketplaceResponse,
+  WirePluginInstallResult,
+  WirePluginListResponse,
+  WirePluginRemoveResult,
+  WirePluginSummary,
   WireCronDeleteResult,
   WireCronTask,
   WireCronTaskListResponse,
@@ -262,6 +269,23 @@ function isCompactionReason(reason: string): boolean {
 // ---------------------------------------------------------------------------
 // DaemonKimiWebApi
 // ---------------------------------------------------------------------------
+
+function toAppPluginSummary(p: WirePluginSummary): AppPluginSummary {
+  return {
+    id: p.id,
+    displayName: p.display_name,
+    version: p.version,
+    enabled: p.enabled,
+    state: p.state,
+    skillCount: p.skill_count,
+    mcpServerCount: p.mcp_server_count,
+    hookCount: p.hook_count,
+    commandCount: p.command_count,
+    hasErrors: p.has_errors,
+    source: p.source,
+    originalSource: p.original_source,
+  };
+}
 
 function toAppAgentProfile(p: WireAgentProfileDescriptor): AppAgentProfile {
   return {
@@ -492,6 +516,49 @@ export class DaemonKimiWebApi implements KimiWebApi {
       `/sessions/${encodeURIComponent(sessionId)}/cron/${encodeURIComponent(taskId)}`,
     );
     return { deleted: data.deleted };
+  }
+
+  // GET /plugins + /plugins/marketplace, POST /plugins:install + :toggle, DELETE /plugins/{id}.
+  async listPlugins(): Promise<AppPluginSummary[]> {
+    const data = await this.http.get<WirePluginListResponse>(`/plugins`);
+    return (data.plugins ?? []).map(toAppPluginSummary);
+  }
+
+  async getPluginMarketplace(): Promise<{ source: string; plugins: AppMarketplaceEntry[] }> {
+    const data = await this.http.get<WireMarketplaceResponse>(`/plugins/marketplace`);
+    return {
+      source: data.source,
+      plugins: (data.plugins ?? []).map((e) => ({
+        id: e.id,
+        displayName: e.display_name,
+        source: e.source,
+        tier: e.tier,
+        version: e.version,
+        description: e.description,
+        homepage: e.homepage,
+        keywords: e.keywords,
+        installed: e.installed,
+        installedVersion: e.installed_version,
+        enabled: e.enabled,
+        updateAvailable: e.update_available ?? false,
+      })),
+    };
+  }
+
+  async installPlugin(source: string): Promise<AppPluginSummary> {
+    const data = await this.http.post<WirePluginInstallResult>(`/plugins:install`, { source });
+    return toAppPluginSummary(data.plugin);
+  }
+
+  async togglePlugin(id: string, enabled: boolean): Promise<void> {
+    await this.http.post(`/plugins/${encodeURIComponent(id)}:toggle`, { enabled });
+  }
+
+  async removePlugin(id: string): Promise<{ removed: boolean }> {
+    const data = await this.http.delete<WirePluginRemoveResult>(
+      `/plugins/${encodeURIComponent(id)}`,
+    );
+    return { removed: data.removed };
   }
 
   // GET /sessions/{id}/agent-profiles — merged catalog (builtin + file agents).

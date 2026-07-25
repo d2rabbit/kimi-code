@@ -30,6 +30,10 @@ exports[`API surface snapshot > matches the documented v2 route table and meta e
     ],
     [
       "DELETE",
+      "/api/v1/plugins/{id}",
+    ],
+    [
+      "DELETE",
       "/api/v1/providers/{provider_id}",
     ],
     [
@@ -123,6 +127,14 @@ exports[`API surface snapshot > matches the documented v2 route table and meta e
     [
       "GET",
       "/api/v1/oauth/usage",
+    ],
+    [
+      "GET",
+      "/api/v1/plugins",
+    ],
+    [
+      "GET",
+      "/api/v1/plugins/marketplace",
     ],
     [
       "GET",
@@ -303,6 +315,14 @@ exports[`API surface snapshot > matches the documented v2 route table and meta e
     [
       "POST",
       "/api/v1/oauth/logout",
+    ],
+    [
+      "POST",
+      "/api/v1/plugins{install}",
+    ],
+    [
+      "POST",
+      "/api/v1/plugins/{tail}",
     ],
     [
       "POST",

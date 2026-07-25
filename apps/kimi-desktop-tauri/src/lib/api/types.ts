@@ -747,6 +747,38 @@ export interface AppPromptItem {
   createdAt: string;
 }
 
+/** An installed plugin (daemon REST /plugins). */
+export interface AppPluginSummary {
+  id: string;
+  displayName: string;
+  version?: string;
+  enabled: boolean;
+  state: 'ok' | 'error';
+  skillCount: number;
+  mcpServerCount: number;
+  hookCount: number;
+  commandCount: number;
+  hasErrors: boolean;
+  source: 'local-path' | 'zip-url' | 'github';
+  originalSource?: string;
+}
+
+/** A marketplace registry entry merged with install state. */
+export interface AppMarketplaceEntry {
+  id: string;
+  displayName: string;
+  source: string;
+  tier?: 'official' | 'curated';
+  version?: string;
+  description?: string;
+  homepage?: string;
+  keywords?: string[];
+  installed: boolean;
+  installedVersion?: string;
+  enabled?: boolean;
+  updateAvailable: boolean;
+}
+
 /** An agent profile spawnable in a session (builtin or file-defined). */
 export interface AppAgentProfile {
   name: string;
@@ -791,6 +823,16 @@ export interface KimiWebApi {
   deleteCronTask(sessionId: string, taskId: string): Promise<{ deleted: boolean }>;
   /** List the agent profiles (builtin + file-defined) spawnable in a session. */
   listAgentProfiles(sessionId: string): Promise<AppAgentProfile[]>;
+  /** List installed plugins. */
+  listPlugins(): Promise<AppPluginSummary[]>;
+  /** Browse the plugin marketplace registry, merged with install state. */
+  getPluginMarketplace(): Promise<{ source: string; plugins: AppMarketplaceEntry[] }>;
+  /** Install a plugin from a source (GitHub URL / zip URL / local path). */
+  installPlugin(source: string): Promise<AppPluginSummary>;
+  /** Enable or disable a plugin. */
+  togglePlugin(id: string, enabled: boolean): Promise<void>;
+  /** Uninstall a plugin. */
+  removePlugin(id: string): Promise<{ removed: boolean }>;
   archiveSession(sessionId: string): Promise<{ archived: true }>;
   restoreSession(sessionId: string): Promise<AppSession>;
   listMessages(sessionId: string, input?: PageRequest & { role?: AppMessageRole }): Promise<Page<AppMessage>>;
