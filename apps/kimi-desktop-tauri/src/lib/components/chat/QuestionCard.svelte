@@ -2,6 +2,7 @@
      Supports multi-step questions with navigation. -->
 <script lang="ts">
   import Button from '../ui/Button.svelte';
+  import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import Chip from '../ui/Chip.svelte';
   import * as client from '../../stores/client.svelte';
@@ -94,7 +95,9 @@
   }
 </script>
 
-<div class="question-card" class:minimized>
+<div class="q-row">
+  <div class="q-avatar"><Icon name="help-circle" size="sm" /></div>
+  <div class="question-card" class:minimized>
   <!-- Header -->
   <div class="q-header">
     {#if total > 1}
@@ -110,7 +113,7 @@
         {/each}
       </div>
     {/if}
-    <span class="q-title">{current?.header ?? 'Agent 提问'}</span>
+    <span class="q-title">{current?.header ?? '需要您补充信息'}</span>
     <IconButton
       name={minimized ? 'chevron-down' : 'chevron-right'}
       label={minimized ? '展开' : '折叠'}
@@ -127,7 +130,7 @@
       {/if}
 
       <!-- Options -->
-      <div class="q-options">
+      <div class="q-options" class:q-grid={current.options.length >= 2 && current.options.every((o) => o.label.length <= 12)}>
         {#each current.options as opt (opt.id)}
           <button
             class="q-option"
@@ -136,17 +139,11 @@
               : currentAnswer === opt.id}
             onclick={() => current.multiSelect ? toggleMulti(current.id, opt.id) : pickSingle(current.id, opt.id)}
           >
-            <span class="q-bullet">
-              {#if current.multiSelect}
-                {Array.isArray(currentAnswer) && currentAnswer.includes(opt.id) ? '■' : '□'}
-              {:else}
-                {currentAnswer === opt.id ? '●' : '○'}
-              {/if}
-            </span>
             <span class="q-option-text">{opt.label}</span>
             {#if opt.recommended}
               <Chip tone="success">推荐</Chip>
             {/if}
+            <span class="q-arrow">›</span>
           </button>
         {/each}
       </div>
@@ -169,11 +166,29 @@
       </div>
     </div>
   {/if}
+  </div>
 </div>
 
 <style>
-  .question-card {
+  .q-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 6px 0;
+  }
+  .q-avatar {
+    width: 30px; height: 30px;
+    flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--g-radius-control, 8px);
+    background: var(--ac-soft);
     border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--ac-bd);
+    color: var(--ac);
+  }
+  .question-card {
+    flex: 1;
+    min-width: 0;
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) color-mix(in srgb, var(--ac) 35%, transparent);
     border-radius: var(--g-radius-card, var(--r-lg));
     overflow: hidden;
     background: var(--mat-surface-2, var(--l2));
@@ -237,14 +252,18 @@
     flex-direction: column;
     gap: 6px;
   }
+  .q-options.q-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
   .q-option {
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 8px;
     padding: 9px 10px;
     border-radius: var(--g-radius-control, var(--r-md));
     border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
-    background: transparent;
+    background: var(--mat-surface-1, transparent);
     color: var(--tx2);
     font-size: 12px;
     cursor: pointer;
@@ -252,24 +271,25 @@
     transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
   }
   .q-option:hover {
-    border-color: var(--bd2);
+    border-color: var(--ac);
     color: var(--tx);
   }
+  .q-option:hover .q-arrow { color: var(--ac); }
   .q-option.selected {
     border-color: var(--ac);
     background: var(--ac-soft);
     color: var(--tx);
   }
-  .q-bullet {
+  .q-option.selected .q-arrow { color: var(--ac); }
+  .q-option-text {
+    flex: 1;
+    font-weight: 500;
+  }
+  .q-arrow {
     flex: none;
     color: var(--tx3);
     font-size: 13px;
-  }
-  .q-option.selected .q-bullet {
-    color: var(--ac);
-  }
-  .q-option-text {
-    flex: 1;
+    transition: color var(--duration-fast) var(--ease);
   }
 
   .q-footer {

@@ -336,6 +336,12 @@ interface Group {
    * tool cards twice. Dedupe by exact content so a turn shows each reply once.
    */
   seenSigs: Set<string>;
+  /**
+   * toolResult parts seen before their toolUse (parallel tool calls can persist
+   * results ahead of the aggregated tool_use message). Buffered so the later
+   * toolUse fold can still attach status/output/media instead of dropping them.
+   */
+  pendingResults: Map<string, AppMessage['content'][number]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -554,16 +560,26 @@ export function messagesToTurns(
         // the final result when expanded, while a subagent's live progress
         // streams in the right-side detail panel (sourced from the task).
         const pendingApproval = approvalByTool.get(c.toolCallId);
+        // Inverted-order recovery: a parallel tool's result may already be
+        // buffered (persisted ahead of the tool_use record).
+        const earlyResult = g.pendingResults.get(c.toolCallId);
+        if (earlyResult && earlyResult.type === 'toolResult') {
+          g.pendingResults.delete(c.toolCallId);
+        }
         const toolCall: ToolCall = {
           id: c.toolCallId,
           name: c.toolName,
           arg: typeof c.input === 'string' ? c.input : JSON.stringify(c.input),
           // 'running' until the toolResult is absorbed (resolves to ok/error);
           // flushGroup settles dangling tools of finished turns back to 'ok'.
-          status: 'running',
-          output: c.outputLines,
+          status: earlyResult && earlyResult.type === 'toolResult' ? (earlyResult.isError ? 'error' : 'ok') : 'running',
+          output: earlyResult && earlyResult.type === 'toolResult' ? normalizeToolOutput(earlyResult.output) : c.outputLines,
+          media: earlyResult && earlyResult.type === 'toolResult' && !earlyResult.isError ? normalizeToolMedia(c.toolName, earlyResult.output) : undefined,
           planPath: c.toolName === 'ExitPlanMode' ? planReviewByToolCallId[c.toolCallId]?.path : undefined,
         };
+        if (toolCall.name === 'ExitPlanMode' && !toolCall.planPath) {
+          toolCall.planPath = parsePlanSavedPath(toolCall.output);
+        }
         g.tools.push(toolCall);
         g.blocks.push({ kind: 'tool', tool: toolCall });
         if (pendingApproval) {
@@ -574,6 +590,10 @@ export function messagesToTurns(
         // Update the matching tool call status within this group (both the flat
         // tools[] and the ordered block that renders it).
         const idx = g.tools.findIndex((t) => t.id === c.toolCallId);
+        if (idx === -1) {
+          // Result arrived before its toolUse — buffer it for the later fold.
+          g.pendingResults.set(c.toolCallId, c);
+        }
         if (idx !== -1) {
           const tool = g.tools[idx]!;
           const updated: ToolCall = {
@@ -750,6 +770,7 @@ export function messagesToTurns(
         approval: undefined,
         approvalId: undefined,
         seenSigs: new Set<string>(),
+        pendingResults: new Map(),
         durationMs: msg.durationMs,
       };
     } else if (pendingGroup !== null && pendingGroup.promptId === undefined && pid !== undefined) {

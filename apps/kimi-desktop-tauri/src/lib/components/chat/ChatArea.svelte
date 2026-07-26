@@ -5,6 +5,7 @@
   import Spinner from '../ui/Spinner.svelte';
   import Composer from './Composer.svelte';
   import MarkdownRenderer from './MarkdownRenderer.svelte';
+  import ThinkCard from './ThinkCard.svelte';
   import ToolCard from './ToolCard.svelte';
   import ApprovalCard from './ApprovalCard.svelte';
   import QuestionCard from './QuestionCard.svelte';
@@ -237,14 +238,10 @@
                 <div class="a-text">
                   {#each group(turn.blocks ?? []) as item}
                     {#if item.kind === 'thinking'}
-                      <details class="think">
-                        <summary>
-                          <span class="think-icon">💭</span>
-                          <span class="think-label">思考过程</span>
-                          <span class="think-line"></span>
-                        </summary>
-                        <div class="think-body">{item.thinking}</div>
-                      </details>
+                      <ThinkCard
+                        thinking={item.thinking}
+                        streaming={running && turn === client.turns().at(-1)}
+                      />
                     {:else if item.kind === 'text'}
                       <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn === client.turns().at(-1)} /></div>
                     {/if}
@@ -411,55 +408,8 @@
   .u-text :global(.md-body ol) { margin: 0 0 6px; }
   .u-text :global(.md-body .cb-wrap) { margin: 0 0 6px; }
   .ai-text { color: var(--tx); line-height: 1.65; }
-  .ai-text + .ai-text, .think + .ai-text { margin-top: 6px; }
-  .think {
-    margin: 2px 0 6px;
-    border-radius: var(--g-radius-card, var(--r-md));
-    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
-    /* accent 渐变底色无契约等价物，保留 */
-    background: linear-gradient(135deg, var(--ac-soft), transparent 60%);
-    overflow: hidden;
-    transition: border-color var(--duration-fast) var(--ease);
-  }
-  .think[open] { border-color: var(--ac-bd); }
-  .think summary {
-    display: flex; align-items: center; gap: 6px;
-    cursor: pointer;
-    padding: 6px 12px;
-    font-size: 11.5px; font-weight: 500;
-    color: var(--tx3);
-    user-select: none;
-    list-style: none;
-    transition: color var(--duration-fast) var(--ease);
-  }
-  .think summary::-webkit-details-marker { display: none; }
-  .think summary:hover { color: var(--tx2); }
-  .think[open] summary { color: var(--ac); }
-  .think-icon { font-size: 12px; opacity: 0.7; }
-  .think-label { white-space: nowrap; }
-  .think-line {
-    flex: 1; height: 1px;
-    background: linear-gradient(90deg, var(--bd) 0%, transparent 100%);
-    margin-left: 4px;
-  }
-  .think-body {
-    padding: 8px 14px 10px;
-    font-family: var(--font-mono);
-    font-size: 11.5px; line-height: 1.6;
-    white-space: pre-wrap; word-break: break-word;
-    color: var(--tx3);
-    border-top: 1px solid var(--bd);
-    max-height: 400px;
-    overflow-y: auto;
-    animation: think-open 180ms var(--ease-out, ease);
-  }
-  @keyframes think-open {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .think-body { animation: none; }
-  }
+  .ai-text + .ai-text { margin-top: 6px; }
+
   .tg-toggle {
     display: flex; align-items: center; gap: 5px;
     width: fit-content;

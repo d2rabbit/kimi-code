@@ -5,10 +5,9 @@
      in header (not just the dot). -->
 <script lang="ts">
   import type { ToolCall } from '../../types';
-  import StatusDot from '../ui/StatusDot.svelte';
-  import Chip from '../ui/Chip.svelte';
   import Icon from '../ui/Icon.svelte';
-  import { toolLabel, toolSummary } from '../../lib/toolMeta';
+  import JsonTreeCard from './JsonTreeCard.svelte';
+  import { toolSummary } from '../../lib/toolMeta';
   import { toast } from '../../stores/toast.svelte';
   import * as client from '../../stores/client.svelte';
   import SwarmCard from './SwarmCard.svelte';
@@ -100,11 +99,31 @@
   // ---- Rich classification ----
   const kind = $derived.by(() => {
     const n = tool.name.toLowerCase();
+    if (n.startsWith('mcp__')) return 'mcp';
     if (['bash', 'shell', 'execute', 'run', 'exec'].includes(n)) return 'bash';
     if (['edit', 'write', 'multi_edit', 'multiedit'].includes(n)) return 'edit';
     if (['read', 'readfile'].includes(n)) return 'read';
     if (['agentswarm', 'swarm'].includes(n)) return 'swarm';
     return 'generic';
+  });
+
+  // MCP：mcp__server__tool → { server, tool }
+  const mcpParts = $derived.by(() => {
+    if (kind !== 'mcp') return null;
+    const parts = tool.name.split('__');
+    if (parts.length < 3) return { server: parts[1] ?? 'mcp', tool: parts.slice(2).join('__') || tool.name };
+    return { server: parts[1]!, tool: parts.slice(2).join('__') };
+  });
+
+  // Arg 的 JSON 解析（用于 Params 树状展示）
+  const argJson = $derived.by(() => {
+    const raw = (tool.arg ?? '').replace(/^[·\s]+/, '').trim();
+    if (!raw || (!raw.startsWith('{') && !raw.startsWith('['))) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   });
 
   const bashCmd = $derived.by(() => {
@@ -129,19 +148,10 @@
     });
   });
 
-  // Status badge label (alongside the colored dot).
-  const statusLabel = $derived.by(() => {
-    switch (tool.status) {
-      case 'running': return '运行中';
-      case 'ok': return '完成';
-      case 'error': return '失败';
-      default: return tool.status;
-    }
-  });
-
-  // Tool icon by name.
+  // Tool icon by name / kind.
   function toolIcon(name: string): string {
     const n = name.toLowerCase();
+    if (n.startsWith('mcp__')) return 'plugin';
     if (['bash', 'shell', 'execute'].includes(n)) return 'terminal';
     if (['read', 'readfile'].includes(n)) return 'file';
     if (['write', 'edit', 'multi_edit', 'multiedit'].includes(n)) return 'file-edit';
@@ -151,113 +161,182 @@
     if (['list', 'todolist', 'todowrite'].includes(n)) return 'check-list';
     return 'tool';
   }
+
+  // Header 标签：MCP 用 mcp::server/tool，其余用 tool::name（mono）。
+  const headLabel = $derived.by(() => {
+    if (kind === 'mcp' && mcpParts) return `mcp::${mcpParts.server}/${mcpParts.tool}`;
+    return `tool::${tool.name}`;
+  });
 </script>
 
-<div class="tool-card" class:expanded>
-  <button class="tool-header" onclick={toggle} type="button">
-    <StatusDot status={tool.status} />
-    <Icon name={toolIcon(tool.name) as never} size="sm" />
-    <span class="tool-name">{toolLabel(tool.name)}</span>
-    <Chip tone={tool.status === 'running' ? 'accent' : tool.status === 'ok' ? 'success' : tool.status === 'error' ? 'danger' : 'neutral'}>{statusLabel}</Chip>
-    {#if tool.arg}
-      {#if filePath}
-        <span
-          class="tool-arg tool-arg-link"
-          title={filePath}
-          role="link"
-          tabindex="0"
-          onclick={(e) => { e.stopPropagation(); client.client.openFilePreview(filePath); }}
-          onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); client.client.openFilePreview(filePath); } }}
-        >{toolSummary(tool.name, tool.arg)}</span>
-      {:else}
-        <span class="tool-arg" title={tool.arg}>{toolSummary(tool.name, tool.arg)}</span>
-      {/if}
-    {/if}
-    {#if diffStats}
-      <span class="diff-chip add">+{diffStats.added}</span>
-      <span class="diff-chip del">−{diffStats.removed}</span>
-    {/if}
-    {#if tool.timing}
-      <span class="tool-timing" class:ok={tool.status === 'ok'} class:err={tool.status === 'error'}>{tool.timing}</span>
-    {/if}
-    <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size="sm" />
-  </button>
-
-  {#if expanded && tool.output && tool.output.length > 0}
-    <div class="tool-expand-area">
-    <div class="tool-output-toolbar">
-      {#if kind === 'bash' && bashCmd}
-        <button class="tool-action-btn" onclick={copyCommand} type="button" title="复制命令">
-          <Icon name="copy" size="sm" /> 复制命令
-        </button>
-      {/if}
-      <button class="tool-action-btn" onclick={copyOutput} type="button" title="复制输出">
-        <Icon name="copy" size="sm" /> 复制输出
+<div class="tool-card kind-{kind}" class:expanded>
+  <div class="tc-row">
+    <div class="tc-avatar"><Icon name={toolIcon(tool.name) as never} size="sm" /></div>
+    <div class="tc-main">
+      <button class="tool-header" onclick={toggle} type="button">
+        <span class="tool-name mono">{headLabel}</span>
+        {#if kind === 'mcp'}
+          <span class="mcp-chip">MCP Server</span>
+        {/if}
+        {#if tool.arg && !argJson}
+          {#if filePath}
+            <span
+              class="tool-arg tool-arg-link"
+              title={filePath}
+              role="link"
+              tabindex="0"
+              onclick={(e) => { e.stopPropagation(); client.client.openFilePreview(filePath); }}
+              onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); client.client.openFilePreview(filePath); } }}
+            >{toolSummary(tool.name, tool.arg)}</span>
+          {:else}
+            <span class="tool-arg" title={tool.arg}>{toolSummary(tool.name, tool.arg)}</span>
+          {/if}
+        {/if}
+        {#if diffStats}
+          <span class="diff-chip add">+{diffStats.added}</span>
+          <span class="diff-chip del">−{diffStats.removed}</span>
+        {/if}
+        {#if tool.timing}
+          <span class="tool-timing" class:ok={tool.status === 'ok'} class:err={tool.status === 'error'}>{tool.timing}</span>
+        {/if}
+        <span class="status-badge" class:sb-run={tool.status === 'running'} class:sb-ok={tool.status === 'ok'} class:sb-err={tool.status === 'error'}>
+          {#if tool.status === 'running'}● 运行中{:else if tool.status === 'ok'}✓ 已成功{:else if tool.status === 'error'}✕ 失败{:else}{tool.status}{/if}
+        </span>
+        <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size="sm" />
       </button>
-    </div>
-    {#if kind === 'swarm'}
-      <SwarmCard {tool} />
-    {:else if prettyJson}
-      <!-- JSON 输出：pretty-print + 折叠提示 -->
-      <details class="json-output">
-        <summary>JSON 输出（点击折叠/展开）</summary>
-        <pre class="tool-output json-view"><code>{prettyJson}</code></pre>
-      </details>
-    {:else if kind === 'bash'}
-      <!-- Bash：终端块（$ 命令 + 输出） -->
-      <div class="term">
-        {#if bashCmd}<div class="term-cmd"><span class="term-prompt">$</span>{bashCmd}</div>{/if}
-        <div class="tool-output term-out">
-          {#each tool.output.slice(0, 200) as line, i (i)}
-            <div class="output-line">{line}</div>
-          {/each}
-          {#if tool.output.length > 200}
-            <div class="output-truncated">… {tool.output.length - 200} more lines</div>
+
+      {#if expanded && (argJson || (tool.output && tool.output.length > 0))}
+        <div class="tool-expand-area">
+          {#if argJson}
+            <div class="params-box">
+              <div class="params-label"><span>PARAMS</span><span class="params-fmt">JSON</span></div>
+              <JsonTreeCard data={argJson} label="params.json" />
+            </div>
+          {/if}
+          {#if tool.output && tool.output.length > 0}
+            <div class="tool-output-toolbar">
+              {#if kind === 'bash' && bashCmd}
+                <button class="tool-action-btn" onclick={copyCommand} type="button" title="复制命令">
+                  <Icon name="copy" size="sm" /> 复制命令
+                </button>
+              {/if}
+              <button class="tool-action-btn" onclick={copyOutput} type="button" title="复制输出">
+                <Icon name="copy" size="sm" /> 复制输出
+              </button>
+            </div>
+            {#if kind === 'swarm'}
+              <SwarmCard {tool} />
+            {:else if prettyJson}
+              <!-- JSON 输出：树状卡片（可切 Raw） -->
+              <div class="params-box">
+                <div class="params-label"><span>RESULT</span><span class="params-fmt">JSON</span></div>
+                <JsonTreeCard data={JSON.parse(tool.output?.join('\n') ?? 'null')} label="output.json" />
+              </div>
+            {:else if kind === 'bash'}
+              <!-- Bash：mac 三点终端卡 -->
+              <div class="term">
+                <div class="term-head">
+                  <span class="term-dot d-r"></span>
+                  <span class="term-dot d-y"></span>
+                  <span class="term-dot d-g"></span>
+                  <span class="term-title">Bash Terminal</span>
+                  <span class="term-spacer"></span>
+                  {#if bashCmd}
+                    <button class="term-copy" onclick={copyCommand} type="button" title="复制命令"><Icon name="copy" size="sm" /></button>
+                  {/if}
+                </div>
+                <div class="term-body">
+                  {#if bashCmd}<div class="term-cmd"><span class="term-prompt">$</span>{bashCmd}</div>{/if}
+                  <div class="tool-output term-out">
+                    {#each tool.output.slice(0, 200) as line, i (i)}
+                      <div class="output-line">{line}</div>
+                    {/each}
+                    {#if tool.output.length > 200}
+                      <div class="output-truncated">… {tool.output.length - 200} more lines</div>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+            {:else if kind === 'edit'}
+              <!-- 改动文件：带行号的 diff 视图 -->
+              <div class="tool-output diff-view">
+                {#each numberedLines.slice(0, 200) as line, i (i)}
+                  {#if line.meta}
+                    <div class="dline meta">{line.text}</div>
+                  {:else}
+                    <div class="dline" class:add={line.add} class:del={line.del}>
+                      <span class="dln">{line.n}</span><span class="dtx">{line.text}</span>
+                    </div>
+                  {/if}
+                {/each}
+                {#if tool.output.length > 200}
+                  <div class="output-truncated">… {tool.output.length - 200} more lines</div>
+                {/if}
+              </div>
+            {:else}
+              <div class="tool-output" class:ln-view={kind === 'read'}>
+                {#each tool.output.slice(0, 200) as line, i (i)}
+                  {#if kind === 'read'}
+                    <div class="dline"><span class="dln">{i + 1}</span><span class="dtx">{line}</span></div>
+                  {:else}
+                    <div class="output-line" class:add={line.startsWith('+') && !line.startsWith('+++')} class:del={line.startsWith('-') && !line.startsWith('---')}>
+                      {line}
+                    </div>
+                  {/if}
+                {/each}
+                {#if tool.output.length > 200}
+                  <div class="output-truncated">… {tool.output.length - 200} more lines</div>
+                {/if}
+              </div>
+            {/if}
           {/if}
         </div>
-      </div>
-    {:else if kind === 'edit'}
-      <!-- 改动文件：带行号的 diff 视图 -->
-      <div class="tool-output diff-view">
-        {#each numberedLines.slice(0, 200) as line, i (i)}
-          {#if line.meta}
-            <div class="dline meta">{line.text}</div>
-          {:else}
-            <div class="dline" class:add={line.add} class:del={line.del}>
-              <span class="dln">{line.n}</span><span class="dtx">{line.text}</span>
-            </div>
-          {/if}
-        {/each}
-        {#if tool.output.length > 200}
-          <div class="output-truncated">… {tool.output.length - 200} more lines</div>
-        {/if}
-      </div>
-    {:else}
-      <div class="tool-output" class:ln-view={kind === 'read'}>
-        {#each tool.output.slice(0, 200) as line, i (i)}
-          {#if kind === 'read'}
-            <div class="dline"><span class="dln">{i + 1}</span><span class="dtx">{line}</span></div>
-          {:else}
-            <div class="output-line" class:add={line.startsWith('+') && !line.startsWith('+++')} class:del={line.startsWith('-') && !line.startsWith('---')}>
-              {line}
-            </div>
-          {/if}
-        {/each}
-        {#if tool.output.length > 200}
-          <div class="output-truncated">… {tool.output.length - 200} more lines</div>
-        {/if}
-      </div>
-    {/if}
+      {/if}
     </div>
-  {/if}
+  </div>
 </div>
 
 <style>
   .tool-expand-area {
     animation: kimi-fade-in var(--duration-fast, 120ms) var(--ease-out, ease);
   }
-  .tool-card {
+  .tc-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
     margin: 6px 0;
+  }
+  /* 类型着色头像（generic=amber / mcp=purple / bash=slate / 其余=accent） */
+  .tc-avatar {
+    width: 30px; height: 30px;
+    flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--g-radius-control, 8px);
+    background: var(--warn-soft);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) color-mix(in srgb, var(--warn) 30%, transparent);
+    color: var(--warn);
+  }
+  .kind-mcp .tc-avatar {
+    background: var(--color-done-soft);
+    border-color: var(--color-done-bd, color-mix(in srgb, var(--color-done) 40%, transparent));
+    color: var(--color-done);
+  }
+  .kind-bash .tc-avatar {
+    background: var(--mat-control-bg, var(--l2));
+    border-color: var(--g-border-color, var(--bd2));
+    color: var(--tx2);
+  }
+  .kind-read .tc-avatar,
+  .kind-edit .tc-avatar,
+  .kind-swarm .tc-avatar {
+    background: var(--ac-soft);
+    border-color: var(--ac-bd);
+    color: var(--ac);
+  }
+
+  .tool-card {
+    flex: 1;
+    min-width: 0;
     border-radius: var(--g-radius-card, var(--r-lg));
     border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
     background: var(--mat-surface-2, var(--l2));
@@ -269,6 +348,10 @@
   }
   .tool-card:hover {
     border-color: var(--bd2);
+  }
+  /* MCP 紫卡 */
+  .kind-mcp.tool-card {
+    border-color: color-mix(in srgb, var(--color-done) 30%, transparent);
   }
 
   .tool-header {
@@ -291,11 +374,59 @@
 
   .tool-name {
     font-weight: var(--weight-semibold);
-    color: var(--tx);
+    color: var(--warn);
     flex: none;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .kind-mcp .tool-name { color: var(--color-done); }
+  .kind-bash .tool-name, .kind-read .tool-name, .kind-edit .tool-name, .kind-swarm .tool-name { color: var(--tx); }
+  .mono { font-family: var(--font-mono, monospace); }
+
+  .mcp-chip {
+    flex: none;
+    font-size: 9.5px;
+    padding: 1px 7px;
+    border-radius: var(--g-radius-chip, 999px);
+    background: var(--color-done-soft);
+    color: var(--color-done);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--color-done-bd, transparent);
   }
 
-  /* Status badge 已由 <Chip> 原语渲染（tone 映射 running/ok/error）。 */
+  /* 右对齐状态徽章（参考原型：✓ 已成功 / ● 运行中 / ✕ 失败） */
+  .status-badge {
+    margin-left: auto;
+    flex: none;
+    font-size: 9.5px;
+    padding: 1px 7px;
+    border-radius: var(--g-radius-chip, 999px);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) transparent;
+    white-space: nowrap;
+  }
+  .status-badge.sb-run { background: var(--ac-soft); color: var(--ac); border-color: var(--ac-bd); }
+  .status-badge.sb-ok { background: var(--ok-soft); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+  .status-badge.sb-err { background: var(--err-soft); color: var(--err); border-color: color-mix(in srgb, var(--err) 30%, transparent); }
+
+  /* Params / Result 树状盒 */
+  .params-box {
+    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    padding: 8px 10px;
+    background: var(--mat-surface-1, var(--l1));
+  }
+  .params-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    color: var(--tx3);
+    font-family: var(--font-mono, monospace);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .params-fmt { opacity: 0.7; }
 
   /* Output toolbar — copy buttons, floats above the output panel. */
   .tool-output-toolbar {
@@ -324,26 +455,6 @@
     color: var(--tx); border-color: var(--ac);
   }
 
-  /* JSON output pretty-print block. */
-  .json-output > summary {
-    cursor: pointer;
-    padding: 6px 12px;
-    font-size: 10.5px;
-    color: var(--tx3);
-    font-family: var(--font-mono, monospace);
-    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
-    background: var(--mat-surface-2, var(--l2));
-    user-select: none;
-  }
-  .json-output > summary:hover { color: var(--tx); }
-  .json-view {
-    margin: 0;
-    max-height: 280px;
-    background: var(--mat-surface-1, var(--l1));
-    white-space: pre-wrap;
-    word-break: break-all;
-    color: var(--tx);
-  }
   .tool-arg {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -364,7 +475,6 @@
     color: var(--ac-h);
   }
   .tool-timing {
-    margin-left: auto;
     flex: none;
     color: var(--tx3);
     font-size: 10.5px;
@@ -398,16 +508,45 @@
     line-height: 1.65;
   }
 
-  /* Bash 终端块 */
-  .term { border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); }
+  /* Bash mac 三点终端卡 */
+  .term {
+    border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-radius: 0 0 var(--g-radius-card, 4px) var(--g-radius-card, 4px);
+    overflow: hidden;
+  }
+  .term-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: var(--mat-surface-2, var(--l2));
+    border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    font-size: 10.5px;
+    color: var(--tx3);
+  }
+  .term-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .term-dot.d-r { background: var(--err); opacity: 0.8; }
+  .term-dot.d-y { background: var(--warn); opacity: 0.8; }
+  .term-dot.d-g { background: var(--ok); opacity: 0.8; }
+  .term-title { margin-left: 6px; font-weight: 600; color: var(--tx2); }
+  .term-spacer { flex: 1; }
+  .term-copy {
+    border: none;
+    background: transparent;
+    color: var(--tx3);
+    cursor: pointer;
+    display: inline-flex;
+    padding: 2px;
+    border-radius: var(--g-radius-control, 4px);
+  }
+  .term-copy:hover { color: var(--tx); background: var(--color-hover); }
   .term-cmd {
     display: flex; align-items: center; gap: 7px;
     padding: 7px 12px;
     background: var(--mat-surface-1, var(--l1));
-    border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
     font-family: var(--font-mono); font-size: 11px; color: var(--tx);
   }
-  .term-prompt { color: var(--ac); font-weight: 700; }
+  .term-prompt { color: var(--ok); font-weight: 700; }
   .term-out { border-top: none; }
 
   /* diff / 行号视图 */
