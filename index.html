@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kimi Code Desktop — Tauri 桌面客户端</title>
+  <meta name="description" content="Kimi Code Desktop：基于 Tauri 2 + Svelte 5 + Rust 的 Kimi Code 桌面客户端。类型化聊天卡片、插件市场、智能体档案、会话定时任务与诊断包导出。" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚡</text></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="#top"><span class="brand-mark">K</span><span>Kimi Code <em>Desktop</em></span></a>
+      <div class="nav-links">
+        <a href="#features">特性</a>
+        <a href="#diff">与上游差异</a>
+        <a href="#quickstart">快速开始</a>
+        <a class="nav-gh" href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <p class="hero-badge">Tauri 2 · Svelte 5 · Rust</p>
+      <h1>Kimi Code 的<br /><span class="grad">原生桌面形态</span></h1>
+      <p class="hero-sub">
+        一个独立于 Electron 的桌面客户端：直连同一 daemon，类型化聊天渲染、插件市场、
+        智能体档案、会话定时任务与一键诊断包导出，全部开箱即用。
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://github.com/d2rabbit/kimi-code/releases" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V1.75A.75.75 0 0 1 8 1ZM2.5 12a.75.75 0 0 1 .75.75v.5c0 .138.112.25.25.25h9a.25.25 0 0 0 .25-.25v-.5a.75.75 0 0 1 1.5 0v.5A1.75 1.75 0 0 1 12.5 15h-9a1.75 1.75 0 0 1-1.75-1.75v-.5A.75.75 0 0 1 2.5 12Z"/></svg>
+          下载（Releases）
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          GitHub 仓库
+        </a>
+      </div>
+      <div class="hero-platforms">
+        <span>macOS</span><i>·</i><span>Linux</span><i>·</i><span>Windows</span>
+      </div>
+
+      <!-- 纯 CSS 装饰性界面预览（非截图） -->
+      <div class="mock" aria-hidden="true">
+        <div class="mock-bar"><i></i><i></i><i></i><span class="mock-title">Kimi Code Desktop</span></div>
+        <div class="mock-body">
+          <div class="mock-msg user">帮我审查最近的代码变更</div>
+          <div class="mock-card think"><span class="tag">THINK</span><div class="lines"><b></b><b></b><b class="w60"></b></div></div>
+          <div class="mock-card tool"><span class="tag tool-tag">TOOL</span><code>rg -n "exportSession" src/</code><em>✓ 3 matches</em></div>
+          <div class="mock-msg agent">审查完成：改动集中在导出通路，建议补充一条冒烟测试…</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section" id="features">
+      <h2 class="section-title">特性</h2>
+      <p class="section-sub">从渲染层到系统层，围绕桌面体验重做了一遍。</p>
+      <div class="grid">
+        <article class="card">
+          <div class="card-icon">💬</div>
+          <h3>类型化聊天卡片</h3>
+          <p>思考、工具调用、MCP、JSON、终端、审批、提问——每种内容都有专属的渲染身份与交互，不再挤在同一副面孔里。</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">🧩</div>
+          <h3>插件市场</h3>
+          <p>服务端代理注册表 + 「发现」页浏览安装；版本更新一次性提醒，计费插件安装时给出配额提示。</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">🪪</div>
+          <h3>智能体档案目录</h3>
+          <p>实时档案目录展示可用智能体，内置 delegate 委派入口，子智能体任务一目了然。</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">⏰</div>
+          <h3>会话定时任务</h3>
+          <p>cron 管理 REST 接口 + 设置面板，让会话按节奏自动运转。</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">📦</div>
+          <h3>诊断包导出</h3>
+          <p>会话头部一键导出诊断归档，服务端自动打包桌面端日志（脱敏、限量、滚动），排障不再靠猜。</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">🎨</div>
+          <h3>七套主题</h3>
+          <p>dark / light / clay / neon / glass / aqua / system，同一套设计变量驱动，切换无闪烁。</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">🪟</div>
+          <h3>原生窗口体验</h3>
+          <p>窗口控制按钮遵循各操作系统惯例，标题栏、徽章计数等细节按平台适配。</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">🔒</div>
+          <h3>私有内嵌守护进程</h3>
+          <p>应用自带 daemon：隔离的 KIMI_CODE_HOME、随机回环端口，随应用启动、随应用退出，绝不串扰共享实例。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="diff">
+      <h2 class="section-title">与上游的差异</h2>
+      <p class="section-sub">本仓库是 kimi-code 的 fork，在跟踪上游 main 的同时，沉淀了以下增量能力。</p>
+      <div class="diff-list">
+        <div class="diff-item"><span class="diff-tag">客户端</span><p>全新 Tauri 2 + Svelte 5 桌面客户端，与 Electron 包装版平行，直连同一 daemon（REST + WebSocket）</p></div>
+        <div class="diff-item"><span class="diff-tag">渲染</span><p>聊天卡片身份体系重做：think / tool / mcp / json / terminal / approval / question 分类渲染</p></div>
+        <div class="diff-item"><span class="diff-tag">服务端</span><p>插件市场注册表服务端代理 + 管理 REST；智能体档案只读目录接口；会话 cron 管理接口</p></div>
+        <div class="diff-item"><span class="diff-tag">诊断</span><p>会话导出打通桌面端日志：渲染进程日志脱敏落盘，导出时由服务端打包</p></div>
+        <div class="diff-item"><span class="diff-tag">同步</span><p>持续合并上游 main（引擎重构、WS 即时冲刷、遥测、secondary_model 配置等）并保持客户端对齐</p></div>
+      </div>
+    </section>
+
+    <section class="section" id="quickstart">
+      <h2 class="section-title">快速开始</h2>
+      <p class="section-sub">需要 Node ≥ 24.15、pnpm 10.33 与 Rust 工具链。</p>
+      <div class="code-block">
+        <button class="copy-btn" data-copy aria-label="复制">复制</button>
+        <pre><code>git clone https://github.com/d2rabbit/kimi-code.git
+cd kimi-code
+pnpm install
+pnpm --filter @moonshot-ai/kimi-desktop-tauri run tauri:dev</code></pre>
+      </div>
+      <p class="hint">打包发行版：<code>pnpm --filter @moonshot-ai/kimi-desktop-tauri run tauri:build</code></p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Kimi Code Desktop — Tauri 2 · Svelte 5 · Rust · 与 kimi-code daemon 同源</p>
+    <p class="footer-links">
+      <a href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">仓库</a>
+      <a href="https://github.com/d2rabbit/kimi-code/issues" target="_blank" rel="noopener">Issues</a>
+      <a href="https://github.com/d2rabbit/kimi-code/releases" target="_blank" rel="noopener">Releases</a>
+    </p>
+    <p class="footer-copy">© <span id="year">2026</span> d2rabbit/kimi-code contributors</p>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
