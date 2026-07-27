@@ -262,7 +262,7 @@
           {:else if turn.role === 'compaction'}
             <div class="compact">对话已压缩</div>
           {:else}
-            <!-- Agent：左侧纯文本（无气泡壳）+ 下方工具卡 -->
+            <!-- Agent：左侧气泡（QQ 聊天式，与用户气泡镜像）+ 下方工具卡 -->
             <div class="msg agent">
               <span class="avatar a">K</span>
               <div class="a-col">
@@ -274,7 +274,9 @@
                         streaming={running && turn === client.turns().at(-1)}
                       />
                     {:else if item.kind === 'text'}
-                      <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn === client.turns().at(-1)} /></div>
+                      <div class="bubble a-bub">
+                        <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn === client.turns().at(-1)} /></div>
+                      </div>
                     {/if}
                   {/each}
                 </div>
@@ -427,7 +429,18 @@
     box-shadow: var(--elev-bubble, none);
   }
   .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-  .a-text { max-width: 100%; padding: 2px 0; }
+  .a-text { display: flex; flex-direction: column; gap: 8px; max-width: 100%; }
+  /* Agent 气泡：与用户气泡镜像（surface-2 底 + 左下圆角尾），QQ 双列感 */
+  .a-bub {
+    max-width: 92%;
+    background: var(--mat-bubble-agent-bg, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    color: var(--tx);
+    border-radius: var(--g-radius-bubble-agent, 14px 14px 14px 4px);
+    box-shadow: var(--elev-bubble, none);
+  }
   .imgs { display: flex; gap: 4px; margin-bottom: 4px; }
   .imgs img { max-width: 100px; border-radius: 6px; }
   .u-text { word-break: break-word; }
@@ -443,58 +456,77 @@
      气泡内的 markdown 渲染不再引用页面层 token（--l1/--l3/--bd/--ac），
      一律以气泡自身墨色（currentColor）的透明度梯度派生表面与线条，
      使文字/代码/链接/引用/表格在全部 7 套主题下都与气泡浑然一体。 */
-  .u-text :global(.md-body) { color: inherit; }
+  .u-text :global(.md-body),
+  .ai-text :global(.md-body) { color: inherit; }
 
   /* 行内代码：气泡墨色的轻染，而非异色小药丸 */
-  .u-text :global(.md-body :not(pre) > code) {
+  .u-text :global(.md-body :not(pre) > code),
+  .ai-text :global(.md-body :not(pre) > code) {
     background: color-mix(in srgb, currentColor 10%, transparent);
     border: none;
     color: inherit;
   }
 
   /* 链接：同色加粗 + 半透明下划线（聊天气泡惯例） */
-  .u-text :global(.md-body a) {
+  .u-text :global(.md-body a),
+  .ai-text :global(.md-body a) {
     color: inherit;
     font-weight: 500;
     text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
   }
 
   /* 代码块：去卡片化——整块的淡墨染 + 细发丝线，头部不再另起一层 */
-  .u-text :global(.md-body .cb-wrap) {
+  .u-text :global(.md-body .cb-wrap),
+  .ai-text :global(.md-body .cb-wrap) {
     background: color-mix(in srgb, currentColor 6%, transparent);
     border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
     border-radius: 10px;
   }
-  .u-text :global(.md-body .cb-head) {
+  .u-text :global(.md-body .cb-head),
+  .ai-text :global(.md-body .cb-head) {
     border-bottom-color: color-mix(in srgb, currentColor 10%, transparent);
     color: color-mix(in srgb, currentColor 55%, transparent);
   }
   .u-text :global(.md-body .cb-copy),
-  .u-text :global(.md-body .cb-preview) {
+  .ai-text :global(.md-body .cb-copy),
+  .u-text :global(.md-body .cb-preview),
+  .ai-text :global(.md-body .cb-preview) {
     color: color-mix(in srgb, currentColor 55%, transparent);
   }
   .u-text :global(.md-body .cb-copy:hover),
-  .u-text :global(.md-body .cb-preview:hover) { color: inherit; }
+  .ai-text :global(.md-body .cb-copy:hover),
+  .u-text :global(.md-body .cb-preview:hover),
+  .ai-text :global(.md-body .cb-preview:hover) { color: inherit; }
   /* shiki 主题的内联底色必须让位于气泡 */
-  .u-text :global(.md-body pre.shiki) {
+  .u-text :global(.md-body pre.shiki),
+  .ai-text :global(.md-body pre.shiki) {
     background: transparent !important;
     border: none;
     margin: 0;
   }
 
   /* 引用块：左侧竖线与文字同样取自气泡墨色 */
-  .u-text :global(.md-body blockquote) {
+  .u-text :global(.md-body blockquote),
+  .ai-text :global(.md-body blockquote) {
     border-left-color: color-mix(in srgb, currentColor 30%, transparent);
     color: color-mix(in srgb, currentColor 80%, transparent);
   }
 
   /* 表格与分隔线 */
   .u-text :global(.md-body th),
-  .u-text :global(.md-body td) { border-color: color-mix(in srgb, currentColor 18%, transparent); }
-  .u-text :global(.md-body hr) { border-top-color: color-mix(in srgb, currentColor 15%, transparent); }
+  .ai-text :global(.md-body th),
+  .u-text :global(.md-body td),
+  .ai-text :global(.md-body td) { border-color: color-mix(in srgb, currentColor 18%, transparent); }
+  .u-text :global(.md-body hr),
+  .ai-text :global(.md-body hr) { border-top-color: color-mix(in srgb, currentColor 15%, transparent); }
 
   .ai-text { color: var(--tx); line-height: 1.65; }
-  .ai-text + .ai-text { margin-top: 6px; }
+  /* Agent 气泡内的 markdown 节奏：比用户气泡略松，仍保持气泡紧凑感 */
+  .ai-text :global(.md-body p:last-child) { margin-bottom: 0; }
+  .ai-text :global(.md-body p) { margin: 0 0 8px; }
+  .ai-text :global(.md-body ul),
+  .ai-text :global(.md-body ol) { margin: 0 0 8px; }
+  .ai-text :global(.md-body .cb-wrap) { margin: 0 0 8px; }
 
   .tg-toggle {
     display: flex; align-items: center; gap: 5px;
