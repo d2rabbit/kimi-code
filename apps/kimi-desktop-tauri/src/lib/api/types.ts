@@ -966,6 +966,11 @@ export interface KimiWebApi {
   guiStoreSetItem(key: string, value: string): Promise<void>;
   guiStoreRemoveItem(key: string): Promise<void>;
 
-  // Session export — POST /sessions/{id}/export (diagnostic archive download)
-  exportSession(sessionId: string, webLog?: string): Promise<Blob>;
+  // Session export — POST /sessions/{id}/export (diagnostic archive download).
+  // `webLog` uploads a client log for bundling; `desktop` asks the server to
+  // bundle the on-disk desktop app log (read server-side, skipped if missing).
+  exportSession(
+    sessionId: string,
+    options?: { webLog?: string; desktop?: boolean },
+  ): Promise<Blob>;
 }

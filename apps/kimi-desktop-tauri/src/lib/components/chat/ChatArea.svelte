@@ -12,6 +12,7 @@
   import GoalStrip from './GoalStrip.svelte';
   import ConversationToc, { type TocItem } from './ConversationToc.svelte';
   import { tryDispatchSlash } from '../../lib/dispatchSlash';
+  import { toast } from '../../stores/toast.svelte';
   import type { ToolCall, TurnBlock } from '../../types';
   import { getKimiWebApi } from '../../api';
   import type { AppSessionWarning } from '../../api/types';
@@ -159,6 +160,35 @@
   }
   async function abort() { await client.client.abortCurrentPrompt(); }
 
+  // Export the session diagnostic archive (POST /sessions/{id}/export). As a
+  // desktop host we pass `desktop: true` so the server bundles the on-disk
+  // desktop app log (`<home>/logs/kimi-code-desktop.log`, skipped if missing).
+  let exporting = $state(false);
+  async function exportDiagnostics() {
+    const id = client.activeSessionId();
+    if (!id || exporting) return;
+    exporting = true;
+    try {
+      const blob = await client.client.exportSession(id, { desktop: true });
+      const url = URL.createObjectURL(blob);
+      try {
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${id}.zip`;
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      }
+      toast.ok('已导出会话诊断包');
+    } catch (e) {
+      toast.err(`导出失败：${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      exporting = false;
+    }
+  }
+
   const running = $derived(client.activity() === 'running');
   const approval = $derived(client.pendingApprovals()[0]);
   const question = $derived(client.questions()[0]);
@@ -184,6 +214,7 @@
     {#if running}<span class="chip-run"><span class="dot-run"></span>运行中</span>{/if}
     <div class="hdr-actions">
       {#if running}<button class="stop-btn" onclick={abort}>停止</button>{/if}
+      {#if client.activeSession()}<IconButton name="download" label="导出诊断包" size="sm" disabled={exporting} onclick={exportDiagnostics} />{/if}
       {#if client.activeSession()}<IconButton name="close" label="归档" size="sm" onclick={() => client.client.archiveSession(client.activeSessionId())} />{/if}
     </div>
   </header>

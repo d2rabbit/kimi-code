@@ -41,6 +41,8 @@ export const STORAGE_KEYS = {
   openInLastTarget: 'kimi-web.open-in.last-target',
   sidebarCollapsed: 'kimi-web.sidebar-collapsed',
   sidebarWidth: 'kimi-web.sidebar-width',
+  // pluginUpdates — last notified marketplace version per plugin id
+  pluginUpdateNotices: 'kimi-desktop.plugin-update-notices',
   // deprecated cleanups (kept so the removals still fire for old users)
   codeFont: 'kimi-web.code-font',
   contentAlign: 'kimi-web.content-align',

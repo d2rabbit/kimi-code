@@ -10,6 +10,7 @@
   import Icon from '../ui/Icon.svelte';
   import Spinner from '../ui/Spinner.svelte';
   import { toast } from '../../stores/toast.svelte';
+  import { noteQuotaConsumingPlugin } from '../../lib/pluginUpdates';
 
   let source = $state('');
   let entries = $state<AppMarketplaceEntry[]>([]);
@@ -52,6 +53,7 @@
     try {
       await getKimiWebApi().installPlugin(entry.source);
       toast.ok(`已安装 ${entry.displayName}`);
+      noteQuotaConsumingPlugin(entry);
       await load();
     } catch (e) {
       toast.err(`安装失败：${e instanceof Error ? e.message : String(e)}`);

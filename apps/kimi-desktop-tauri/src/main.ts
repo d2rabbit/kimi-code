@@ -9,6 +9,12 @@ import '@fontsource-variable/inter';
 import '@fontsource-variable/jetbrains-mono';
 import './lib/styles/global.css';
 import App from './App.svelte';
+import { initDesktopLog } from './lib/lib/desktopLog';
+
+// Renderer log tee → <agent home>/logs/kimi-code-desktop.log, so the daemon's
+// session export (`desktop: true`) has a desktop app log to bundle. Install
+// before mounting so early warnings are captured. No-op outside Tauri.
+initDesktopLog();
 
 // Apply the persisted color scheme before mounting the app to avoid a flash.
 // Default to dark if no preference is stored. All 7 themes are recognized.

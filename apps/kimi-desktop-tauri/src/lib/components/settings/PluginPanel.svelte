@@ -1,9 +1,12 @@
 <!-- PluginPanel.svelte — 插件管理面板.
-     Scans ~/.kimi-code/plugins/installed.json + manifests via Tauri FS commands.
-     Shows installed plugins with name, source, trust level, version, description.
-     In browser mode, reads from the daemon's config endpoint as a fallback. -->
+     列表：Tauri 模式经 Rust 读取 daemon 注册表（agent home 的 installed.json +
+     manifest 富化元数据）；浏览器模式退化为 daemon REST /plugins（元数据略少）。
+     变更（安装/启用/禁用/卸载）：一律走 daemon REST（POST /plugins:install、
+     POST /plugins/{id}:toggle、DELETE /plugins/{id}），与 MarketplacePanel 一致——
+     此前的 `kimi plugin` CLI 调用指向一个不存在的子命令，卸载必然报错。 -->
 <script lang="ts">
   import { invoke as tauriInvoke } from '@tauri-apps/api/core';
+  import { getKimiWebApi } from '../../api';
   import Icon from '../ui/Icon.svelte';
   import Button from '../ui/Button.svelte';
   import Card from '../ui/Card.svelte';
@@ -104,18 +107,24 @@
       if (isTauri) {
         plugins = await tauriInvoke<PluginInfo[]>('list_installed_plugins');
       } else {
-        // Browser fallback: fetch installed.json via daemon fs or direct fetch.
-        // Since daemon has no plugin endpoint, we try reading the file via the
-        // kimi home path + a direct fetch through the Vite proxy.
-        const res = await fetch('/api/v1/gui/store/getItem?key=__kimi_plugins_cache__');
-        if (res.ok) {
-          const data = await res.json();
-          plugins = data?.data ?? [];
-        }
-        // If no cache, show empty state.
-        if (!plugins.length) {
-          plugins = [];
-        }
+        // Browser mode: the daemon REST list carries no description/developer/
+        // installedAt metadata — degrade those fields to empty.
+        const list = await getKimiWebApi().listPlugins();
+        plugins = list.map((p) => ({
+          id: p.id,
+          root: '',
+          source: p.source,
+          enabled: p.enabled,
+          installedAt: '',
+          originalSource: p.originalSource ?? '',
+          displayName: p.displayName,
+          version: p.version ?? 'unknown',
+          description: '',
+          developer: '',
+          hasMcp: p.mcpServerCount > 0,
+          skillCount: p.skillCount,
+          commandCount: p.commandCount,
+        }));
       }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
@@ -159,8 +168,9 @@
     }
   }
 
-  // Install/Uninstall via Rust commands (no shell sidecar — avoids the
-  // plugin:shell|execute ACL gate).
+  // Install/Uninstall/Toggle via the daemon REST API — the same surface the
+  // MarketplacePanel uses (POST /plugins:install accepts GitHub URL / zip URL
+  // / local path; DELETE /plugins/{id}; POST /plugins/{id}:toggle).
   let showInstallForm = $state(false);
   let installSource = $state('');
   let installing = $state(false);
@@ -171,10 +181,8 @@
     installing = true;
     installMsg = null;
     try {
-      // Use the Rust install_plugin_from_local command — accepts zip path,
-      // directory, or URL (the kimi CLI handles all three).
-      const out = await tauriInvoke<string>('install_plugin_from_local', { localPath: installSource.trim() });
-      installMsg = `安装成功${out ? `：${out.split('\n')[0]}` : ''}`;
+      const p = await getKimiWebApi().installPlugin(installSource.trim());
+      installMsg = `安装成功：${p.displayName}${p.version ? ` v${p.version}` : ''}`;
       showInstallForm = false;
       installSource = '';
       await loadPlugins();
@@ -187,11 +195,8 @@
   }
 
   // Local zip install: opens a native file dialog via a hidden <input
-  // type="file"> (Tauri routes these to the OS picker), then pipes the
-  // chosen file path to the Rust install_plugin_from_local command. We
-  // can't use tauri-plugin-dialog because it's not in our dep set, but
-  // the HTML file input works in the Tauri webview and gives us the
-  // absolute path through webkitRelativePath / Tauri's path conversion.
+  // type="file"> (Tauri routes these to the OS picker), then passes the
+  // chosen absolute path to the daemon's install endpoint.
   let zipInputEl: HTMLInputElement | null = $state(null);
 
   async function installFromZip() {
@@ -208,8 +213,8 @@
     installing = true;
     installMsg = `正在从 ${file.name} 安装…`;
     try {
-      const out = await tauriInvoke<string>('install_plugin_from_local', { localPath });
-      installMsg = `安装成功${out ? `：${out.split('\n')[0]}` : ''}`;
+      await getKimiWebApi().installPlugin(localPath);
+      installMsg = '安装成功';
       await loadPlugins();
       toast.ok('插件已安装');
     } catch (e) {
@@ -224,13 +229,13 @@
   async function uninstallPlugin(pluginId: string, displayName: string) {
     if (!confirm(`确认卸载插件 ${displayName}?`)) return;
     try {
-      // Spawn kimi CLI directly through Rust (no shell sidecar, no ACL).
-      // This uses install_plugin_from_local with a sentinel — the Rust
-      // handler routes uninstall via the same kimi binary, just a different
-      // argv. Cleaner: a dedicated uninstall command, but this avoids
-      // adding one more Tauri command for now.
-      const out = await tauriInvoke<string>('install_plugin_from_local', { localPath: `uninstall:${pluginId}` });
-      void out;
+      // DELETE /plugins/{id} answers { removed: false } (not an error
+      // envelope) when the plugin isn't installed — surface that explicitly.
+      const { removed } = await getKimiWebApi().removePlugin(pluginId);
+      if (!removed) {
+        error = `卸载失败：插件 ${displayName} 不存在或已被移除`;
+        return;
+      }
       await loadPlugins();
       toast.ok(`已卸载 ${displayName}`);
     } catch (e) {
@@ -240,12 +245,7 @@
 
   async function togglePlugin(pluginId: string, currentEnabled: boolean) {
     try {
-      // Direct filesystem write via the Rust `toggle_plugin` command.
-      // Avoids the previous Command.sidecar('kimi', ['plugin', ...]) flow
-      // which required the shell:allow-execute ACL and failed with
-      // "Command plugin:shell|execute not allowed by ACL".
-      const { invoke } = await import('@tauri-apps/api/core');
-      await invoke('toggle_plugin', { pluginId, enabled: !currentEnabled });
+      await getKimiWebApi().togglePlugin(pluginId, !currentEnabled);
       await loadPlugins();
     } catch (e) {
       error = `操作失败: ${e instanceof Error ? e.message : String(e)}`;
@@ -275,8 +275,8 @@
       <Button size="sm" icon="refresh" onclick={loadPlugins} disabled={loading}>刷新</Button>
       {#if isTauri}
         <Button size="sm" icon="download" onclick={installFromZip} disabled={installing}>本地安装</Button>
-        <Button size="sm" variant="primary" icon="plus" onclick={() => showInstallForm = !showInstallForm}>URL/GitHub</Button>
       {/if}
+      <Button size="sm" variant="primary" icon="plus" onclick={() => showInstallForm = !showInstallForm}>URL/GitHub</Button>
     </div>
   </div>
 
@@ -315,10 +315,10 @@
     <div class="plugin-empty">
       <Icon name="plugin" size="lg" />
       <h4>暂无已安装插件</h4>
-      <p>通过 CLI 安装插件：<code>kimi plugin install &lt;github-repo&gt;</code></p>
-      <p>或从官方市场安装：<code>kimi plugin install &lt;name&gt;</code></p>
+      <p>用上方「URL/GitHub」或「本地安装」按钮安装插件</p>
+      <p>或到「发现」页从官方市场浏览安装</p>
       {#if !isTauri}
-        <p class="browser-hint"><Icon name="information" size="sm" /> 浏览器模式仅显示缓存数据。请使用桌面应用获取完整插件列表。</p>
+        <p class="browser-hint"><Icon name="information" size="sm" /> 浏览器模式的插件元数据（描述/开发者）较桌面应用少。</p>
       {/if}
     </div>
   {:else}
@@ -402,7 +402,7 @@
                         源
                       </a>
                     {/if}
-                    {#if isTauri && !isPlaceholder}
+                    {#if !plugin.id.startsWith('__builtin_')}
                       <Button size="sm" onclick={() => togglePlugin(plugin.id, plugin.enabled)}>
                         {plugin.enabled ? '禁用' : '启用'}
                       </Button>
@@ -423,7 +423,7 @@
 
   <div class="plugin-help">
     <Icon name="information" size="sm" />
-    <span>插件通过 CLI 命令 <code>kimi plugin install/uninstall</code> 管理。插件目录：<code>~/.kimi-code/plugins/</code></span>
+    <span>插件的安装、启用/禁用与卸载均通过内嵌 daemon 的 REST 接口完成，注册表位于桌面端私有 home 的 <code>plugins/installed.json</code>。</span>
   </div>
 </div>
 
@@ -471,7 +471,6 @@
     font-size: var(--text-sm, 13px);
     margin: 0;
   }
-  .plugin-empty code,
   .plugin-help code {
     font-family: var(--font-mono, monospace);
     font-size: 11px;

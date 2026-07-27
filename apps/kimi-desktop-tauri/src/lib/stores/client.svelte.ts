@@ -31,6 +31,7 @@ import {
   type KimiClientState,
 } from '../api/daemon/eventReducer';
 import { messagesToTurns } from '../lib/messagesToTurns';
+import { notifyPluginUpdatesOnce } from '../lib/pluginUpdates';
 import type { ChatTurn } from '../types';
 import { setDaemonOrigin } from '../api/config';
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
@@ -373,6 +374,10 @@ async function load(): Promise<void> {
     if ('__TAURI_INTERNALS__' in globalThis) {
       connectEvents();
     }
+
+    // One-time-per-version plugin update notice (fire-and-forget; see
+    // lib/pluginUpdates.ts — mirrors the CLI's plugin-update-notifier).
+    void notifyPluginUpdatesOnce();
 
     ui.initialized = true;
   } finally {
@@ -1655,6 +1660,7 @@ export const client = {
   /** Replace an existing provider (PUT /providers/{id}). */
   replaceProvider: (id: string, input: { newId?: string; type: string; apiKey?: string; baseUrl?: string; defaultModel?: string }) =>
     getApi().replaceProvider(id, input),
-  /** Export a session diagnostic archive (POST /sessions/{id}/export → tar.gz Blob). */
-  exportSession: (sessionId: string, webLog?: string) => getApi().exportSession(sessionId, webLog),
+  /** Export a session diagnostic archive (POST /sessions/{id}/export → zip Blob). */
+  exportSession: (sessionId: string, options?: { webLog?: string; desktop?: boolean }) =>
+    getApi().exportSession(sessionId, options),
 };

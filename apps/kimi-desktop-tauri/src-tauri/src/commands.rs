@@ -72,6 +72,52 @@ pub fn get_server_log_path() -> String {
         .into_owned()
 }
 
+// ---- Desktop renderer log --------------------------------------------------
+// Appended to <agent home>/logs/kimi-code-desktop.log — the exact path the
+// daemon's session export reads when the client passes `desktop: true`
+// (packages/agent-core-v2/src/app/sessionExport/sessionExportService.ts).
+
+/// On-disk filename of the desktop app log bundled into session exports.
+const DESKTOP_LOG_FILE: &str = "kimi-code-desktop.log";
+/// Rotate once the log grows past this size; one previous generation is kept.
+const DESKTOP_LOG_MAX_BYTES: u64 = 4 * 1024 * 1024;
+
+/// Resolve the desktop app log path (<agent home>/logs/kimi-code-desktop.log).
+pub fn desktop_log_path() -> PathBuf {
+    agent_home().join("logs").join(DESKTOP_LOG_FILE)
+}
+
+/// Append renderer log lines to the desktop app log. Each entry becomes exactly
+/// one line (embedded newlines are flattened so a crafted message cannot forge
+/// log entries). Best-effort diagnostics — the frontend swallows failures.
+#[tauri::command]
+pub fn append_desktop_log(lines: Vec<String>) -> Result<(), String> {
+    if lines.is_empty() {
+        return Ok(());
+    }
+    let path = desktop_log_path();
+    let dir = path.parent().ok_or("desktop log path has no parent")?;
+    fs::create_dir_all(dir).map_err(|e| format!("create desktop log dir: {e}"))?;
+    if let Ok(meta) = fs::metadata(&path) {
+        if meta.len() > DESKTOP_LOG_MAX_BYTES {
+            let _ = fs::rename(&path, dir.join(format!("{DESKTOP_LOG_FILE}.1")));
+        }
+    }
+    use std::io::Write as _;
+    let mut f = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .map_err(|e| format!("open desktop log: {e}"))?;
+    let mut out = String::new();
+    for line in &lines {
+        out.push_str(&line.replace(['\r', '\n'], " "));
+        out.push('\n');
+    }
+    f.write_all(out.as_bytes())
+        .map_err(|e| format!("write desktop log: {e}"))
+}
+
 // ---- Git helpers (branch list / checkout, driven by the GitTree panel) ----
 
 /// Run `git` in `cwd` and return stdout on success.
@@ -347,11 +393,11 @@ fn count_subdir_entries(root: &str, subdir: &str) -> u32 {
 
 /// Read and parse the installed plugins registry + manifests.
 ///
-/// Plugin install / enable / disable / remove all go through the `kimi` CLI
-/// sidecar, which writes to the SHARED home (`~/.kimi-code/plugins/`). The
-/// list must read from the same place the sidecar writes, otherwise the GUI
-/// would show a different set than what `kimi plugin list` reports. Fall back
-/// to the embedded agent's home for any plugin seeded there directly.
+/// Plugin install / enable / disable / remove all go through the daemon REST
+/// API (`/plugins*`), and the embedded daemon's registry lives under the
+/// AGENT home (`~/.kimi-code/desktop/plugins/`) — so the list must read from
+/// there to show the same set the daemon reports. The shared CLI home is only
+/// a fallback for plugins seeded there before the agent home existed.
 #[tauri::command]
 pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
     let shared_plugins_dir = kimi_home().join("plugins");
@@ -359,13 +405,14 @@ pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
     let desktop_plugins_dir = agent_home().join("plugins");
     let desktop_installed = desktop_plugins_dir.join("installed.json");
 
-    // Prefer the shared registry (where the sidecar writes). Fall back to the
-    // embedded agent home, then to an empty list — never hard-error so the
-    // panel can render an "no plugins installed" state instead of a crash.
-    let installed_path = if shared_installed.exists() {
-        shared_installed
-    } else if desktop_installed.exists() {
+    // Prefer the agent-home registry (where the daemon REST API writes).
+    // Fall back to the shared CLI home, then to an empty list — never
+    // hard-error so the panel can render a "no plugins installed" state
+    // instead of a crash.
+    let installed_path = if desktop_installed.exists() {
         desktop_installed
+    } else if shared_installed.exists() {
+        shared_installed
     } else {
         return Ok(Vec::new());
     };
@@ -470,81 +517,6 @@ pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
 // ---------------------------------------------------------------------------
 // Dock badge / taskbar overlay (unread session count)
 // ---------------------------------------------------------------------------
-
-/// Install a plugin from a local zip file or directory path, OR uninstall
-/// an existing plugin. Spawns the `kimi plugin` CLI as a child process
-/// (NOT via the webview shell plugin — that path is blocked by ACL). The
-/// CLI handles unzipping, manifest parsing, and writing to
-/// ~/.kimi-code/plugins/installed.json.
-///
-/// `local_path` can be:
-///   - an absolute path to a .zip file
-///   - an absolute path to an unpacked plugin directory
-///   - a GitHub URL (the CLI supports it natively)
-///   - the sentinel `uninstall:<plugin-id>` to remove a plugin
-///
-/// Returns the combined stdout of the command (useful for surfacing
-/// 'installed foo@1.0.0' / 'removed foo' style summaries in the toast).
-#[tauri::command]
-pub async fn install_plugin_from_local(local_path: String) -> Result<String, String> {
-    let trimmed = local_path.trim();
-    if trimmed.is_empty() {
-        return Err("local plugin path is required".to_string());
-    }
-    let kimi_bin = resolve_kimi_cli()
-        .map_err(|e| format!("Cannot locate kimi CLI: {e}"))?;
-
-    // Route uninstall sentinel through the same plumbing.
-    let (sub, arg) = if let Some(id) = trimmed.strip_prefix("uninstall:") {
-        ("remove", id.to_string())
-    } else {
-        ("install", trimmed.to_string())
-    };
-
-    let output = tokio::process::Command::new(&kimi_bin)
-        .arg("plugin")
-        .arg(sub)
-        .arg(&arg)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .output()
-        .await
-        .map_err(|e| format!("Failed to spawn kimi plugin {sub}: {e}"))?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        return Err(if stderr.is_empty() { stdout } else { stderr });
-    }
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-}
-
-/// Resolve the kimi CLI binary path. Tries (in order):
-///   1. `apps/kimi-code/dist-native/intermediates/bin/kimi` (dev build)
-///   2. `kimi` on PATH (packaged / user-installed)
-fn resolve_kimi_cli() -> Result<std::path::PathBuf, String> {
-    let is_dev = cfg!(debug_assertions)
-        || std::env::var("KIMI_DESKTOP_DEV").as_deref() == Ok("1");
-    if is_dev {
-        let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let apps_dir = manifest_dir
-            .ancestors()
-            .nth(2)
-            .ok_or("Cannot determine apps directory")?;
-        let dev_bin = apps_dir
-            .join("kimi-code")
-            .join("dist-native")
-            .join("intermediates")
-            .join("bin")
-            .join(if cfg!(windows) { "kimi.exe" } else { "kimi" });
-        if dev_bin.exists() {
-            return Ok(dev_bin);
-        }
-    }
-    // PATH fallback
-    let bin_name = if cfg!(windows) { "kimi.exe" } else { "kimi" };
-    which::which(bin_name).map_err(|e| format!("`{bin_name}` not on PATH: {e}"))
-}
 
 /// Resolve the codegraph CLI binary. Priority:
 ///   1. Bundled codegraph at <resource_dir>/codegraph/bin/codegraph
@@ -661,57 +633,6 @@ pub async fn update_codegraph_index(cwd: String) -> Result<String, String> {
         subcmd,
         project_path.display()
     ))
-}
-
-/// Enable or disable an installed plugin by flipping the `enabled` field in
-/// `~/.kimi-code/plugins/installed.json`. This replaces the previous
-/// `Command.sidecar('kimi', ['plugin', 'enable|disable', ...])` flow which
-/// required the `shell:allow-execute` ACL permission and failed with
-/// "Command plugin:shell|execute not allowed by ACL" when called from the
-/// webview. Direct filesystem write is both faster and ACL-safe.
-#[tauri::command]
-pub fn toggle_plugin(plugin_id: String, enabled: bool) -> Result<(), String> {
-    if plugin_id.trim().is_empty() {
-        return Err("plugin id is required".to_string());
-    }
-    let installed_path = kimi_home().join("plugins").join("installed.json");
-    if !installed_path.exists() {
-        return Err(format!(
-            "installed.json not found at {} — no plugins installed",
-            installed_path.display()
-        ));
-    }
-    let content = stdfs::read_to_string(&installed_path)
-        .map_err(|e| format!("Cannot read installed.json: {e}"))?;
-    let mut root: serde_json::Value =
-        serde_json::from_str(&content).map_err(|e| format!("Cannot parse installed.json: {e}"))?;
-
-    // Walk plugins[] and flip the matching id's `enabled` field.
-    let plugins = root
-        .get_mut("plugins")
-        .and_then(|v| v.as_array_mut())
-        .ok_or_else(|| "installed.json: missing plugins[] array".to_string())?;
-    let mut found = false;
-    for plugin in plugins.iter_mut() {
-        if plugin.get("id").and_then(|v| v.as_str()) == Some(&plugin_id) {
-            plugin["enabled"] = serde_json::Value::Bool(enabled);
-            found = true;
-            break;
-        }
-    }
-    if !found {
-        return Err(format!("plugin {plugin_id} not found in installed.json"));
-    }
-
-    // Atomic write: serialize to a string then replace the file.
-    let new_content = serde_json::to_string_pretty(&root)
-        .map_err(|e| format!("Cannot serialize installed.json: {e}"))?;
-    let tmp = installed_path.with_extension("json.tmp");
-    stdfs::write(&tmp, new_content + "\n")
-        .map_err(|e| format!("Cannot write installed.json.tmp: {e}"))?;
-    stdfs::rename(&tmp, &installed_path)
-        .map_err(|e| format!("Cannot replace installed.json: {e}"))?;
-    Ok(())
 }
 
 /// Set the macOS Dock badge (or Windows taskbar overlay) to show the number
@@ -853,4 +774,51 @@ pub fn delete_user_skill(name: String) -> Result<(), String> {
         return Ok(());
     }
     Err(format!("Skill '{trimmed_name}' not found"))
+}
+
+#[cfg(test)]
+mod desktop_log_tests {
+    use super::*;
+
+    /// append_desktop_log writes to <agent home>/logs/kimi-code-desktop.log —
+    /// the exact file the daemon's session export bundles on `desktop: true`.
+    /// KIMI_CODE_HOME drives both kimi_home() and (transitively) agent_home().
+    /// Single test function: env mutation is process-global and must not race.
+    #[test]
+    fn append_desktop_log_lifecycle() {
+        let tmp = tempfile::tempdir().unwrap();
+        // SAFETY: assertions in this crate touching KIMI_CODE_HOME live in
+        // this one test, so no concurrent readers exist.
+        unsafe { std::env::set_var("KIMI_CODE_HOME", tmp.path()) };
+
+        // Write + newline flattening.
+        append_desktop_log(vec![
+            "2026-07-27T00:00:00.000Z ERROR [renderer] first".to_string(),
+            "line with\nembedded\r\nnewlines".to_string(),
+        ])
+        .unwrap();
+        let path = desktop_log_path();
+        assert!(path.ends_with("logs/kimi-code-desktop.log"), "path: {path:?}");
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(
+            content,
+            "2026-07-27T00:00:00.000Z ERROR [renderer] first\nline with embedded  newlines\n"
+        );
+
+        // Append preserves existing content; empty batch is a no-op.
+        append_desktop_log(vec!["second batch".to_string()]).unwrap();
+        append_desktop_log(vec![]).unwrap();
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.ends_with("second batch\n"));
+
+        // Rotation: an oversized log moves to .1 and the write starts fresh.
+        std::fs::write(&path, "x".repeat((DESKTOP_LOG_MAX_BYTES + 1) as usize)).unwrap();
+        append_desktop_log(vec!["after rotation".to_string()]).unwrap();
+        let rotated = path.with_file_name("kimi-code-desktop.log.1");
+        assert!(rotated.exists(), "previous generation should be kept");
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(content, "after rotation\n");
+
+        unsafe { std::env::remove_var("KIMI_CODE_HOME") };
+    }
 }

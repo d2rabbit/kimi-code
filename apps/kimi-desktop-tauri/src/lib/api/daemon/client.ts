@@ -569,10 +569,17 @@ export class DaemonKimiWebApi implements KimiWebApi {
     return (data.profiles ?? []).map(toAppAgentProfile);
   }
 
-  /** POST /sessions/{id}/export — download a diagnostic archive (tar.gz). */
-  async exportSession(sessionId: string, webLog?: string): Promise<Blob> {
+  /** POST /sessions/{id}/export — download a diagnostic archive (zip). */
+  async exportSession(
+    sessionId: string,
+    options: { webLog?: string; desktop?: boolean } = {},
+  ): Promise<Blob> {
     const body: Record<string, unknown> = {};
-    if (webLog !== undefined) body['web_log'] = webLog;
+    if (options.webLog !== undefined) body['web_log'] = options.webLog;
+    // Desktop hosts set `desktop` to bundle the on-disk desktop app log
+    // (`<home>/logs/kimi-code-desktop.log`); the server reads the file itself
+    // and skips it when missing (protocol: ExportSessionRequest.desktop).
+    if (options.desktop === true) body['desktop'] = true;
     return this.http.postBlob(
       `/sessions/${encodeURIComponent(sessionId)}/export`,
       Object.keys(body).length > 0 ? body : undefined,
