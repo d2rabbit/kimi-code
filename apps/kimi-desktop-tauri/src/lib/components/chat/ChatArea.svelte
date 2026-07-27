@@ -426,7 +426,7 @@
     border-radius: var(--g-radius-bubble, 14px 14px 4px 14px);
     box-shadow: var(--elev-bubble, none);
   }
-  .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
   .a-text { max-width: 100%; padding: 2px 0; }
   .imgs { display: flex; gap: 4px; margin-bottom: 4px; }
   .imgs img { max-width: 100px; border-radius: 6px; }

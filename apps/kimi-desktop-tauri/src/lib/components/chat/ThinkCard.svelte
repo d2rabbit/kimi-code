@@ -1,7 +1,5 @@
-<!-- ThinkCard.svelte — 思考链卡片（参考原型第 2 卡：琥珀/brain/折叠/耗时）。 -->
+<!-- ThinkCard.svelte — 思考链卡片（琥珀/brain/折叠/耗时，与工具卡共享左边线）。 -->
 <script lang="ts">
-  import Icon from '../ui/Icon.svelte';
-
   let {
     thinking,
     streaming = false,
@@ -27,7 +25,6 @@
 </script>
 
 <div class="think-card">
-  <div class="tc-avatar"><Icon name="sparkles" size="sm" /></div>
   <div class="tc-card">
     <button class="tc-head" onclick={() => open = !open} type="button">
       <span class="tc-brain">🧠</span>
@@ -46,23 +43,9 @@
 
 <style>
   .think-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
     margin: 6px 0;
   }
-  .tc-avatar {
-    width: 30px; height: 30px;
-    flex: none;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: var(--g-radius-control, 8px);
-    background: var(--warn-soft);
-    border: var(--g-border-w, 1px) var(--g-border-style, solid) color-mix(in srgb, var(--warn) 35%, transparent);
-    color: var(--warn);
-  }
   .tc-card {
-    flex: 1;
-    min-width: 0;
     max-width: 640px;
     border-radius: var(--g-radius-card, 4px);
     border: var(--g-border-w, 1px) var(--g-border-style, solid) color-mix(in srgb, var(--warn) 30%, transparent);
@@ -101,11 +84,11 @@
   @keyframes think-live { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   @media (prefers-reduced-motion: reduce) { .tc-live { animation: none; } }
   .tc-body {
-    padding: 8px 12px 10px;
+    padding: 10px 12px;
     border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
-    color: var(--tx3);
-    font-size: 11px;
-    line-height: 1.65;
+    color: var(--tx2);
+    font-size: 11.5px;
+    line-height: 1.7;
     font-style: italic;
     white-space: pre-wrap;
     word-break: break-word;

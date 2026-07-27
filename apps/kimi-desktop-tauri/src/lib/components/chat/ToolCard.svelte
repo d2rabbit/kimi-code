@@ -170,173 +170,134 @@
 </script>
 
 <div class="tool-card kind-{kind}" class:expanded>
-  <div class="tc-row">
-    <div class="tc-avatar"><Icon name={toolIcon(tool.name) as never} size="sm" /></div>
-    <div class="tc-main">
-      <button class="tool-header" onclick={toggle} type="button">
-        <span class="tool-name mono">{headLabel}</span>
-        {#if kind === 'mcp'}
-          <span class="mcp-chip">MCP Server</span>
-        {/if}
-        {#if tool.arg && !argJson}
-          {#if filePath}
-            <span
-              class="tool-arg tool-arg-link"
-              title={filePath}
-              role="link"
-              tabindex="0"
-              onclick={(e) => { e.stopPropagation(); client.client.openFilePreview(filePath); }}
-              onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); client.client.openFilePreview(filePath); } }}
-            >{toolSummary(tool.name, tool.arg)}</span>
-          {:else}
-            <span class="tool-arg" title={tool.arg}>{toolSummary(tool.name, tool.arg)}</span>
-          {/if}
-        {/if}
-        {#if diffStats}
-          <span class="diff-chip add">+{diffStats.added}</span>
-          <span class="diff-chip del">−{diffStats.removed}</span>
-        {/if}
-        {#if tool.timing}
-          <span class="tool-timing" class:ok={tool.status === 'ok'} class:err={tool.status === 'error'}>{tool.timing}</span>
-        {/if}
-        <span class="status-badge" class:sb-run={tool.status === 'running'} class:sb-ok={tool.status === 'ok'} class:sb-err={tool.status === 'error'}>
-          {#if tool.status === 'running'}● 运行中{:else if tool.status === 'ok'}✓ 已成功{:else if tool.status === 'error'}✕ 失败{:else}{tool.status}{/if}
-        </span>
-        <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size="sm" />
-      </button>
+  <button class="tool-header" onclick={toggle} type="button">
+    <span class="kind-ic"><Icon name={toolIcon(tool.name) as never} size="sm" /></span>
+    <span class="tool-name mono">{headLabel}</span>
+    {#if kind === 'mcp'}
+      <span class="mcp-chip">MCP Server</span>
+    {/if}
+    {#if tool.arg && !argJson}
+      {#if filePath}
+        <span
+          class="tool-arg tool-arg-link"
+          title={filePath}
+          role="link"
+          tabindex="0"
+          onclick={(e) => { e.stopPropagation(); client.client.openFilePreview(filePath); }}
+          onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); client.client.openFilePreview(filePath); } }}
+        >{toolSummary(tool.name, tool.arg)}</span>
+      {:else}
+        <span class="tool-arg" title={tool.arg}>{toolSummary(tool.name, tool.arg)}</span>
+      {/if}
+    {/if}
+    {#if diffStats}
+      <span class="diff-chip add">+{diffStats.added}</span>
+      <span class="diff-chip del">−{diffStats.removed}</span>
+    {/if}
+    {#if tool.timing}
+      <span class="tool-timing" class:ok={tool.status === 'ok'} class:err={tool.status === 'error'}>{tool.timing}</span>
+    {/if}
+    <span class="status-badge" class:sb-run={tool.status === 'running'} class:sb-ok={tool.status === 'ok'} class:sb-err={tool.status === 'error'}>
+      {#if tool.status === 'running'}● 运行中{:else if tool.status === 'ok'}✓ 已成功{:else if tool.status === 'error'}✕ 失败{:else}{tool.status}{/if}
+    </span>
+    <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size="sm" />
+  </button>
 
-      {#if expanded && (argJson || (tool.output && tool.output.length > 0))}
-        <div class="tool-expand-area">
-          {#if argJson}
-            <div class="params-box">
-              <div class="params-label"><span>PARAMS</span><span class="params-fmt">JSON</span></div>
-              <JsonTreeCard data={argJson} label="params.json" />
-            </div>
-          {/if}
-          {#if tool.output && tool.output.length > 0}
-            <div class="tool-output-toolbar">
-              {#if kind === 'bash' && bashCmd}
-                <button class="tool-action-btn" onclick={copyCommand} type="button" title="复制命令">
-                  <Icon name="copy" size="sm" /> 复制命令
-                </button>
-              {/if}
-              <button class="tool-action-btn" onclick={copyOutput} type="button" title="复制输出">
-                <Icon name="copy" size="sm" /> 复制输出
-              </button>
-            </div>
-            {#if kind === 'swarm'}
-              <SwarmCard {tool} />
-            {:else if prettyJson}
-              <!-- JSON 输出：树状卡片（可切 Raw） -->
-              <div class="params-box">
-                <div class="params-label"><span>RESULT</span><span class="params-fmt">JSON</span></div>
-                <JsonTreeCard data={JSON.parse(tool.output?.join('\n') ?? 'null')} label="output.json" />
-              </div>
-            {:else if kind === 'bash'}
-              <!-- Bash：mac 三点终端卡 -->
-              <div class="term">
-                <div class="term-head">
-                  <span class="term-dot d-r"></span>
-                  <span class="term-dot d-y"></span>
-                  <span class="term-dot d-g"></span>
-                  <span class="term-title">Bash Terminal</span>
-                  <span class="term-spacer"></span>
-                  {#if bashCmd}
-                    <button class="term-copy" onclick={copyCommand} type="button" title="复制命令"><Icon name="copy" size="sm" /></button>
-                  {/if}
-                </div>
-                <div class="term-body">
-                  {#if bashCmd}<div class="term-cmd"><span class="term-prompt">$</span>{bashCmd}</div>{/if}
-                  <div class="tool-output term-out">
-                    {#each tool.output.slice(0, 200) as line, i (i)}
-                      <div class="output-line">{line}</div>
-                    {/each}
-                    {#if tool.output.length > 200}
-                      <div class="output-truncated">… {tool.output.length - 200} more lines</div>
-                    {/if}
-                  </div>
-                </div>
-              </div>
-            {:else if kind === 'edit'}
-              <!-- 改动文件：带行号的 diff 视图 -->
-              <div class="tool-output diff-view">
-                {#each numberedLines.slice(0, 200) as line, i (i)}
-                  {#if line.meta}
-                    <div class="dline meta">{line.text}</div>
-                  {:else}
-                    <div class="dline" class:add={line.add} class:del={line.del}>
-                      <span class="dln">{line.n}</span><span class="dtx">{line.text}</span>
-                    </div>
-                  {/if}
-                {/each}
-                {#if tool.output.length > 200}
-                  <div class="output-truncated">… {tool.output.length - 200} more lines</div>
-                {/if}
-              </div>
-            {:else}
-              <div class="tool-output" class:ln-view={kind === 'read'}>
-                {#each tool.output.slice(0, 200) as line, i (i)}
-                  {#if kind === 'read'}
-                    <div class="dline"><span class="dln">{i + 1}</span><span class="dtx">{line}</span></div>
-                  {:else}
-                    <div class="output-line" class:add={line.startsWith('+') && !line.startsWith('+++')} class:del={line.startsWith('-') && !line.startsWith('---')}>
-                      {line}
-                    </div>
-                  {/if}
-                {/each}
-                {#if tool.output.length > 200}
-                  <div class="output-truncated">… {tool.output.length - 200} more lines</div>
-                {/if}
-              </div>
-            {/if}
-          {/if}
+  {#if expanded && (argJson || (tool.output && tool.output.length > 0))}
+    <div class="tool-expand-area">
+      {#if argJson}
+        <div class="params-box">
+          <div class="params-label"><span>PARAMS</span><span class="params-fmt">JSON</span></div>
+          <JsonTreeCard data={argJson} label="params.json" />
         </div>
       {/if}
+      {#if tool.output && tool.output.length > 0}
+        <div class="tool-output-toolbar">
+          {#if kind === 'bash' && bashCmd}
+            <button class="tool-action-btn" onclick={copyCommand} type="button" title="复制命令">
+              <Icon name="copy" size="sm" /> 复制命令
+            </button>
+          {/if}
+          <button class="tool-action-btn" onclick={copyOutput} type="button" title="复制输出">
+            <Icon name="copy" size="sm" /> 复制输出
+          </button>
+        </div>
+        {#if kind === 'swarm'}
+          <SwarmCard {tool} />
+        {:else if prettyJson}
+          <!-- JSON 输出：树状卡片（可切 Raw） -->
+          <div class="params-box">
+            <div class="params-label"><span>RESULT</span><span class="params-fmt">JSON</span></div>
+            <JsonTreeCard data={JSON.parse(tool.output?.join('\n') ?? 'null')} label="output.json" />
+          </div>
+        {:else if kind === 'bash'}
+          <!-- Bash：mac 三点终端卡 -->
+          <div class="term">
+            <div class="term-head">
+              <span class="term-dot d-r"></span>
+              <span class="term-dot d-y"></span>
+              <span class="term-dot d-g"></span>
+              <span class="term-title">Bash Terminal</span>
+              <span class="term-spacer"></span>
+              {#if bashCmd}
+                <button class="term-copy" onclick={copyCommand} type="button" title="复制命令"><Icon name="copy" size="sm" /></button>
+              {/if}
+            </div>
+            <div class="term-body">
+              {#if bashCmd}<div class="term-cmd"><span class="term-prompt">$</span>{bashCmd}</div>{/if}
+              <div class="tool-output term-out">
+                {#each tool.output.slice(0, 200) as line, i (i)}
+                  <div class="output-line">{line}</div>
+                {/each}
+                {#if tool.output.length > 200}
+                  <div class="output-truncated">… {tool.output.length - 200} more lines</div>
+                {/if}
+              </div>
+            </div>
+          </div>
+        {:else if kind === 'edit'}
+          <!-- 改动文件：带行号的 diff 视图 -->
+          <div class="tool-output diff-view">
+            {#each numberedLines.slice(0, 200) as line, i (i)}
+              {#if line.meta}
+                <div class="dline meta">{line.text}</div>
+              {:else}
+                <div class="dline" class:add={line.add} class:del={line.del}>
+                  <span class="dln">{line.n}</span><span class="dtx">{line.text}</span>
+                </div>
+              {/if}
+            {/each}
+            {#if tool.output.length > 200}
+              <div class="output-truncated">… {tool.output.length - 200} more lines</div>
+            {/if}
+          </div>
+        {:else}
+          <div class="tool-output" class:ln-view={kind === 'read'}>
+            {#each tool.output.slice(0, 200) as line, i (i)}
+              {#if kind === 'read'}
+                <div class="dline"><span class="dln">{i + 1}</span><span class="dtx">{line}</span></div>
+              {:else}
+                <div class="output-line" class:add={line.startsWith('+') && !line.startsWith('+++')} class:del={line.startsWith('-') && !line.startsWith('---')}>
+                  {line}
+                </div>
+              {/if}
+            {/each}
+            {#if tool.output.length > 200}
+              <div class="output-truncated">… {tool.output.length - 200} more lines</div>
+            {/if}
+          </div>
+        {/if}
+      {/if}
     </div>
-  </div>
+  {/if}
 </div>
 
 <style>
   .tool-expand-area {
     animation: kimi-fade-in var(--duration-fast, 120ms) var(--ease-out, ease);
   }
-  .tc-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin: 6px 0;
-  }
-  /* 类型着色头像（generic=amber / mcp=purple / bash=slate / 其余=accent） */
-  .tc-avatar {
-    width: 30px; height: 30px;
-    flex: none;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: var(--g-radius-control, 8px);
-    background: var(--warn-soft);
-    border: var(--g-border-w, 1px) var(--g-border-style, solid) color-mix(in srgb, var(--warn) 30%, transparent);
-    color: var(--warn);
-  }
-  .kind-mcp .tc-avatar {
-    background: var(--color-done-soft);
-    border-color: var(--color-done-bd, color-mix(in srgb, var(--color-done) 40%, transparent));
-    color: var(--color-done);
-  }
-  .kind-bash .tc-avatar {
-    background: var(--mat-control-bg, var(--l2));
-    border-color: var(--g-border-color, var(--bd2));
-    color: var(--tx2);
-  }
-  .kind-read .tc-avatar,
-  .kind-edit .tc-avatar,
-  .kind-swarm .tc-avatar {
-    background: var(--ac-soft);
-    border-color: var(--ac-bd);
-    color: var(--ac);
-  }
-
   .tool-card {
-    flex: 1;
-    min-width: 0;
+    margin: 6px 0;
     border-radius: var(--g-radius-card, var(--r-lg));
     border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
     background: var(--mat-surface-2, var(--l2));
@@ -376,11 +337,15 @@
     font-weight: var(--weight-semibold);
     color: var(--warn);
     flex: none;
-    max-width: 45%;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* 类型着色小图标（generic=amber / mcp=purple / bash=slate / 其余=accent） */
+  .kind-ic { display: inline-flex; flex: none; color: var(--warn); }
+  .kind-mcp .kind-ic { color: var(--color-done); }
+  .kind-bash .kind-ic { color: var(--tx3); }
+  .kind-read .kind-ic,
+  .kind-edit .kind-ic,
+  .kind-swarm .kind-ic { color: var(--ac); }
   .kind-mcp .tool-name { color: var(--color-done); }
   .kind-bash .tool-name, .kind-read .tool-name, .kind-edit .tool-name, .kind-swarm .tool-name { color: var(--tx); }
   .mono { font-family: var(--font-mono, monospace); }
