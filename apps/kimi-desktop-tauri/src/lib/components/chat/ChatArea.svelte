@@ -438,6 +438,61 @@
   .u-text :global(.md-body ul),
   .u-text :global(.md-body ol) { margin: 0 0 6px; }
   .u-text :global(.md-body .cb-wrap) { margin: 0 0 6px; }
+
+  /* ---- 气泡融合层 ------------------------------------------------------
+     气泡内的 markdown 渲染不再引用页面层 token（--l1/--l3/--bd/--ac），
+     一律以气泡自身墨色（currentColor）的透明度梯度派生表面与线条，
+     使文字/代码/链接/引用/表格在全部 7 套主题下都与气泡浑然一体。 */
+  .u-text :global(.md-body) { color: inherit; }
+
+  /* 行内代码：气泡墨色的轻染，而非异色小药丸 */
+  .u-text :global(.md-body :not(pre) > code) {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+    border: none;
+    color: inherit;
+  }
+
+  /* 链接：同色加粗 + 半透明下划线（聊天气泡惯例） */
+  .u-text :global(.md-body a) {
+    color: inherit;
+    font-weight: 500;
+    text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+  }
+
+  /* 代码块：去卡片化——整块的淡墨染 + 细发丝线，头部不再另起一层 */
+  .u-text :global(.md-body .cb-wrap) {
+    background: color-mix(in srgb, currentColor 6%, transparent);
+    border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    border-radius: 10px;
+  }
+  .u-text :global(.md-body .cb-head) {
+    border-bottom-color: color-mix(in srgb, currentColor 10%, transparent);
+    color: color-mix(in srgb, currentColor 55%, transparent);
+  }
+  .u-text :global(.md-body .cb-copy),
+  .u-text :global(.md-body .cb-preview) {
+    color: color-mix(in srgb, currentColor 55%, transparent);
+  }
+  .u-text :global(.md-body .cb-copy:hover),
+  .u-text :global(.md-body .cb-preview:hover) { color: inherit; }
+  /* shiki 主题的内联底色必须让位于气泡 */
+  .u-text :global(.md-body pre.shiki) {
+    background: transparent !important;
+    border: none;
+    margin: 0;
+  }
+
+  /* 引用块：左侧竖线与文字同样取自气泡墨色 */
+  .u-text :global(.md-body blockquote) {
+    border-left-color: color-mix(in srgb, currentColor 30%, transparent);
+    color: color-mix(in srgb, currentColor 80%, transparent);
+  }
+
+  /* 表格与分隔线 */
+  .u-text :global(.md-body th),
+  .u-text :global(.md-body td) { border-color: color-mix(in srgb, currentColor 18%, transparent); }
+  .u-text :global(.md-body hr) { border-top-color: color-mix(in srgb, currentColor 15%, transparent); }
+
   .ai-text { color: var(--tx); line-height: 1.65; }
   .ai-text + .ai-text { margin-top: 6px; }
 
