@@ -430,13 +430,14 @@
   }
   .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
   .a-text { display: flex; flex-direction: column; gap: 8px; max-width: 100%; }
-  /* Agent 气泡：与用户气泡镜像（surface-2 底 + 左下圆角尾），QQ 双列感 */
+  /* Agent 气泡：与用户气泡镜像且色彩分立——用户用 accent 蓝，agent 用 K 头像
+     渐变里的青（#5bc0be），QQ 式绿白对比；surface-2 为底调出主题自适应 */
   .a-bub {
     max-width: 92%;
-    background: var(--mat-bubble-agent-bg, var(--l2));
+    background: var(--mat-bubble-agent-bg, color-mix(in srgb, #5bc0be 11%, var(--l2)));
     backdrop-filter: var(--mat-blur, none);
     -webkit-backdrop-filter: var(--mat-blur, none);
-    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--mat-bubble-agent-bd, color-mix(in srgb, #5bc0be 26%, transparent));
     color: var(--tx);
     border-radius: var(--g-radius-bubble-agent, 14px 14px 14px 4px);
     box-shadow: var(--elev-bubble, none);
