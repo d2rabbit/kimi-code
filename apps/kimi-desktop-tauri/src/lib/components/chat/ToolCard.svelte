@@ -86,6 +86,32 @@
 
   const isEditTool = $derived(['edit', 'write', 'multi_edit', 'multiedit'].includes(tool.name.toLowerCase()));
 
+  // ---- 文件类工具：文件名 + 相对路径（相对会话工作区）----
+  // filePath 已从 JSON / 纯文本 arg 中提取绝对路径；这里进一步换算成
+  //「basename（醒目）+ :行范围 + dir/（相对 cwd，淡色）」的头部展示结构。
+  const fileInfo = $derived.by(() => {
+    if (!filePath) return null;
+    const norm = filePath.replace(/\\/g, '/');
+    const cwd = (client.activeSession()?.cwd ?? '').replace(/\\/g, '/').replace(/\/+$/, '');
+    let rel = norm;
+    if (cwd && norm.startsWith(cwd + '/')) rel = './' + norm.slice(cwd.length + 1);
+    const slash = rel.lastIndexOf('/');
+    const base = slash >= 0 ? rel.slice(slash + 1) : rel;
+    const dir = slash >= 0 ? rel.slice(0, slash + 1) : '';
+    let range: string | null = null;
+    if (argJson) {
+      const num = (v: unknown): number | undefined =>
+        typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+      const start = num(argJson.offset) ?? num(argJson.line_start) ?? num(argJson.start_line);
+      const len = num(argJson.limit) ?? num(argJson.length);
+      const end = num(argJson.line_end) ?? num(argJson.end_line) ??
+        (start !== undefined && len !== undefined ? start + len : undefined);
+      if (start !== undefined && end !== undefined) range = `${start}-${end}`;
+      else if (start !== undefined) range = `${start}`;
+    }
+    return { base, dir, full: filePath, range };
+  });
+
   const diffStats = $derived.by(() => {
     if (!isEditTool || !tool.output) return null;
     let added = 0, removed = 0;
@@ -176,7 +202,17 @@
     {#if kind === 'mcp'}
       <span class="mcp-chip">MCP Server</span>
     {/if}
-    {#if tool.arg && !argJson}
+    {#if fileInfo}
+      <!-- 文件类工具：文件名 + 相对路径（点击预览） -->
+      <span
+        class="tool-fpath"
+        title={fileInfo.full}
+        role="link"
+        tabindex="0"
+        onclick={(e) => { e.stopPropagation(); client.client.openFilePreview(fileInfo!.full); }}
+        onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); client.client.openFilePreview(fileInfo!.full); } }}
+      >{#if fileInfo.dir}<span class="fp-dir">{fileInfo.dir}</span>{/if}<b class="fp-base">{fileInfo.base}</b>{#if fileInfo.range}<span class="fp-range">:{fileInfo.range}</span>{/if}</span>
+    {:else if tool.arg && !argJson}
       {#if filePath}
         <span
           class="tool-arg tool-arg-link"
@@ -429,6 +465,26 @@
     opacity: 0.8;
     min-width: 0;
   }
+  /* 文件路径芯片：dir/ 淡色可压缩，文件名加粗锚定视线，行范围用 accent */
+  .tool-fpath {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .fp-dir {
+    color: var(--tx3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .fp-base { color: var(--tx); font-weight: 600; white-space: nowrap; }
+  .fp-range { color: var(--ac); white-space: nowrap; }
+  .tool-fpath:hover .fp-base { color: var(--ac); text-decoration: underline; text-underline-offset: 2px; }
   .tool-arg-link {
     cursor: pointer;
     color: var(--ac);
