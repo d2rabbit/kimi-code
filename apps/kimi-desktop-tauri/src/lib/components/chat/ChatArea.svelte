@@ -61,8 +61,7 @@
     void client.turns().length;
     void client.turns().at(-1)?.blocks?.length;
     if (scrollEl && stickToBottom) {
-      requestAnimationFrame(() => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; });
-    }
+      requestAnimationFrame(() => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; });    }
   });
 
   // ---- Conversation TOC (one entry per user turn) ----
@@ -190,6 +189,8 @@
   }
 
   const running = $derived(client.activity() === 'running');
+  // 末轮 id 只取一次——streaming 标记按 id 比较，避免每个块都触发 turns() 求值。
+  const lastTurnId = $derived(client.turns().at(-1)?.id);
   const approval = $derived(client.pendingApprovals()[0]);
   const question = $derived(client.questions()[0]);
 
@@ -290,11 +291,11 @@
                     {#if item.kind === 'thinking'}
                       <ThinkCard
                         thinking={item.thinking}
-                        streaming={running && turn === client.turns().at(-1)}
+                        streaming={running && turn.id === lastTurnId}
                       />
                     {:else if item.kind === 'text'}
                       <div class="bubble a-bub">
-                        <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn === client.turns().at(-1)} /></div>
+                        <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn.id === lastTurnId} /></div>
                       </div>
                     {/if}
                   {/each}

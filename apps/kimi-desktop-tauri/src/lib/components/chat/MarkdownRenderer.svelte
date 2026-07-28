@@ -4,6 +4,7 @@
      and render plain text code blocks for zero-latency incremental display.
      When streaming=false, we highlight with shiki for the final render. -->
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
 
@@ -14,6 +15,24 @@
     text?: string;
     streaming?: boolean;
   } = $props();
+
+  // 流式解析节流：marked.parse + DOMPurify 是全文 O(n) 操作，逐 token 全量
+  // 重算会让单轮成本变成 O(n²) 并挤占主线程。流式期间按 ~120ms 节流刷新
+  // 解析源；流式结束立即对齐最终文本，保证终稿精确。
+  // svelte-ignore state_referenced_locally
+  let parseText = $state(text);
+  let parseTimer: ReturnType<typeof setTimeout> | undefined;
+  $effect(() => {
+    if (!streaming) {
+      if (parseTimer !== undefined) { clearTimeout(parseTimer); parseTimer = undefined; }
+      parseText = text;
+      return;
+    }
+    if (parseTimer === undefined) {
+      parseTimer = setTimeout(() => { parseTimer = undefined; parseText = text; }, 120);
+    }
+  });
+  onDestroy(() => { if (parseTimer !== undefined) clearTimeout(parseTimer); });
 
   // Shiki highlighter singleton (loaded once).
   import type { Highlighter } from 'shiki';
@@ -103,8 +122,8 @@
 
   // Render markdown to sanitized HTML.
   let html = $derived.by(() => {
-    if (!text) return '';
-    const raw = marked.parse(text, { async: false }) as string;
+    if (!parseText) return '';
+    const raw = marked.parse(parseText, { async: false }) as string;
     return DOMPurify.sanitize(raw, {
       ADD_ATTR: ['target', 'data-line', 'data-copy'],
     });

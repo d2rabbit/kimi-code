@@ -171,7 +171,12 @@ export const activeMessages = () =>
     : [];
 
 // Turns (grouped messages) for the active session.
-export const turns = (): ChatTurn[] => {
+// Memoized via $derived: previously every template evaluation re-ran the full
+// messagesToTurns over the whole history — and ChatArea calls turns() once for
+// the list plus twice per content block, so each streaming frame paid that
+// cost dozens of times. Now it recomputes only when the underlying state
+// actually changes (active session / messages / approvals / side-chat hides).
+const turnsCache = $derived.by((): ChatTurn[] => {
   const sid = rawState.activeSessionId;
   if (!sid) return [];
   // BTW side-chat user messages live in the parent's history but belong to
@@ -181,7 +186,8 @@ export const turns = (): ChatTurn[] => {
   const approvals = rawState.approvalsBySession[sid] ?? [];
   // messagesToTurns signature: (messages, approvals, getFileUrl?, sessionActive?, planReview?)
   return messagesToTurns(msgs, approvals, undefined, true);
-};
+});
+export const turns = (): ChatTurn[] => turnsCache;
 
 // Pending approvals for the active session (reducer removes resolved ones,
 // so all entries in approvalsBySession are still pending).
