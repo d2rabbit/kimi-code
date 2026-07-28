@@ -634,12 +634,13 @@
   .atch .rm { color: var(--tx3); font-size: 11px; width: 14px; height: 14px; border: none; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: transparent; cursor: pointer; padding: 0; }
   .atch .rm:hover { color: var(--err); background: var(--err-soft); }
 
-  /* Input row */
-  .inrow { display: flex; align-items: flex-end; gap: 8px; padding: 12px 14px 10px; min-height: 84px; }
+  /* Input row — 行高完全由内容决定（去掉 min-height 充气），单行时 +/文本/
+     发送键共线；多行输入时行自然生长，按钮钉在末行 */
+  .inrow { display: flex; align-items: flex-end; gap: 8px; padding: 9px 14px 7px; }
   .composer-input {
     flex: 1; border: none; background: transparent; color: var(--tx);
     font-family: var(--font-ui); font-size: 14px; line-height: 1.6;
-    resize: none; outline: none; max-height: 200px; min-height: 52px; padding: 6px 4px;
+    resize: none; outline: none; max-height: 200px; min-height: 26px; padding: 3px 4px;
   }
   .composer-input::placeholder { color: var(--tx3); }
   .composer-input.busy { opacity: 0.6; }
