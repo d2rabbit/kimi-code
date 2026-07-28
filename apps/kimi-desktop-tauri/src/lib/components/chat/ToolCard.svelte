@@ -161,6 +161,19 @@
     } catch { return raw; }
   });
 
+  // Bash/CLI 头部命令概略：首个 token（可执行文件，跳过 VAR=val 环境前缀）
+  // 加粗 + 命令余部淡色截断；arg 解析失败（原始 JSON 串）时不展示。
+  const cmdHead = $derived.by(() => {
+    if (kind !== 'bash' || !bashCmd || bashCmd.startsWith('{')) return null;
+    const tokens = bashCmd.trim().split(/\s+/).filter(Boolean);
+    let i = 0;
+    while (i < tokens.length - 1 && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[i]!)) i++;
+    const bin = tokens[i] ?? '';
+    if (!bin) return null;
+    const rest = tokens.slice(i + 1).join(' ');
+    return { bin, rest, full: bashCmd.trim() };
+  });
+
   // Edit/Read: numbered line sequence (enhanced diff-line coloring).
   const numberedLines = $derived.by(() => {
     if (!tool.output) return [];
@@ -212,6 +225,11 @@
         onclick={(e) => { e.stopPropagation(); client.client.openFilePreview(fileInfo!.full); }}
         onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); client.client.openFilePreview(fileInfo!.full); } }}
       >{#if fileInfo.dir}<span class="fp-dir">{fileInfo.dir}</span>{/if}<b class="fp-base">{fileInfo.base}</b>{#if fileInfo.range}<span class="fp-range">:{fileInfo.range}</span>{/if}</span>
+    {:else if kind === 'bash' && cmdHead}
+      <!-- Bash/CLI：命令概略（可执行文件加粗，余部截断） -->
+      <span class="tool-cmd" title={cmdHead.full}>
+        <b class="cmd-bin">{cmdHead.bin}</b>{#if cmdHead.rest}<span class="cmd-rest">{cmdHead.rest}</span>{/if}
+      </span>
     {:else if tool.arg && !argJson}
       {#if filePath}
         <span
@@ -485,6 +503,23 @@
   .fp-base { color: var(--tx); font-weight: 600; white-space: nowrap; }
   .fp-range { color: var(--ac); white-space: nowrap; }
   .tool-fpath:hover .fp-base { color: var(--ac); text-decoration: underline; text-underline-offset: 2px; }
+  /* Bash 命令概略：可执行文件加粗，余部淡色截断 */
+  .tool-cmd {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .cmd-bin { color: var(--tx); font-weight: 600; white-space: nowrap; }
+  .cmd-rest {
+    color: var(--tx3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .tool-arg-link {
     cursor: pointer;
     color: var(--ac);
