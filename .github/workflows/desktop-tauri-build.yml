@@ -1,15 +1,25 @@
 name: desktop-tauri-build
 
 # Builds the Kimi Code Desktop (Tauri) installers for macOS, Windows and Linux.
-# Each runner builds the matching-platform SEA backend first, then stages it
-# and packages with Tauri's bundler.
 #
-# SEA injection is per-platform (the blob is injected into the host Node binary),
-# so each OS must be built on its own runner.
+# Current architecture (post-SEA): the embedded agent is a PLATFORM-INDEPENDENT
+# JS bundle — apps/kimi-code is packed by tsdown into
+# dist-native/intermediates/main.cjs, staged into the app bundle by
+# scripts/before-bundle.cjs (Tauri beforeBundleCommand), and executed at
+# runtime by Node. Only the Rust shell and the installers are per-platform,
+# so each OS builds on its own runner.
 #
-# Triggered two ways:
+# Note: the packaged app currently resolves the Node runtime from
+# <resource_dir>/node[.exe] and falls back to the system Node on PATH
+# (>= 24.15 required) — bundling a per-platform Node runtime is a known gap,
+# not handled by this workflow yet.
+#
+# Triggers:
 #   - workflow_dispatch: manual ad-hoc builds from the Actions tab.
-#   - workflow_call:     called by release.yml to attach installers to a release.
+#   - push tag `desktop-v*`: build installers and attach them to a GitHub
+#     Release named after the tag.
+#   - workflow_call: reusable from other workflows.
+
 on:
   workflow_dispatch:
     inputs:
@@ -18,12 +28,22 @@ on:
         required: false
         type: number
         default: 5
+  push:
+    tags:
+      - 'desktop-v*'
   workflow_call:
     inputs:
       retention-days:
         required: false
         type: number
         default: 5
+
+permissions:
+  contents: write # attach installers to a GitHub Release on tag builds
+
+concurrency:
+  group: desktop-tauri-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -33,42 +53,37 @@ jobs:
         include:
           - os: macos-latest
             target: darwin-arm64
-            rust-target: aarch64-apple-darwin
           - os: macos-13
             target: darwin-x64
-            rust-target: x86_64-apple-darwin
           - os: windows-latest
             target: win32-x64
-            rust-target: x86_64-pc-windows-msvc
           - os: ubuntu-22.04
             target: linux-x64
-            rust-target: x86_64-unknown-linux-gnu
 
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: '10.33.0'
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust-target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: apps/kimi-desktop-tauri/src-tauri
 
-      # Linux: install WebKitGTK dependencies (required by Tauri)
+      # Linux: WebKitGTK + AppImage tooling (required by Tauri).
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -78,24 +93,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Build the web UI and copy it into the kimi-code package so the SEA
-      # bundles the latest frontend.
-      - name: Build web UI
+      # Build the shared packages (main.cjs references their dist/ output).
+      - name: Build packages
+        run: pnpm run build:packages
+
+      # Build the embedded agent: kimi-web assets → copy → tsdown main.cjs.
+      # This mirrors scripts/build-run.sh's agent stage, kept as explicit
+      # cross-platform steps (the script itself uses GNU find / mapfile and
+      # is Linux-only).
+      - name: Build kimi-web frontend
         run: |
           pnpm --filter @moonshot-ai/kimi-web run build
           node apps/kimi-code/scripts/copy-web-assets.mjs
 
-      # Build the SEA backend for this platform.
-      - name: Build SEA backend
-        run: pnpm --filter @moonshot-ai/kimi-code run build:native:sea
+      - name: Build vis asset (tsdown prerequisite)
+        run: node apps/kimi-code/scripts/build-vis-asset.mjs
 
-      # Build + package the Tauri app (triggers before-bundle.cjs to stage the SEA).
+      - name: Build embedded agent (tsdown → main.cjs)
+        run: pnpm -C apps/kimi-code exec tsdown --config tsdown.native.config.ts
+
+      # Package installers. beforeBuildCommand builds the Svelte frontend
+      # (vite), beforeBundleCommand stages main.cjs into the bundle.
       - name: Build Tauri app
         working-directory: apps/kimi-desktop-tauri
         run: pnpm run tauri:build
-        env:
-          TAURI_PLATFORM: ${{ matrix.target }}
-          TAURI_ARCH: ${{ contains(matrix.target, 'arm64') && 'arm64' || 'x64' }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -107,5 +128,18 @@ jobs:
             apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.msi
             apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.exe
             apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.deb
+            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.rpm
             apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.AppImage
-          retention-days: ${{ inputs.retention-days }}
+          retention-days: ${{ inputs.retention-days || 5 }}
+
+      - name: Attach installers to the Release
+        if: startsWith(github.ref, 'refs/tags/desktop-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.dmg
+            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.msi
+            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.exe
+            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.deb
+            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.rpm
+            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.AppImage
