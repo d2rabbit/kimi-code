@@ -31,64 +31,45 @@
   }
 </script>
 
-<div class="ap-row">
-  <div class="ap-avatar"><Icon name="alert-triangle" size="sm" /></div>
-  <div class="approval-card" class:minimized class:ap-resolved={resolved !== null}>
-    <div class="approval-header" onclick={() => minimized = !minimized} role="button" tabindex="0"
-      onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); minimized = !minimized; } }}>
-      <span class="approval-title"><Icon name="alert-triangle" size="sm" /> 敏感操作权限申请</span>
-      <IconButton name={minimized ? 'chevron-down' : 'chevron-right'} label={minimized ? '展开' : '折叠'} size="sm"
-        onclick={(e) => { e.stopPropagation(); minimized = !minimized; }} />
+<div class="approval-card" class:minimized class:ap-resolved={resolved !== null}>
+  <div class="approval-header" onclick={() => minimized = !minimized} role="button" tabindex="0"
+    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); minimized = !minimized; } }}>
+    <span class="approval-title"><Icon name="alert-triangle" size="sm" /> 敏感操作权限申请</span>
+    <IconButton name={minimized ? 'chevron-down' : 'chevron-right'} label={minimized ? '展开' : '折叠'} size="sm"
+      onclick={(e) => { e.stopPropagation(); minimized = !minimized; }} />
+  </div>
+
+  {#if !minimized}
+    <div class="approval-body">
+      <p class="approval-desc">Agent 申请以提升的权限执行以下操作，请确认是否授权：</p>
+      <div class="approval-cmd mono">
+        <span class="cmd-exec">exec:</span> {request.toolName} · {request.action}
+      </div>
     </div>
 
-    {#if !minimized}
-      <div class="approval-body">
-        <p class="approval-desc">Agent 申请以提升的权限执行以下操作，请确认是否授权：</p>
-        <div class="approval-cmd mono">
-          <span class="cmd-exec">exec:</span> {request.toolName} · {request.action}
-        </div>
-      </div>
-
-      <div class="approval-actions">
-        {#if resolved}
-          <span class="ap-chip" class:ap-ok={resolved === 'approved'} class:ap-no={resolved === 'rejected'}>
-            {#if resolved === 'approved'}✓ 已授权允许执行{:else}✕ 已拒绝授权{/if}
-          </span>
-        {:else}
-          <Button variant="primary" size="sm" onclick={() => decide('approved')} disabled={busy}>
-            允许执行 <kbd>1</kbd>
-          </Button>
-          <Button variant="default" size="sm" onclick={() => decide('approved')} disabled={busy}>
-            本会话同意 <kbd>2</kbd>
-          </Button>
-          <Button variant="danger" size="sm" onclick={() => decide('rejected')} disabled={busy}>
-            拒绝授权 <kbd>3</kbd>
-          </Button>
-        {/if}
-      </div>
-    {/if}
-  </div>
+    <div class="approval-actions">
+      {#if resolved}
+        <span class="ap-chip" class:ap-ok={resolved === 'approved'} class:ap-no={resolved === 'rejected'}>
+          {#if resolved === 'approved'}✓ 已授权允许执行{:else}✕ 已拒绝授权{/if}
+        </span>
+      {:else}
+        <Button variant="primary" size="sm" onclick={() => decide('approved')} disabled={busy}>
+          允许执行 <kbd>1</kbd>
+        </Button>
+        <Button variant="default" size="sm" onclick={() => decide('approved')} disabled={busy}>
+          本会话同意 <kbd>2</kbd>
+        </Button>
+        <Button variant="danger" size="sm" onclick={() => decide('rejected')} disabled={busy}>
+          拒绝授权 <kbd>3</kbd>
+        </Button>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style>
-  .ap-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin: 6px 0;
-  }
-  .ap-avatar {
-    width: 30px; height: 30px;
-    flex: none;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: var(--g-radius-control, 8px);
-    background: var(--warn-soft);
-    border: var(--g-border-w, 1px) var(--g-border-style, solid) color-mix(in srgb, var(--warn) 40%, transparent);
-    color: var(--warn);
-  }
   .approval-card {
-    flex: 1;
-    min-width: 0;
+    margin: 6px 0 8px;
     border: var(--g-border-w, 1px) var(--g-border-style, solid) color-mix(in srgb, var(--warn) 45%, transparent);
     border-radius: var(--g-radius-card, var(--r-lg));
     overflow: hidden;
@@ -96,7 +77,6 @@
     backdrop-filter: var(--mat-blur, none);
     -webkit-backdrop-filter: var(--mat-blur, none);
     box-shadow: var(--elev-card, var(--toplight));
-    margin-bottom: 8px;
   }
   .approval-card.minimized {
     border-color: var(--g-border-color, var(--bd));

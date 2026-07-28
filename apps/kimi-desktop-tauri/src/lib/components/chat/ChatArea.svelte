@@ -316,8 +316,19 @@
             </div>
           {/if}
         {/each}
-        {#if approval}<ApprovalCard request={approval} />{/if}
-        {#if question}<QuestionCard question={question} />{/if}
+        <!-- 审批/提问卡来自 agent —— 挂进 agent 行，与气泡/工具卡共享左边线 -->
+        {#if approval}
+          <div class="msg agent">
+            <span class="avatar a">K</span>
+            <div class="a-col"><ApprovalCard request={approval} /></div>
+          </div>
+        {/if}
+        {#if question}
+          <div class="msg agent">
+            <span class="avatar a">K</span>
+            <div class="a-col"><QuestionCard question={question} /></div>
+          </div>
+        {/if}
       {/if}
     </div>
   </div>

@@ -2,7 +2,6 @@
      Supports multi-step questions with navigation. -->
 <script lang="ts">
   import Button from '../ui/Button.svelte';
-  import Icon from '../ui/Icon.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import Chip from '../ui/Chip.svelte';
   import * as client from '../../stores/client.svelte';
@@ -95,9 +94,7 @@
   }
 </script>
 
-<div class="q-row">
-  <div class="q-avatar"><Icon name="help-circle" size="sm" /></div>
-  <div class="question-card" class:minimized>
+<div class="question-card" class:minimized>
   <!-- Header -->
   <div class="q-header">
     {#if total > 1}
@@ -166,28 +163,11 @@
       </div>
     </div>
   {/if}
-  </div>
 </div>
 
 <style>
-  .q-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin: 6px 0;
-  }
-  .q-avatar {
-    width: 30px; height: 30px;
-    flex: none;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: var(--g-radius-control, 8px);
-    background: var(--ac-soft);
-    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--ac-bd);
-    color: var(--ac);
-  }
   .question-card {
-    flex: 1;
-    min-width: 0;
+    margin: 6px 0 8px;
     border: var(--g-border-w, 1px) var(--g-border-style, solid) color-mix(in srgb, var(--ac) 35%, transparent);
     border-radius: var(--g-radius-card, var(--r-lg));
     overflow: hidden;
@@ -195,7 +175,6 @@
     backdrop-filter: var(--mat-blur, none);
     -webkit-backdrop-filter: var(--mat-blur, none);
     box-shadow: var(--elev-card, var(--toplight));
-    margin-bottom: 8px;
   }
   .question-card.minimized {
     border-color: var(--g-border-color, var(--bd));
