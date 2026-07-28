@@ -1217,62 +1217,12 @@ function setUiFontSize(size: number): void {
 // These actions call Rust commands that operate directly on
 // ~/.kimi-code/skills/<name>/SKILL.md, then refresh the file list.
 
-interface UserSkillFile {
-  name: string;
-  path: string;
-  content: string;
-}
-
-const userSkills = $state<UserSkillFile[]>([]);
-
-export const skillFiles = () => userSkills;
-
-/** Refresh the user-level skill file list from the filesystem. */
-async function refreshUserSkills(): Promise<void> {
-  try {
-    const list = await tauriInvoke<UserSkillFile[]>('list_user_skills');
-    userSkills.splice(0, userSkills.length, ...list);
-  } catch {
-    // Non-fatal — skills dir may not exist yet.
-  }
-}
-
-/** Create or overwrite a skill. Returns the file path on success. */
-async function saveUserSkill(name: string, content: string): Promise<string> {
-  const path = await tauriInvoke<string>('write_user_skill', { name, content });
-  await refreshUserSkills();
-  return path;
-}
-
-/** Delete a user-level skill from the filesystem. */
-async function deleteUserSkill(name: string): Promise<void> {
-  await tauriInvoke('delete_user_skill', { name });
-  await refreshUserSkills();
-}
-
 // ---------------------------------------------------------------------------
 // Archived sessions browser
 // ---------------------------------------------------------------------------
 
 let archivedSessions = $state<AppSession[]>([]);
 let archivedLoading = $state(false);
-
-// ---------------------------------------------------------------------------
-// Cross-section UI intents (ephemeral, not persisted). Settings' 命令 section
-// uses this to deep-link into the 技能 section's create view.
-// ---------------------------------------------------------------------------
-
-let skillCreateRequested = $state(false);
-
-function requestSkillCreate(): void {
-  skillCreateRequested = true;
-}
-
-function consumeSkillCreateRequest(): boolean {
-  const v = skillCreateRequested;
-  skillCreateRequested = false;
-  return v;
-}
 
 // Composer prefill intent: cross-view requests (e.g. 子智能体 委派入口) drop
 // text into the chat composer. ChatArea applies it when mounted; the flag
@@ -1616,16 +1566,11 @@ export const client = {
   setUiFontSize,
 
   // Skill management (filesystem CRUD).
-  refreshUserSkills,
-  saveUserSkill,
-  deleteUserSkill,
 
   // Archived sessions.
   get archivedSessions() { return archivedSessions; },
   get archivedLoading() { return archivedLoading; },
   loadArchivedSessions,
-  requestSkillCreate,
-  consumeSkillCreateRequest,
   consumeOpenBtwPanelRequest,
   requestComposerPrefill,
   consumeComposerPrefill,

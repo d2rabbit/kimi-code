@@ -14,8 +14,6 @@
   import Select from '../ui/Select.svelte';
   import Spinner from '../ui/Spinner.svelte';
   import Switch from '../ui/Switch.svelte';
-  import SkillsPanel from './SkillsPanel.svelte';
-  import McpPanel from './McpPanel.svelte';
   import MemoryPanel from './MemoryPanel.svelte';
   import PluginPanel from './PluginPanel.svelte';
   import * as client from '../../stores/client.svelte';
@@ -25,7 +23,7 @@
     open = $bindable(true),
   }: { open?: boolean } = $props();
 
-  let activeTab = $state<'account' | 'models' | 'providers' | 'skills' | 'mcp' | 'plugins' | 'memory' | 'general' | 'archived' | 'advanced'>('account');
+  let activeTab = $state<'account' | 'models' | 'providers' | 'plugins' | 'memory' | 'general' | 'archived' | 'advanced'>('account');
   let saving = $state(false);
   let message = $state<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -332,12 +330,6 @@
     <button class="tab" class:active={activeTab === 'providers'} onclick={() => activeTab = 'providers'}>
       <Icon name="globe" size="sm" /> Provider
     </button>
-    <button class="tab" class:active={activeTab === 'skills'} onclick={() => activeTab = 'skills'}>
-      <Icon name="sparkles" size="sm" /> Skills
-    </button>
-    <button class="tab" class:active={activeTab === 'mcp'} onclick={() => activeTab = 'mcp'}>
-      <Icon name="server" size="sm" /> MCP
-    </button>
     <button class="tab" class:active={activeTab === 'memory'} onclick={() => activeTab = 'memory'}>
       <Icon name="brain" size="sm" /> 记忆
     </button>
@@ -528,20 +520,6 @@
           </div>
         </div>
       {/if}
-    </div>
-  {/if}
-
-  <!-- === Skills tab === -->
-  {#if activeTab === 'skills'}
-    <div class="tab-content">
-      <SkillsPanel />
-    </div>
-  {/if}
-
-  <!-- === MCP tab === -->
-  {#if activeTab === 'mcp'}
-    <div class="tab-content">
-      <McpPanel />
     </div>
   {/if}
 

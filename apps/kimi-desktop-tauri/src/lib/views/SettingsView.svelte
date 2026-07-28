@@ -13,8 +13,6 @@
   import type { IconName } from '../lib/icon-types';
   import { shortcut } from '../lib/desktopFlag';
   import PluginsSection from '../components/settings/PluginsSection.svelte';
-  import SkillsPanel from '../components/settings/SkillsPanel.svelte';
-  import McpPanel from '../components/settings/McpPanel.svelte';
   import MemoryPanel from '../components/settings/MemoryPanel.svelte';
   import CronPanel from '../components/settings/CronPanel.svelte';
   import LoginDialog from '../components/settings/LoginDialog.svelte';
@@ -29,7 +27,7 @@
 
   let { onnavigate = () => {} }: { onnavigate?: () => void } = $props();
 
-  type Section = 'general' | 'preview' | 'models' | 'subagents' | 'plugins' | 'skills' | 'mcp' | 'memory' | 'cron' | 'commands' | 'index' | 'usage' | 'guide';
+  type Section = 'general' | 'preview' | 'models' | 'subagents' | 'plugins' | 'memory' | 'cron' | 'commands' | 'index' | 'usage' | 'guide';
   let active = $state<Section>('general');
 
   // 索引库：codegraph 持久索引重建（Tauri IPC；浏览器模式不可用）。
@@ -60,8 +58,6 @@
     { id: 'models', label: '模型设置', icon: 'sparkles' },
     { id: 'subagents', label: '子智能体', icon: 'git-branch' },
     { id: 'plugins', label: '插件管理', icon: 'plugin' },
-    { id: 'skills', label: '技能', icon: 'sparkles' },
-    { id: 'mcp', label: 'MCP', icon: 'globe' },
     { id: 'memory', label: '记忆', icon: 'file-text' },
     { id: 'cron', label: '定时任务', icon: 'check-list' },
     { id: 'commands', label: '命令', icon: 'bolt' },
@@ -378,12 +374,6 @@
       {:else if active === 'plugins'}
         <PluginsSection />
 
-      {:else if active === 'skills'}
-        <SkillsPanel />
-
-      {:else if active === 'mcp'}
-        <McpPanel />
-
       {:else if active === 'memory'}
         <MemoryPanel />
 
@@ -400,9 +390,9 @@
           <span class="isq"><Icon name="bolt" size="sm" /></span>
           <span class="ir">
             <span class="it">自定义命令</span>
-            <span class="id">命令文件位于项目 <code>.kimi/commands/</code> 与全局 <code>commands/</code> 目录；技能即斜杠命令，可在「技能」页直接创建</span>
+            <span class="id">命令文件位于项目 <code>.kimi/commands/</code> 与全局 <code>commands/</code> 目录；技能与 MCP 已并入「插件管理」统一维护</span>
           </span>
-          <Button size="sm" onclick={() => { client.client.requestSkillCreate(); active = 'skills'; }}>＋ 新建</Button>
+          <Button size="sm" onclick={() => { active = 'plugins'; }}>前往插件管理</Button>
         </div>
 
       {:else if active === 'index'}
