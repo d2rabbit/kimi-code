@@ -26,6 +26,15 @@
     error = '';
     try {
       const r = await client.client.startOAuthLogin();
+      // 已是登录态的快速路径：无设备码可展示，直接判定成功并刷新状态——
+      // 否则会卡在 waiting 阶段对着空设备码空等（轮询也拿不到无 device 的 flow）。
+      if (r.status === 'authenticated' || !r.verificationUri) {
+        phase = 'success';
+        toast.ok('Kimi 已是登录状态');
+        try { await client.client.checkAuth(); } catch { /* 状态稍后自动刷新 */ }
+        setTimeout(onclose, 900);
+        return;
+      }
       userCode = r.userCode ?? '';
       verifyUrl = r.verificationUri;
       verifyUrlComplete = r.verificationUriComplete ?? '';

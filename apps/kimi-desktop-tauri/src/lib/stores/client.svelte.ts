@@ -1153,6 +1153,8 @@ async function startOAuthLogin(): Promise<{
   userCode?: string;
   expiresIn?: number;
   interval?: number;
+  /** 'authenticated' = 已是登录态的快速路径（无设备码流程）。 */
+  status?: string;
 }> {
   const a = getApi();
   const result = await a.startOAuthLogin();
@@ -1162,6 +1164,7 @@ async function startOAuthLogin(): Promise<{
     userCode: result.userCode,
     expiresIn: result.expiresIn,
     interval: result.interval,
+    status: result.status,
   };
 }
 
