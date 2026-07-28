@@ -272,6 +272,26 @@ if [[ "$LOG_LEVEL" != "info" || "$DEBUG_ENDPOINTS" == "1" ]]; then
   log "  daemon 日志：~/.kimi-code/desktop/server/server.log"
 fi
 
+# 任务栏身份（Wayland/KDE）：窗口的 xdg app_id 来自 bundle identifier
+#（tauri.conf.json 的 enableGTKAppId），KWin 按 <app_id>.desktop 匹配任务栏
+# 条目。开发期没有安装包落地 desktop 文件，这里幂等播种一个用户级条目，
+# 让本应用在自己的任务栏图标下显示，而不是堆叠进宿主（如 ZCode）的分组。
+DESKTOP_ID="ai.moonshot.kimi.desktop.tauri"
+APPS_DIR="$HOME/.local/share/applications"
+if [[ -d "$APPS_DIR" ]]; then
+  cat > "$APPS_DIR/$DESKTOP_ID.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Kimi Code Desktop
+Comment=Kimi Code desktop client (Tauri)
+Exec=$BIN
+Icon=$APP_DIR/src-tauri/icons/128x128.png
+StartupWMClass=$DESKTOP_ID
+Terminal=false
+Categories=Development;
+EOF
+fi
+
 # 清除会从启动器/宿主（如 ZCode AppImage）继承的环境标记，否则 KDE 会按
 # CHROME_DESKTOP 把本窗口归到宿主的 .desktop 组里（任务栏与宿主混在一起）。
 if [[ "$FOREGROUND" == "1" ]]; then

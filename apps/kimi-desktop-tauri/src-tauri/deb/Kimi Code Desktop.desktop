@@ -1,0 +1,10 @@
+[Desktop Entry]
+Categories=Development;
+Comment=Kimi Code desktop client (Tauri)
+Exec=kimi-desktop-tauri
+Icon=kimi-desktop-tauri
+Name=Kimi Code Desktop
+StartupWMClass=ai.moonshot.kimi.desktop.tauri
+Terminal=false
+Type=Application
+X-GNOME-UsesNotifications=true
