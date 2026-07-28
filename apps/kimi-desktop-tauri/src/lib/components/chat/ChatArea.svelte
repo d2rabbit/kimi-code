@@ -251,7 +251,26 @@
             <div class="msg user" id="turn-{turn.id}" data-turn-id={turn.id}>
               <div class="bubble u-bub">
                 {#if turn.images?.length}<div class="imgs">{#each turn.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}</div>{/if}
-                {#if turn.text}
+                {#if turn.skillActivation}
+                  <!-- 技能激活卡片（kimi-web 同款，替代裸 "/xxx" 文本） -->
+                  <div class="skill-act">
+                    <div class="sa-head">
+                      <span class="sa-icon">✦</span>
+                      <span class="sa-title">已激活技能</span>
+                      <span class="sa-name mono">{turn.skillActivation.name}</span>
+                    </div>
+                    {#if turn.skillActivation.args}<div class="sa-args">{turn.skillActivation.args}</div>{/if}
+                  </div>
+                {:else if turn.pluginCommand}
+                  <!-- 插件命令卡片（替代展开后的插件正文） -->
+                  <div class="skill-act">
+                    <div class="sa-head">
+                      <span class="sa-icon">🧩</span>
+                      <span class="sa-name mono">/{turn.pluginCommand.pluginId}:{turn.pluginCommand.commandName}</span>
+                    </div>
+                    {#if turn.pluginCommand.args}<div class="sa-args">{turn.pluginCommand.args}</div>{/if}
+                  </div>
+                {:else if turn.text}
                   <div class="u-text">
                     <MarkdownRenderer text={turn.text} streaming={false} />
                   </div>
@@ -452,6 +471,41 @@
   .u-text :global(.md-body ul),
   .u-text :global(.md-body ol) { margin: 0 0 6px; }
   .u-text :global(.md-body .cb-wrap) { margin: 0 0 6px; }
+
+  /* 技能激活 / 插件命令卡片：气泡内的墨色淡染小卡，呼应融合层 */
+  .skill-act {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    background: color-mix(in srgb, currentColor 7%, transparent);
+    border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  }
+  .sa-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .sa-icon { font-size: 11px; opacity: 0.85; }
+  .sa-title { opacity: 0.75; font-weight: 500; }
+  .sa-name {
+    padding: 1px 7px;
+    border-radius: 6px;
+    background: color-mix(in srgb, currentColor 10%, transparent);
+    font-size: 11px;
+  }
+  .mono { font-family: var(--font-mono, monospace); }
+  .sa-args {
+    padding-left: 18px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: color-mix(in srgb, currentColor 78%, transparent);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
 
   /* ---- 气泡融合层 ------------------------------------------------------
      气泡内的 markdown 渲染不再引用页面层 token（--l1/--l3/--bd/--ac），
