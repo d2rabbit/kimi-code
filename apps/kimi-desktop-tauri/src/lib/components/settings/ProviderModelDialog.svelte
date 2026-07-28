@@ -27,10 +27,13 @@
 
   let {
     onclose = () => {},
+    initial = undefined,
   }: {
     /** Kept for backward compatibility — the dialog is now always unified. */
     mode?: 'unified' | 'provider' | 'model';
     onclose?: () => void;
+    /** Edit mode: prefill with an existing provider (e.g. 更新 Key / 改端点). */
+    initial?: { providerId: string } | undefined;
   } = $props();
 
   // ---- provider presets (same as before) ----
@@ -98,6 +101,18 @@
   let useExisting = $state(false);
   let selectedProvider = $state('');
 
+  // Edit mode: prefill from the given provider so the dialog is the single
+  // place to add OR edit (更新 Key / 改端点 / 加模型别名).
+  $effect(() => {
+    if (initial === undefined) return;
+    const p = client.providers().find((x) => x.id === initial.providerId);
+    if (!p) return;
+    useExisting = true;
+    selectedProvider = p.id;
+    pType = p.type;
+    pUrl = p.baseUrl ?? '';
+  });
+
   // ---- model form state ----
   let mName = $state('');
   let mAlias = $state('');
@@ -132,6 +147,16 @@
     }
   });
 
+  // Keep the URL/type fields in sync with the provider chosen in useExisting
+  // mode (covers both the initial prefill and manual switches).
+  $effect(() => {
+    if (!useExisting || !selectedProvider) return;
+    const p = existingProviders.find((x) => x.id === selectedProvider);
+    if (!p) return;
+    pType = p.type;
+    pUrl = p.baseUrl ?? '';
+  });
+
   async function submit() {
     if (saving) return;
     saving = true;
@@ -140,6 +165,18 @@
       let providerId = '';
       if (useExisting) {
         providerId = selectedProvider;
+        // Edit path: only touch the provider when the user actually changed
+        // something (key filled, or URL differs from the stored one).
+        const existing = existingProviders.find((p) => p.id === providerId);
+        const newKey = pKey.trim();
+        const newUrl = pUrl.trim();
+        if (existing && (newKey || newUrl !== (existing.baseUrl ?? '')) ) {
+          await client.client.saveProvider(providerId, {
+            type: existing.type,
+            apiKey: newKey || undefined,
+            baseUrl: newUrl || undefined,
+          });
+        }
       } else {
         if (!pId.trim()) {
           toast.err('请填写供应商 ID');
@@ -229,6 +266,14 @@
           <label class="fld">
             <span class="lbl">选择供应商</span>
             <Select bind:value={selectedProvider} options={providerOptions} />
+          </label>
+          <label class="fld">
+            <span class="lbl">API Key<span class="hint">留空则保持不变</span></span>
+            <Input type="password" bind:value={pKey} placeholder="输入新 Key 以更新" />
+          </label>
+          <label class="fld">
+            <span class="lbl">Base URL<span class="hint">修改后保存生效</span></span>
+            <Input bind:value={pUrl} placeholder="https://…" />
           </label>
         {:else}
           <label class="fld">

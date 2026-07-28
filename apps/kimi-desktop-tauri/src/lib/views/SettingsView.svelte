@@ -7,7 +7,6 @@
   import Button from '../components/ui/Button.svelte';
   import IconButton from '../components/ui/IconButton.svelte';
   import Chip from '../components/ui/Chip.svelte';
-  import Input from '../components/ui/Input.svelte';
   import Segmented from '../components/ui/Segmented.svelte';
   import Switch from '../components/ui/Switch.svelte';
   import type { IconName } from '../lib/icon-types';
@@ -21,6 +20,8 @@
 
   let showLogin = $state(false);
   let pmdMode = $state<'unified' | null>(null);
+  /** 编辑模式：传入对话框的既有供应商 id（undefined = 新建）。 */
+  let pmdEdit = $state<string | undefined>(undefined);
   import * as client from '../stores/client.svelte';
   import { daemon } from '../stores/daemon.svelte';
   import { toast } from '../stores/toast.svelte';
@@ -117,9 +118,6 @@
 
 
 
-  let showEditProvider = $state(false);
-  let editingProvider = $state('');
-  let providerApiKey = $state('');
 
   // Preview preferences (localStorage-backed)
   let previewMode = $state(typeof localStorage !== 'undefined' ? (localStorage.getItem('kode.preview-mode') ?? 'source') : 'source');
@@ -337,36 +335,14 @@
             {:else}<Chip tone="warning">未配置</Chip>{/if}
             {#if p.hasApiKey}
               <IconButton name="refresh" variant="default" size="sm" label="刷新模型" onclick={() => { void client.client.refreshProviderModels(p.id); }} />
-              <Button size="sm" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }}>更新 Key</Button>
+              <Button size="sm" onclick={() => { pmdEdit = p.id; pmdMode = 'unified'; }}>编辑</Button>
             {:else}
-              <Button size="sm" onclick={() => { editingProvider = p.id; providerApiKey = ''; showEditProvider = true; }}>配置</Button>
+              <Button size="sm" onclick={() => { pmdEdit = p.id; pmdMode = 'unified'; }}>编辑</Button>
             {/if}
           </div>
         {/each}
 
-        <button class="dashed-btn" onclick={() => pmdMode = 'unified'} type="button">+ 添加供应商</button>
-
-        {#if showEditProvider}
-          <div class="scard add-model-form">
-            <div class="form-row-vertical"><span class="form-lbl">更新 {editingProvider} 的 API Key</span><Input type="password" bind:value={providerApiKey} placeholder="输入新的 API Key" /></div>
-            <div class="form-actions">
-              <Button size="sm" onclick={() => showEditProvider = false}>取消</Button>
-              <Button variant="primary" size="sm" onclick={async () => {
-                if (!editingProvider || !providerApiKey.trim()) return;
-                const existing = client.providers().find((p) => p.id === editingProvider);
-                await client.client.saveProvider(editingProvider, {
-                  type: existing?.type ?? 'openai',
-                  apiKey: providerApiKey.trim(),
-                  baseUrl: existing?.baseUrl,
-                });
-                showEditProvider = false; providerApiKey = '';
-              }}>保存</Button>
-            </div>
-          </div>
-        {/if}
-
-        <h3>自定义模型</h3>
-        <button class="dashed-btn" onclick={() => pmdMode = 'unified'} type="button">+ 添加自定义模型</button>
+        <button class="dashed-btn" onclick={() => { pmdEdit = undefined; pmdMode = 'unified'; }} type="button">+ 添加供应商 / 自定义模型</button>
 
       {:else if active === 'subagents'}
         <SubagentsSection />
@@ -500,7 +476,7 @@
     <LoginDialog onclose={() => showLogin = false} />
   {/if}
   {#if pmdMode}
-    <ProviderModelDialog mode={pmdMode} onclose={() => pmdMode = null} />
+    <ProviderModelDialog mode={pmdMode} initial={pmdEdit ? { providerId: pmdEdit } : undefined} onclose={() => { pmdMode = null; pmdEdit = undefined; }} />
   {/if}
 </div>
 
@@ -647,10 +623,6 @@
   .key-desc { font-size: 13px; color: var(--tx2); }
 
   /* ---- Forms ---- */
-  .add-model-form { flex-direction: column; align-items: stretch; gap: 10px; display: flex; }
-  .form-row-vertical { display: flex; flex-direction: column; gap: 3px; }
-  .form-lbl { font-size: 11px; color: var(--tx3); }
-  .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
   .dashed-btn { width: 100%; padding: 14px; border: var(--g-border-w-input, 1.5px) dashed var(--ac-bd); border-radius: var(--g-radius-card, 14px); background: transparent; color: var(--ac); font-size: 13px; cursor: pointer; font-family: inherit; opacity: 0.8; transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), opacity var(--duration-fast) var(--ease); }
   .dashed-btn:hover { border-color: var(--ac); background: var(--ac-soft); opacity: 1; }
 </style>
