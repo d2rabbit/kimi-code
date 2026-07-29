@@ -29,14 +29,14 @@
 
   <header class="hero" id="top">
     <div class="hero-inner">
-      <div class="hero-copy">
+      <div class="hero-copy rv">
         <p class="hero-badge">Tauri 2 · Svelte 5 · Rust · fork of Kimi Code</p>
-        <h1>月亮之上，<br /><span class="grad">偏食成形。</span></h1>
+        <h1>自月衍生，<br /><span class="grad">光暗相随。</span></h1>
         <p class="hero-sub">
           <strong>Partial Lunar Eclipse（月偏食）</strong>是
           <a class="up-link" href="https://github.com/MoonshotAI/kimi-code" target="_blank" rel="noopener">Kimi Code</a>
           的 Tauri 桌面客户端——同一个 daemon、同一套会话与工具链，换上原生桌面外壳。
-          月，是 Kimi / Moonshot；偏食，是衍生而不遮蔽。
+          月是 Kimi / Moonshot；光是被照亮的部分，暗是正在发生的自己。
         </p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="https://github.com/d2rabbit/kimi-code/releases" target="_blank" rel="noopener">
@@ -54,18 +54,26 @@
         </div>
       </div>
 
-      <!-- 月偏食：纯 CSS 签名视觉 -->
-      <div class="eclipse" role="img" aria-label="月偏食：银月一角被阴影遮住">
-        <div class="eclipse-glow"></div>
-        <div class="moon">
-          <span class="crater c1"></span>
-          <span class="crater c2"></span>
-          <span class="crater c3"></span>
-          <div class="umbra"></div>
+      <!-- 月偏食形成动画：望 → 初亏 → 食甚 → 复圆 -->
+      <div class="eclipse" role="img" aria-label="月偏食形成动画：阴影自右缘侵入月面，铜边掠过后复圆">
+        <div class="eclipse-stage">
+          <div class="eclipse-glow"></div>
+          <div class="moon">
+            <span class="crater c1"></span>
+            <span class="crater c2"></span>
+            <span class="crater c3"></span>
+            <div class="umbra"></div>
+          </div>
+        </div>
+        <div class="phases" aria-hidden="true">
+          <span class="ph" data-ph="full">望</span>
+          <span class="ph" data-ph="start">初亏</span>
+          <span class="ph" data-ph="max">食甚</span>
+          <span class="ph" data-ph="end">复圆</span>
         </div>
         <div class="eclipse-caption">
-          <span class="cap-cn">月偏食</span>
-          <span class="cap-en">partial lunar eclipse</span>
+          <span class="cap-cn">月偏食 · 形成中</span>
+          <span class="cap-en">partial lunar eclipse in motion</span>
         </div>
       </div>
     </div>
@@ -74,44 +82,44 @@
   <main>
     <section class="section" id="features">
       <h2 class="section-title">特性</h2>
-      <p class="section-sub">同一枚月亮的两种光：Kimi 的蓝与偏食的铜。</p>
+      <p class="section-sub">同一枚月亮的两种光——Kimi 的蓝，偏食的铜。</p>
       <div class="grid">
-        <article class="card">
+        <article class="card rv">
           <div class="card-icon">💬</div>
           <h3>QQ 式双列聊天</h3>
           <p>用户与 agent 分侧气泡，markdown 以气泡自身墨色融合渲染——代码块、链接、引用、表格，在七套主题下都浑然一体。</p>
         </article>
-        <article class="card">
+        <article class="card rv">
           <div class="card-icon">🧩</div>
           <h3>类型化工具卡</h3>
           <p>思考 / 工具 / MCP / JSON / 终端 / 审批 / 提问各就其位；文件卡显示工作区相对路径，Bash 卡显示命令概略，扫一眼就懂。</p>
         </article>
-        <article class="card">
+        <article class="card rv">
           <div class="card-icon">🌗</div>
           <h3>插件市场</h3>
           <p>服务端代理注册表 + 「发现」页，官方 / 精选 / 社区分层；版本更新一次性提醒，计费插件安装时给出配额提示。</p>
         </article>
-        <article class="card">
+        <article class="card rv">
           <div class="card-icon">🪪</div>
           <h3>账号与配额可见</h3>
           <p>绑定卡显示登录账号 ID，周/短周期配额实时条与重置倒计时——会员权益看得见。</p>
         </article>
-        <article class="card">
+        <article class="card rv">
           <div class="card-icon">📦</div>
           <h3>诊断包导出</h3>
           <p>会话头部一键导出诊断归档，服务端自动打包脱敏后的桌面端日志，排障不靠猜。</p>
         </article>
-        <article class="card">
+        <article class="card rv">
           <div class="card-icon">🔒</div>
           <h3>私有内嵌 daemon</h3>
           <p>隔离的 KIMI_CODE_HOME、随机回环端口，随应用启停；浏览器 UI 为可选挂载，无资产时仅以 REST/WS 运行。</p>
         </article>
-        <article class="card">
+        <article class="card rv">
           <div class="card-icon">🎨</div>
           <h3>七套主题</h3>
           <p>dark / light / clay / neon / glass / aqua / system，同一套设计变量驱动，切换无闪烁。</p>
         </article>
-        <article class="card">
+        <article class="card rv">
           <div class="card-icon">⚡</div>
           <h3>性能精修</h3>
           <p>流式渲染全链路调优：turns 记忆化、markdown 解析节流、事件按帧合流——长会话与高速 token 流下依旧顺滑。</p>
@@ -123,18 +131,18 @@
       <h2 class="section-title">与上游</h2>
       <p class="section-sub">衍生而不遮蔽——持续合并 <a class="up-link" href="https://github.com/MoonshotAI/kimi-code" target="_blank" rel="noopener">MoonshotAI/kimi-code</a> 主干。</p>
       <div class="diff-list">
-        <div class="diff-item"><span class="diff-tag">聚焦</span><p>仅保留 Tauri 桌面路线：移除浏览器版（apps/kimi-web）与 Electron 包装版，daemon 的浏览器 UI 改为可选挂载，无资产时 API-only 启动</p></div>
-        <div class="diff-item"><span class="diff-tag">渲染</span><p>聊天体系重做：双列气泡 + 墨色融合 + 类型化卡片 + 技能/插件命令卡片化</p></div>
-        <div class="diff-item"><span class="diff-tag">服务端</span><p>插件市场注册表代理 + 管理 REST、智能体档案目录、会话 cron 管理、/oauth/account 账号身份</p></div>
-        <div class="diff-item"><span class="diff-tag">诊断</span><p>会话导出打通桌面端日志：渲染进程日志脱敏落盘，导出时由服务端打包</p></div>
-        <div class="diff-item"><span class="diff-tag">同步</span><p>持续合并上游 main（引擎重构、WS 即时冲刷、遥测、secondary_model 配置等）并保持客户端对齐</p></div>
+        <div class="diff-item rv"><span class="diff-tag">聚焦</span><p>仅保留 Tauri 桌面路线：移除浏览器版（apps/kimi-web）与 Electron 包装版，daemon 的浏览器 UI 改为可选挂载，无资产时 API-only 启动</p></div>
+        <div class="diff-item rv"><span class="diff-tag">渲染</span><p>聊天体系重做：双列气泡 + 墨色融合 + 类型化卡片 + 技能/插件命令卡片化</p></div>
+        <div class="diff-item rv"><span class="diff-tag">服务端</span><p>插件市场注册表代理 + 管理 REST、智能体档案目录、会话 cron 管理、/oauth/account 账号身份</p></div>
+        <div class="diff-item rv"><span class="diff-tag">诊断</span><p>会话导出打通桌面端日志：渲染进程日志脱敏落盘，导出时由服务端打包</p></div>
+        <div class="diff-item rv"><span class="diff-tag">同步</span><p>持续合并上游 main（引擎重构、WS 即时冲刷、遥测、secondary_model 配置等）并保持客户端对齐</p></div>
       </div>
     </section>
 
     <section class="section" id="quickstart">
       <h2 class="section-title">快速开始</h2>
       <p class="section-sub">需要 Node ≥ 24.15、pnpm 10.33 与 Rust 工具链。</p>
-      <div class="code-block">
+      <div class="code-block rv">
         <button class="copy-btn" data-copy aria-label="复制">复制</button>
         <pre><code>git clone https://github.com/d2rabbit/kimi-code.git
 cd kimi-code
