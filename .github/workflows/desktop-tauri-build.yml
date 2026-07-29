@@ -97,15 +97,8 @@ jobs:
       - name: Build packages
         run: pnpm run build:packages
 
-      # Build the embedded agent: kimi-web assets → copy → tsdown main.cjs.
-      # This mirrors scripts/build-run.sh's agent stage, kept as explicit
-      # cross-platform steps (the script itself uses GNU find / mapfile and
-      # is Linux-only).
-      - name: Build kimi-web frontend
-        run: |
-          pnpm --filter @moonshot-ai/kimi-web run build
-          node apps/kimi-code/scripts/copy-web-assets.mjs
-
+      # Build the embedded agent: tsdown main.cjs (no browser UI in this
+      # fork — the daemon serves REST/WS only). Mirrors scripts/build-run.sh.
       - name: Build vis asset (tsdown prerequisite)
         run: node apps/kimi-code/scripts/build-vis-asset.mjs
 

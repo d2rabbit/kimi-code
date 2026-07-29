@@ -133,11 +133,15 @@ elif [[ "$SKIP_SEA" == "1" ]]; then
   fi
   log "复用已有 main.cjs（--skip-sea）: $AGENT_SCRIPT"
 else
-  log "构建 kimi-web 前端（agent 内嵌用）…"
-  pnpm --filter "$WEB_PKG" run build
+  if [[ -d "$REPO_ROOT/apps/kimi-web" ]]; then
+    log "构建 kimi-web 前端（agent 内嵌用）…"
+    pnpm --filter "$WEB_PKG" run build
 
-  log "拷贝 kimi-web 资源到 kimi-code/dist-web …"
-  node "$REPO_ROOT/apps/kimi-code/scripts/copy-web-assets.mjs"
+    log "拷贝 kimi-web 资源到 kimi-code/dist-web …"
+    node "$REPO_ROOT/apps/kimi-code/scripts/copy-web-assets.mjs"
+  else
+    log "apps/kimi-web 不存在——跳过浏览器 UI 资源（daemon 仅提供 REST/WS）"
+  fi
 
   log "构建内嵌 agent（tsdown，约 30 秒）…"
   # 只跑 bundle 步骤（tsdown native config），跳过 SEA 注入步骤。

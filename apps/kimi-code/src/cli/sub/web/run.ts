@@ -8,6 +8,7 @@
  * `startServer`).
  */
 
+import { statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { hostRequestHeadersSeed } from '@moonshot-ai/agent-core-v2';
@@ -315,14 +316,22 @@ async function runServerInProcess(
   });
 }
 
-function serverWebAssetsDir(): string {
+function serverWebAssetsDir(): string | undefined {
   return resolveServerWebAssetsDir();
 }
 
 export function resolveServerWebAssetsDir(
   nativeWebAssetsDir: string | null = getNativeWebAssetsDir(),
-): string {
-  return nativeWebAssetsDir ?? join(getHostPackageRoot(), WEB_ASSETS_DIR);
+): string | undefined {
+  const dir = nativeWebAssetsDir ?? join(getHostPackageRoot(), WEB_ASSETS_DIR);
+  // Tolerate a missing web UI bundle: kap-server treats `webAssetsDir` as
+  // optional (REST/WS keep serving when it is undefined), so a Tauri-focused
+  // build without the browser UI still boots. When dist-web exists the
+  // behavior is unchanged.
+  if (!statSync(join(dir, 'index.html'), { throwIfNoEntry: false })?.isFile()) {
+    return undefined;
+  }
+  return dir;
 }
 
 interface FormatReadyBannerOptions {

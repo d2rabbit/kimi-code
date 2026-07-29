@@ -1,126 +1,64 @@
-# Kimi Code CLI
+# Partial Lunar Eclipse · 月偏食
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/kimi-code/en/) <br>
-[Documentation](https://moonshotai.github.io/kimi-code/en/) · [Issues](https://github.com/MoonshotAI/kimi-code/issues) · [中文](README.zh-CN.md)
+> A desktop client for [Kimi Code](https://github.com/MoonshotAI/kimi-code), eclipsed onto the desktop.
+> 基于 [Kimi Code](https://github.com/MoonshotAI/kimi-code) 衍生的桌面客户端——月偏食：月在（Kimi / Moonshot）之上，偏食成形。
 
-![Demo of using Kimi Code](./docs/media/intro.gif)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Site](https://img.shields.io/badge/site-github%20pages-blue)](https://d2rabbit.github.io/kimi-code/) <br>
+[原始项目 · Upstream](https://github.com/MoonshotAI/kimi-code) · [站点](https://d2rabbit.github.io/kimi-code/) · [Issues](https://github.com/d2rabbit/kimi-code/issues)
 
-## What is Kimi Code CLI
+## 是什么 · What is this
 
-Kimi Code CLI is an AI coding agent that runs in your terminal — it can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It works out of the box with Moonshot AI’s Kimi models and can also be configured to use other compatible providers.
+**Partial Lunar Eclipse（月偏食）** 是 Kimi Code 的 Tauri 桌面客户端仓库，从上游 [Kimi Code](https://github.com/MoonshotAI/kimi-code)（Moonshot AI 的终端 AI 编码代理）衍生而来：月亮（Kimi）依旧，只是换了一个被"偏食"过的形态——同一个 daemon、同一套会话与工具链，换上原生桌面外壳。
 
-## Install
+名字的含义：**月，是 Kimi / Moonshot；偏食，是衍生而不遮蔽**——我们跟踪上游主干，同时沉淀自己的桌面体验。
 
-Install with the official script. No Node.js required.
+- **Tauri 2 + Svelte 5 + Rust**：与 Electron 平行的轻量桌面形态，本仓库已移除 `apps/kimi-web`（浏览器版）与 Electron 包装版，聚焦单一路线
+- **QQ 式双列聊天**：用户/agent 分侧气泡，墨色融合的 markdown 渲染
+- **类型化工具卡**：思考 / 工具 / MCP / JSON / 终端 / 审批 / 提问，各就其位，文件名与命令概略一目了然
+- **插件市场**：服务端代理注册表 + 发现页 + 更新提醒
+- **私有内嵌 daemon**：隔离 home、随机回环端口、随应用启停
+- **诊断包导出**：一键打包会话与桌面日志
+- **七套主题**：dark / light / clay / neon / glass / aqua / system
 
-- **macOS or Linux**:
+## 构建 · Build
 
-```sh
-curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
-```
-
-- **Windows (PowerShell)**:
-
-```powershell
-irm https://code.kimi.com/kimi-code/install.ps1 | iex
-```
-
-> On Windows, install [Git for Windows](https://gitforwindows.org/) before first launch because Kimi Code CLI uses the bundled Git Bash as its shell environment. If Git Bash is installed in a custom location, set `KIMI_SHELL_PATH` to the absolute path of `bash.exe`.
-
-Then, run it with a new shell session:
+需要 Node ≥ 24.15、pnpm 10.33 与 Rust 工具链。
 
 ```sh
-kimi --version
-```
-
-For npm install, upgrade, uninstall, see [Getting Started](https://moonshotai.github.io/kimi-code/en/guides/getting-started).
-
-## Quick Start
-
-Open a project and start the interactive UI:
-
-```sh
-cd your-project
-kimi
-```
-
-On first launch, run `/login` inside Kimi Code CLI and choose either Kimi Code OAuth or a Moonshot AI Open Platform API key. After login, try your first task:
-
-```
-Take a look at this project and explain its main directories.
-```
-
-## Key Features
-
-- **Single-binary distribution.** Install with one command: no Node.js setup, PATH gymnastics, or global module conflicts.
-- **Blazing-fast startup.** The TUI is ready in milliseconds, so starting a session never feels heavy.
-- **Purpose-built TUI.** A carefully tuned interface, optimized end to end for long, focused agent sessions.
-- **Video input.** Drop a screen recording or demo clip into the chat and let the agent watch what is hard to describe in words — turn a reference clip into a LUT, a long video into a short, a screen recording into working code, and more.
-- **AI-native MCP configuration.** Add, edit, and authenticate Model Context Protocol servers conversationally with `/mcp-config`, without hand-editing JSON.
-- **Rich plugin ecosystem.** Install skills, MCP servers, and data sources from the marketplace or any GitHub repo, with each install's trust level surfaced up front.
-- **Subagents for focused, parallel work.** Dispatch built-in `coder`, `explore`, and `plan` subagents in isolated contexts while keeping the main conversation clean.
-- **Lifecycle hooks.** Run local commands at key points to gate risky tool calls, audit decisions, trigger desktop notifications, or connect to your own automation.
-- **Editor & IDE integration (ACP).** Drive a Kimi Code CLI session straight from Zed, JetBrains, or any [Agent Client Protocol](https://agentclientprotocol.com/) client with `kimi acp`.
-
-## Use it in your editor (ACP)
-
-Kimi Code CLI speaks the [Agent Client Protocol](https://agentclientprotocol.com/), so ACP-compatible editors and IDEs (Zed, JetBrains, …) can drive a session over stdio. Log in once, then point your editor at the `kimi acp` subcommand — no extra login needed.
-
-For Zed, add this to `~/.config/zed/settings.json`:
-
-```json
-{
-  "agent_servers": {
-    "Kimi Code CLI": {
-      "type": "custom",
-      "command": "kimi",
-      "args": ["acp"],
-      "env": {}
-    }
-  }
-}
-```
-
-Then open a new conversation in Zed's Agent panel. See [Using in IDEs](https://moonshotai.github.io/kimi-code/en/guides/ides) for JetBrains setup and troubleshooting, and the [`kimi acp` reference](https://moonshotai.github.io/kimi-code/en/reference/kimi-acp) for the full capability matrix.
-
-## Docs
-
-- [Getting Started](https://moonshotai.github.io/kimi-code/en/guides/getting-started)
-- [Interaction and approvals](https://moonshotai.github.io/kimi-code/en/guides/interaction)
-- [Sessions](https://moonshotai.github.io/kimi-code/en/guides/sessions)
-- [Using in IDEs (ACP)](https://moonshotai.github.io/kimi-code/en/guides/ides)
-- [Configuration](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
-- [Command reference](https://moonshotai.github.io/kimi-code/en/reference/kimi-command)
-
-## Develop
-
-Requirements: Node.js ≥ 24.15.0, pnpm 10.33.0.
-
-```sh
-git clone https://github.com/MoonshotAI/kimi-code.git
+git clone https://github.com/d2rabbit/kimi-code.git
 cd kimi-code
 pnpm install
+
+# 开发运行（内嵌 daemon + 前端热更新）
+pnpm --filter @moonshot-ai/kimi-desktop-tauri run tauri:dev
+
+# 产出可执行程序（本地调试版）
+bash apps/kimi-desktop-tauri/scripts/build-run.sh
+
+# 产出安装包（.deb/.rpm/.AppImage/.dmg/.msi）
+bash apps/kimi-desktop-tauri/scripts/build-run.sh --dist
 ```
 
-```sh
-pnpm dev:cli    # run the CLI in dev mode
-pnpm test       # run tests
-pnpm typecheck  # TypeScript check
-pnpm lint       # oxlint
-pnpm build      # build all packages
+GitHub Actions 已配置四平台打包（`desktop-v*` 标签触发，产物挂到 Release）。
+
+## 仓库结构 · Layout
+
+```
+apps/
+  kimi-code            # 内嵌 agent 本体（CLI/daemon，上游主干 + fork 增量）
+  kimi-desktop-tauri   # Tauri 桌面客户端（Svelte 5 前端 + Rust 外壳）
+packages/              # agent 引擎与协议包（上游主干）
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution guide.
+与上游的主要差异：移除了 `apps/kimi-web`（浏览器版，daemon 改为可选挂载、无资产时仅提供 REST/WS）与 Electron 包装版；daemon 的浏览器 UI 变为可选——没有 `dist-web` 时照常以 API-only 模式启动。
 
-## Community
+## 原始项目 · Upstream
 
-- [Issues](https://github.com/MoonshotAI/kimi-code/issues)
-- For security vulnerabilities, see [SECURITY.md](SECURITY.md).
+本仓库是 [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code) 的 fork，持续合并上游 main。引擎、协议与 CLI 能力全部来自上游，致谢 Moonshot AI 团队。
 
-## Acknowledgements
-
-Our TUI is built on top of [`pi-tui`](https://github.com/earendil-works/pi-mono/tree/main/packages/tui). We thank the authors of `pi-tui` for their valuable work.
+- 上游文档：<https://moonshotai.github.io/kimi-code/en/>
+- 本 fork 站点：<https://d2rabbit.github.io/kimi-code/>
 
 ## License
 
-Released under the [MIT License](LICENSE).
+[MIT](LICENSE)（与上游一致）

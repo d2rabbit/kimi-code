@@ -20,7 +20,14 @@ async function assertBuiltWeb() {
   }
 }
 
-await assertBuiltWeb();
+try {
+  await assertBuiltWeb();
+} catch {
+  // Tauri-focused fork: apps/kimi-web may be absent — the daemon boots
+  // without the browser UI (webAssetsDir is optional in kap-server).
+  console.log('kimi-web build output not found — skipping web assets (API-only daemon).');
+  process.exit(0);
+}
 await rm(target, { recursive: true, force: true });
 await cp(source, target, { recursive: true });
 
