@@ -536,14 +536,25 @@ export interface AppTranscriptPlanResponse {
 }
 
 /** Managed account plan usage (GET /oauth/usage). */
+/** One quota row of the managed account (label + used/limit + reset hint). */
+export interface AppUsageRow {
+  label: string;
+  used?: number;
+  limit?: number;
+  resetHint?: string;
+}
+
+/** Managed account usage (GET /oauth/usage, kind=ok 时返回) */
 export interface AppManagedUsage {
-  plan: string;
-  periodStart?: string;
-  periodEnd?: string;
-  usageLimit?: number;
-  usageUsed?: number;
-  extraUsage?: number;
-  booster?: { remaining?: number; total?: number };
+  summary?: AppUsageRow;
+  limits: AppUsageRow[];
+}
+
+/** Current account identity from the access token's JWT claims (GET /oauth/account). */
+export interface AppOAuthAccount {
+  userId: string;
+  scope?: string;
+  expiresAt?: number;
 }
 
 /** Tool descriptor with active state (GET /tools). */
@@ -954,6 +965,7 @@ export interface KimiWebApi {
 
   // OAuth usage — GET /oauth/usage (managed account plan usage, #2027)
   getOauthUsage(): Promise<AppManagedUsage | null>;
+  getOAuthAccount(): Promise<AppOAuthAccount | null>;
 
   // Connections — GET /connections (attached WS clients diagnostic)
   getConnections(): Promise<AppConnection[]>;

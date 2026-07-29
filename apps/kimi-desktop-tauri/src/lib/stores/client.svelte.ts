@@ -1595,6 +1595,8 @@ export const client = {
   listTools: (sessionId?: string) => getApi().listTools(sessionId),
   /** Get managed account plan usage (GET /oauth/usage). Returns null for non-managed. */
   getOauthUsage: () => getApi().getOauthUsage(),
+  /** Account identity from the access token's JWT claims (GET /oauth/account). */
+  getOAuthAccount: () => getApi().getOAuthAccount(),
   /** List attached WebSocket connections for diagnostics (GET /connections). */
   getConnections: () => getApi().getConnections(),
   /** Gracefully shut down the embedded daemon (POST /shutdown). */

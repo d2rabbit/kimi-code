@@ -20,6 +20,11 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    watch: {
+      // The Rust target/ tree holds hundreds of thousands of build artifacts;
+      // watching it exhausts inotify (ENOSPC) on long-lived dev sessions.
+      ignored: ['**/src-tauri/target/**'],
+    },
     // Browser dev proxy: forward /api/v1/* to the daemon to bypass CORS.
     proxy: {
       '/api/v1': {

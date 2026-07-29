@@ -13,6 +13,8 @@ import type {
   AppPluginSummary,
   AppGoal,
   AppManagedUsage,
+  AppOAuthAccount,
+  AppUsageRow,
   AppMessage,
   AppMessageRole,
   AppModel,
@@ -76,6 +78,8 @@ import type {
   WireFsEntry,
   WireFsHomeResult,
   WireManagedUsage,
+  WireOAuthAccount,
+  WireUsageRow,
   WireMessage,
   WireModel,
   WireOAuthCancelResult,
@@ -1476,24 +1480,34 @@ export class DaemonKimiWebApi implements KimiWebApi {
   }
 
   // -------------------------------------------------------------------------
-  // OAuth usage — GET /oauth/usage (managed account plan usage, #2027)
+  // OAuth usage — GET /oauth/usage (managed account quota rows)
   // -------------------------------------------------------------------------
   async getOauthUsage(): Promise<AppManagedUsage | null> {
     try {
       const data = await this.http.get<WireManagedUsage>('/oauth/usage');
+      if (data.kind !== 'ok') return null;
+      const row = (r?: WireUsageRow | null): AppUsageRow | undefined =>
+        r == null
+          ? undefined
+          : { label: r.label, used: r.used, limit: r.limit, resetHint: r.reset_hint };
       return {
-        plan: data.plan,
-        periodStart: data.period_start,
-        periodEnd: data.period_end,
-        usageLimit: data.usage_limit,
-        usageUsed: data.usage_used,
-        extraUsage: data.extra_usage,
-        booster: data.booster
-          ? { remaining: data.booster.remaining, total: data.booster.total }
-          : undefined,
+        summary: row(data.summary),
+        limits: (data.limits ?? []).map((r) => row(r)!),
       };
     } catch {
       // Non-managed accounts or unconfigured providers return errors — treat as null.
+      return null;
+    }
+  }
+
+  /** GET /oauth/account — account identity from the access token's JWT claims. */
+  async getOAuthAccount(): Promise<AppOAuthAccount | null> {
+    try {
+      const data = await this.http.get<WireOAuthAccount | null>('/oauth/account');
+      return data === null
+        ? null
+        : { userId: data.user_id, scope: data.scope, expiresAt: data.expires_at };
+    } catch {
       return null;
     }
   }

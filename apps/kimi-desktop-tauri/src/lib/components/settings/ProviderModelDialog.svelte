@@ -100,6 +100,9 @@
   }));
   let useExisting = $state(false);
   let selectedProvider = $state('');
+  // 已有供应商加模型时默认继承供应商凭据，Key/端点编辑收进高级区——
+  // 编辑模式（initial）下自动展开。
+  let showProviderEdit = $state(false);
 
   // Edit mode: prefill from the given provider so the dialog is the single
   // place to add OR edit (更新 Key / 改端点 / 加模型别名).
@@ -111,6 +114,7 @@
     selectedProvider = p.id;
     pType = p.type;
     pUrl = p.baseUrl ?? '';
+    showProviderEdit = true;
   });
 
   // ---- model form state ----
@@ -267,14 +271,20 @@
             <span class="lbl">选择供应商</span>
             <Select bind:value={selectedProvider} options={providerOptions} />
           </label>
-          <label class="fld">
-            <span class="lbl">API Key<span class="hint">留空则保持不变</span></span>
-            <Input type="password" bind:value={pKey} placeholder="输入新 Key 以更新" />
-          </label>
-          <label class="fld">
-            <span class="lbl">Base URL<span class="hint">修改后保存生效</span></span>
-            <Input bind:value={pUrl} placeholder="https://…" />
-          </label>
+          <p class="inherit-hint">凭据沿用该供应商现有配置，无需重复输入。</p>
+          <button class="adv-toggle" type="button" onclick={() => showProviderEdit = !showProviderEdit}>
+            <span class="adv-chev">{showProviderEdit ? '▾' : '▸'}</span> 修改供应商信息（Key / 端点）
+          </button>
+          {#if showProviderEdit}
+            <label class="fld">
+              <span class="lbl">API Key<span class="hint">留空则保持不变</span></span>
+              <Input type="password" bind:value={pKey} placeholder="输入新 Key 以更新" />
+            </label>
+            <label class="fld">
+              <span class="lbl">Base URL<span class="hint">修改后保存生效</span></span>
+              <Input bind:value={pUrl} placeholder="https://…" />
+            </label>
+          {/if}
         {:else}
           <label class="fld">
             <span class="lbl">服务类型</span>
@@ -409,6 +419,14 @@
   }
 
   .fld { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .inherit-hint { font-size: 11px; color: var(--tx3); margin: 2px 0 0; }
+  .adv-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: none; background: transparent; padding: 2px 0;
+    color: var(--tx3); font-size: 11px; cursor: pointer;
+  }
+  .adv-toggle:hover { color: var(--tx); }
+  .adv-chev { font-size: 9px; }
   .fld-row { display: flex; gap: 10px; }
   .lbl { font-size: 11.5px; font-weight: 500; color: var(--tx); display: flex; align-items: baseline; gap: 6px; }
   .hint { font-size: 10px; color: var(--tx3); font-weight: 400; }

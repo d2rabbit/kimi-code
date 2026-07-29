@@ -537,14 +537,27 @@ export interface WireAuthResult {
 }
 
 /** GET /oauth/usage — managed account plan usage (#2027). */
+export interface WireUsageRow {
+  label: string;
+  used?: number;
+  limit?: number;
+  reset_hint?: string;
+}
+
 export interface WireManagedUsage {
-  plan: string;
-  period_start?: string;
-  period_end?: string;
-  usage_limit?: number;
-  usage_used?: number;
-  extra_usage?: number;
-  booster?: { remaining?: number; total?: number };
+  kind: 'ok' | 'error';
+  message?: string;
+  summary?: WireUsageRow | null;
+  limits?: WireUsageRow[];
+  extra_usage?: unknown;
+}
+
+/** GET /oauth/account — JWT claims of the current access token (null when logged out). */
+export interface WireOAuthAccount {
+  user_id: string;
+  scope?: string;
+  client_id?: string;
+  expires_at?: number;
 }
 
 /** GET /tools — tool descriptors with active state (#2005). */

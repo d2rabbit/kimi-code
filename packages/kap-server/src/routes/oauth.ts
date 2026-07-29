@@ -5,6 +5,8 @@
  *   GET    /oauth/login   poll current flow state  → OAuthFlowSnapshot | null
  *   DELETE /oauth/login   cancel pending flow       → { cancelled, status }
  *   POST   /oauth/logout  logout                    → { logged_out, provider }
+ *   GET    /oauth/usage   managed-account usage     → ManagedUsageResult
+ *   GET    /oauth/account current account identity  → JWT claims | null
  *
  * Backed by the v2 `IOAuthService` (Core scope), which already returns the
  * protocol wire types, so the handlers only swap the v1 accessor
@@ -31,6 +33,28 @@ import {
   oauthLoginStartRequestSchema,
   oauthLogoutRequestSchema,
 } from '../protocol/rest-oauth';
+
+/** Account identity decoded from the current access token's JWT claims. */
+const oauthAccountSchema = z.object({
+  user_id: z.string(),
+  scope: z.string().optional(),
+  client_id: z.string().optional(),
+  expires_at: z.number().optional(),
+});
+const oauthAccountOrNullSchema = z.union([oauthAccountSchema, z.null()]);
+
+/** Decode the payload of a JWT without verifying the signature (the token was
+ *  issued/validated by the OAuth host; we only surface identity claims). */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1]!, 'base64url').toString('utf-8'));
+    return payload !== null && typeof payload === 'object' ? payload as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
 
 interface RouteHost {
   get(
@@ -174,6 +198,50 @@ export function registerOAuthRoutes(app: RouteHost, core: Scope): void {
     usageRoute.path,
     usageRoute.options,
     usageRoute.handler as Parameters<RouteHost['get']>[2],
+  );
+
+  // GET /oauth/account — current account identity from the access token -----
+  const accountRoute = defineRoute(
+    {
+      method: 'GET',
+      path: '/oauth/account',
+      querystring: oauthLoginQuerySchema,
+      success: { data: oauthAccountOrNullSchema },
+      description: 'Get the current account identity (JWT claims), null when logged out',
+      tags: ['auth'],
+    },
+    async (req, reply) => {
+      const oauth = core.accessor.get(IOAuthService);
+      const provider = (req.query as { provider?: string }).provider;
+      const token = await oauth.getCachedAccessToken(
+        provider ?? 'managed:kimi-code',
+        undefined,
+      );
+      if (token === undefined) {
+        reply.send(okEnvelope(null, req.id));
+        return;
+      }
+      const claims = decodeJwtPayload(token);
+      if (claims === null) {
+        reply.send(okEnvelope(null, req.id));
+        return;
+      }
+      const sub = claims['sub'] ?? claims['user_id'];
+      reply.send(okEnvelope(
+        {
+          user_id: typeof sub === 'string' ? sub : String(sub ?? ''),
+          scope: typeof claims['scope'] === 'string' ? claims['scope'] : undefined,
+          client_id: typeof claims['client_id'] === 'string' ? claims['client_id'] : undefined,
+          expires_at: typeof claims['exp'] === 'number' ? claims['exp'] : undefined,
+        },
+        req.id,
+      ));
+    },
+  );
+  app.get(
+    accountRoute.path,
+    accountRoute.options,
+    accountRoute.handler as Parameters<RouteHost['get']>[2],
   );
 }
 

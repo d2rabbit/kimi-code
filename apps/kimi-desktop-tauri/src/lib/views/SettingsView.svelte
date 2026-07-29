@@ -10,6 +10,7 @@
   import Segmented from '../components/ui/Segmented.svelte';
   import Switch from '../components/ui/Switch.svelte';
   import type { IconName } from '../lib/icon-types';
+  import type { AppManagedUsage, AppOAuthAccount } from '../api/types';
   import { shortcut } from '../lib/desktopFlag';
   import PluginsSection from '../components/settings/PluginsSection.svelte';
   import MemoryPanel from '../components/settings/MemoryPanel.svelte';
@@ -127,18 +128,31 @@
   // Usage hero: context ring geometry
   const usage = $derived(client.activeSessionUsage());
 
-  // Managed account plan usage (GET /oauth/usage) — fills quota bars when authenticated.
-  let oauthUsage = $state<{ plan: string; used?: number; limit?: number; extra?: number } | null>(null);
+  // Managed account usage + identity (GET /oauth/usage + /oauth/account) —
+  // fills quota bars and the account row when authenticated.
+  let oauthUsage = $state<AppManagedUsage | null>(null);
+  let oauthAccount = $state<AppOAuthAccount | null>(null);
   $effect(() => {
     if (client.authProvider()?.status === 'authenticated') {
       void client.client.getOauthUsage().then((u) => { oauthUsage = u; });
+      void client.client.getOAuthAccount().then((a) => { oauthAccount = a; });
     } else {
       oauthUsage = null;
+      oauthAccount = null;
     }
   });
-  const usagePct = $derived(
-    oauthUsage && oauthUsage.limit ? Math.min(100, Math.round(((oauthUsage.used ?? 0) / oauthUsage.limit) * 100)) : 0,
-  );
+  const summaryPct = $derived.by(() => {
+    const s = oauthUsage?.summary;
+    return s?.limit ? Math.min(100, Math.round(((s.used ?? 0) / s.limit) * 100)) : 0;
+  });
+  /** 账号 id 中段省略（完整 id 放 title / 点击复制）。 */
+  function shortUserId(id: string): string {
+    return id.length > 14 ? `${id.slice(0, 8)}…${id.slice(-4)}` : id;
+  }
+  function copyUserId() {
+    if (!oauthAccount) return;
+    void navigator.clipboard.writeText(oauthAccount.userId).then(() => toast.ok('账号 ID 已复制'));
+  }
 
   // 真实聚合：按工作区汇总全部会话的 token 与费用（来自 sessions 的 usage 字段）
   const usageByWs = $derived.by(() => {
@@ -267,7 +281,15 @@
           </div>
           <div class="bind-body">
             <div class="bind-plan">
-              <span class="t">{client.authProvider()?.status === 'authenticated' ? (client.authProvider()?.name ?? 'Kimi 账号') : 'Kimi 账号'}</span>
+              <span class="t">
+                {#if client.authProvider()?.status === 'authenticated' && oauthAccount}
+                  <button class="acct mono" title={`账号 ID：${oauthAccount.userId}（点击复制）`} onclick={copyUserId} type="button">
+                    {shortUserId(oauthAccount.userId)}
+                  </button>
+                {:else}
+                  Kimi 账号
+                {/if}
+              </span>
               <span class="d">{#if client.authProvider()?.status === 'authenticated'}订阅生效中 · 第一方模型可用{:else}登录后可使用 Kimi K2 等第一方模型，无需 API Key{/if}</span>
             </div>
             {#if client.authProvider()?.status === 'authenticated'}
@@ -279,27 +301,37 @@
           </div>
         </div>
 
-        <!-- Quota bars — filled from GET /oauth/usage when managed account is authenticated -->
+        <!-- Quota bars — filled from GET /oauth/usage when authenticated -->
         <div class="quota-row">
           <div class="quota-card">
             <div class="quota-t">
-              <span>Token 额度{#if oauthUsage?.plan} · {oauthUsage.plan}{/if}</span>
-              <span class="mono pct">{#if oauthUsage?.limit}{usagePct}%{:else}—{/if}</span>
+              <span>{oauthUsage?.summary?.label ?? '周期额度'}</span>
+              <span class="mono pct">{#if oauthUsage?.summary?.limit}{summaryPct}%{:else}—{/if}</span>
             </div>
-            <div class="bar"><i style="width:{usagePct}%"></i></div>
+            <div class="bar"><i style="width:{summaryPct}%"></i></div>
             <div class="quota-m mono">
-              {#if oauthUsage?.limit}
-                {(oauthUsage.used ?? 0).toLocaleString()} / {oauthUsage.limit.toLocaleString()} tokens
-                {#if oauthUsage.extra} · 额外 {oauthUsage.extra.toLocaleString()}{/if}
+              {#if oauthUsage?.summary}
+                {oauthUsage.summary.used ?? 0} / {oauthUsage.summary.limit ?? '—'}
+                {#if oauthUsage.summary.resetHint} · {oauthUsage.summary.resetHint}{/if}
               {:else}
                 账户配额由服务端管理，登录后在账单页查看
               {/if}
             </div>
           </div>
           <div class="quota-card">
-            <div class="quota-t"><span>MCP 额度</span><span class="mono pct purple">—</span></div>
-            <div class="bar purple"><i style="width:0%"></i></div>
-            <div class="quota-m mono">账户配额由服务端管理，登录后在账单页查看</div>
+            <div class="quota-t">
+              <span>{oauthUsage?.limits?.[0]?.label ?? '短周期额度'}</span>
+              <span class="mono pct purple">{#if oauthUsage?.limits?.[0]?.limit}{Math.min(100, Math.round(((oauthUsage.limits[0].used ?? 0) / oauthUsage.limits[0].limit) * 100))}%{:else}—{/if}</span>
+            </div>
+            <div class="bar purple"><i style="width:{oauthUsage?.limits?.[0]?.limit ? Math.min(100, Math.round(((oauthUsage.limits[0].used ?? 0) / oauthUsage.limits[0].limit) * 100)) : 0}%"></i></div>
+            <div class="quota-m mono">
+              {#if oauthUsage?.limits?.[0]}
+                {oauthUsage.limits[0].used ?? 0} / {oauthUsage.limits[0].limit ?? '—'}
+                {#if oauthUsage.limits[0].resetHint} · {oauthUsage.limits[0].resetHint}{/if}
+              {:else}
+                账户配额由服务端管理，登录后在账单页查看
+              {/if}
+            </div>
           </div>
         </div>
 
@@ -483,6 +515,17 @@
 <style>
   .settings-page { display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden; animation: spIn 0.18s var(--ease); }
   @keyframes spIn { from { opacity: 0; transform: translateY(6px); } }
+
+  .acct {
+    border: none;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    color: var(--tx);
+    cursor: pointer;
+    text-align: left;
+  }
+  .acct:hover { color: var(--ac); }
 
   /* ---- Top header ---- */
   .sp-header { flex: none; height: 40px; display: flex; align-items: center; padding: 0 16px; background: var(--mat-header-bg, var(--l1)); border-bottom: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); }
