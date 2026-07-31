@@ -3,167 +3,282 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Partial Lunar Eclipse · 月偏食 — Kimi Code 桌面客户端</title>
-  <meta name="description" content="Partial Lunar Eclipse（月偏食）：基于 Kimi Code 衍生的 Tauri 桌面客户端。月在（Kimi / Moonshot）之上，偏食成形——同一 daemon，原生桌面外壳。" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='42' cy='50' r='30' fill='%23e8ecf3'/><circle cx='58' cy='50' r='30' fill='%2305070f'/></svg>" />
+  <meta name="theme-color" content="#070914" />
+  <title>Partial Lunar Eclipse · 月偏食 — Kimi Code 原生桌面客户端</title>
+  <meta name="description" content="Partial Lunar Eclipse（月偏食）：让 Kimi Code 的蓝紫月光穿过原生桌面外壳。Tauri 2、Svelte 5、Rust 与私有内嵌 daemon。" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='%236c8cff'/><stop offset='1' stop-color='%23ffac84'/></linearGradient></defs><circle cx='50' cy='50' r='34' fill='url(%23g)'/><circle cx='66' cy='43' r='34' fill='%23070914'/></svg>" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- 星野背景 -->
-  <div class="stars" aria-hidden="true"></div>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="ambient ambient-kimi" aria-hidden="true"></div>
+  <div class="ambient ambient-eclipse" aria-hidden="true"></div>
 
-  <nav class="nav">
+  <nav class="nav" aria-label="主导航">
     <div class="nav-inner">
-      <a class="brand" href="#top">
-        <span class="brand-moon" aria-hidden="true"><i></i></span>
-        <span class="brand-text">Partial Lunar Eclipse <em>月偏食</em></span>
+      <a class="brand" href="#top" aria-label="回到首页">
+        <span class="brand-mark" aria-hidden="true">
+          <span class="brand-light"></span>
+          <span class="brand-shadow"></span>
+        </span>
+        <span class="brand-copy">
+          <strong>Partial Lunar Eclipse</strong>
+          <small>Kimi Code · 月偏食</small>
+        </span>
       </a>
       <div class="nav-links">
-        <a href="#features">特性</a>
-        <a href="#lineage">与上游</a>
-        <a href="#quickstart">快速开始</a>
-        <a class="nav-gh" href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">GitHub</a>
+        <a href="#experience">桌面体验</a>
+        <a href="#lineage">光的来处</a>
+        <a href="#quickstart">开始使用</a>
       </div>
+      <a class="nav-action" href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        <span>GitHub</span>
+      </a>
     </div>
   </nav>
 
   <header class="hero" id="top">
+    <div class="hero-orbit hero-orbit-a" aria-hidden="true"></div>
+    <div class="hero-orbit hero-orbit-b" aria-hidden="true"></div>
     <div class="hero-inner">
-      <div class="hero-copy rv">
-        <p class="hero-badge">Tauri 2 · Svelte 5 · Rust · fork of Kimi Code</p>
-        <h1>自月衍生，<br /><span class="grad">光暗相随。</span></h1>
-        <p class="hero-sub">
-          <strong>Partial Lunar Eclipse（月偏食）</strong>是
-          <a class="up-link" href="https://github.com/MoonshotAI/kimi-code" target="_blank" rel="noopener">Kimi Code</a>
-          的 Tauri 桌面客户端——同一个 daemon、同一套会话与工具链，换上原生桌面外壳。
-          月是 Kimi / Moonshot；光是被照亮的部分，暗是正在发生的自己。
-        </p>
-        <div class="hero-cta">
-          <a class="btn btn-primary" href="https://github.com/d2rabbit/kimi-code/releases" target="_blank" rel="noopener">
-            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V1.75A.75.75 0 0 1 8 1ZM2.5 12a.75.75 0 0 1 .75.75v.5c0 .138.112.25.25.25h9a.25.25 0 0 0 .25-.25v-.5a.75.75 0 0 1 1.5 0v.5A1.75 1.75 0 0 1 12.5 15h-9a1.75 1.75 0 0 1-1.75-1.75v-.5A.75.75 0 0 1 2.5 12Z"/></svg>
-            下载（Releases）
-          </a>
-          <a class="btn btn-ghost" href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">
-            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-            GitHub 仓库
-          </a>
-          <a class="btn btn-quiet" href="https://github.com/MoonshotAI/kimi-code" target="_blank" rel="noopener">原始项目 ↗</a>
+      <div class="hero-copy reveal">
+        <div class="eyebrow">
+          <span class="eyebrow-pulse" aria-hidden="true"></span>
+          <span>Kimi Code 的原生桌面分支</span>
+          <span class="eyebrow-sep">/</span>
+          <span>持续跟随上游 main</span>
         </div>
-        <div class="hero-platforms">
-          <span>macOS</span><i>·</i><span>Linux</span><i>·</i><span>Windows</i>
+        <h1>
+          <span class="title-kimi">Kimi 的月光，</span>
+          <span class="title-eclipse">偏食后的桌面。</span>
+        </h1>
+        <p class="hero-sub">
+          <strong>Partial Lunar Eclipse（月偏食）</strong>把 Kimi Code 的智能、会话与工具链，
+          收进一个更安静、更原生的 Tauri 桌面工作台。蓝紫是 Kimi 的光，铜色是偏食留下的边缘。
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="https://github.com/d2rabbit/kimi-code/releases" target="_blank" rel="noopener">
+            <span class="button-shine" aria-hidden="true"></span>
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V1.75A.75.75 0 0 1 8 1ZM2.5 12a.75.75 0 0 1 .75.75v.5c0 .138.112.25.25.25h9a.25.25 0 0 0 .25-.25v-.5a.75.75 0 0 1 1.5 0v.5A1.75 1.75 0 0 1 12.5 15h-9a1.75 1.75 0 0 1-1.75-1.75v-.5A.75.75 0 0 1 2.5 12Z"/></svg>
+            下载桌面版
+          </a>
+          <a class="button button-secondary" href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">
+            查看源代码
+            <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+        <div class="hero-facts" aria-label="平台与技术信息">
+          <span><i class="fact-dot fact-blue"></i>macOS · Linux · Windows</span>
+          <span><i class="fact-dot fact-copper"></i>Tauri 2 · Svelte 5 · Rust</span>
+          <span><i class="fact-dot fact-white"></i>私有内嵌 daemon</span>
         </div>
       </div>
 
-      <!-- 月偏食形成动画：望 → 初亏 → 食甚 → 复圆 -->
-      <div class="eclipse" role="img" aria-label="月偏食形成动画：阴影自右缘侵入月面，铜边掠过后复圆">
-        <div class="eclipse-stage">
-          <div class="eclipse-glow"></div>
-          <div class="moon">
-            <span class="crater c1"></span>
-            <span class="crater c2"></span>
-            <span class="crater c3"></span>
-            <div class="umbra"></div>
+      <div class="hero-visual reveal" data-parallax>
+        <div class="eclipse-system" id="eclipseSystem" data-phase="partial" role="img" aria-label="Kimi 蓝紫光源穿过月偏食，照亮原生桌面工作台">
+          <div class="orbit orbit-outer" aria-hidden="true"><span class="orbit-satellite">K</span></div>
+          <div class="orbit orbit-inner" aria-hidden="true"></div>
+          <div class="source-core" aria-hidden="true">
+            <span class="source-ring"></span>
+            <span class="source-label">Kimi</span>
           </div>
+          <div class="eclipse-corona" aria-hidden="true"></div>
+          <div class="hero-moon" aria-hidden="true">
+            <span class="moon-noise"></span>
+            <span class="crater crater-a"></span>
+            <span class="crater crater-b"></span>
+            <span class="crater crater-c"></span>
+            <span class="moon-shadow"></span>
+            <span class="copper-rim"></span>
+          </div>
+          <div class="light-bridge" aria-hidden="true"><span></span></div>
+
+          <div class="desktop-window">
+            <div class="window-bar">
+              <div class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+              <span class="window-title">Partial Lunar Eclipse</span>
+              <span class="window-state"><i></i> Local daemon</span>
+            </div>
+            <div class="window-body">
+              <aside class="mock-sidebar" aria-hidden="true">
+                <span class="mock-logo">P</span>
+                <i class="side-line active"></i><i class="side-line"></i><i class="side-line short"></i>
+                <span class="side-orb"></span>
+              </aside>
+              <div class="mock-chat">
+                <div class="mock-topline"><span>月偏食工作区</span><i></i></div>
+                <div class="mock-message message-user">把主干的新能力适配到桌面端</div>
+                <div class="mock-message message-kimi">
+                  <span class="kimi-avatar">K</span>
+                  <p>正在同步 Workspace、搜索与终端能力。</p>
+                </div>
+                <div class="mock-tool">
+                  <div><span class="tool-spark">✦</span><strong>Workspace search</strong><em>completed</em></div>
+                  <span class="tool-line"></span><span class="tool-line medium"></span>
+                </div>
+                <div class="mock-composer"><span>继续交给 Kimi Code…</span><i>⌘↵</i></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="signal-pill signal-kimi"><i></i><span>Kimi intelligence</span></div>
+          <div class="signal-pill signal-shell"><i></i><span>Native shell</span></div>
+          <div class="signal-pill signal-local"><i></i><span>Local first</span></div>
         </div>
-        <div class="phases" aria-hidden="true">
-          <span class="ph" data-ph="full">望</span>
-          <span class="ph" data-ph="start">初亏</span>
-          <span class="ph" data-ph="max">食甚</span>
-          <span class="ph" data-ph="end">复圆</span>
-        </div>
-        <div class="eclipse-caption">
-          <span class="cap-cn">月偏食 · 形成中</span>
-          <span class="cap-en">partial lunar eclipse in motion</span>
+
+        <div class="phase-control" aria-label="月偏食阶段选择">
+          <button type="button" data-phase="light">月光</button>
+          <button type="button" data-phase="partial" class="is-active">初亏</button>
+          <button type="button" data-phase="maximum">食甚</button>
+          <button type="button" data-phase="return">复圆</button>
         </div>
       </div>
     </div>
+    <a class="scroll-cue" href="#experience" aria-label="继续浏览">
+      <span>向下进入桌面</span><i aria-hidden="true"></i>
+    </a>
   </header>
 
   <main>
-    <section class="section" id="features">
-      <h2 class="section-title">特性</h2>
-      <p class="section-sub">同一枚月亮的两种光——Kimi 的蓝，偏食的铜。</p>
-      <div class="grid">
-        <article class="card rv">
-          <div class="card-icon">💬</div>
-          <h3>QQ 式双列聊天</h3>
-          <p>用户与 agent 分侧气泡，markdown 以气泡自身墨色融合渲染——代码块、链接、引用、表格，在七套主题下都浑然一体。</p>
+    <div class="signal-strip" aria-hidden="true">
+      <div class="signal-track">
+        <span>KIMI CODE</span><i>✦</i><span>PARTIAL LUNAR ECLIPSE</span><i>◐</i><span>TAURI NATIVE</span><i>✦</i><span>LOCAL DAEMON</span><i>◐</i>
+        <span>KIMI CODE</span><i>✦</i><span>PARTIAL LUNAR ECLIPSE</span><i>◐</i><span>TAURI NATIVE</span><i>✦</i><span>LOCAL DAEMON</span><i>◐</i>
+      </div>
+    </div>
+
+    <section class="section experience" id="experience">
+      <div class="section-heading reveal">
+        <span class="section-kicker">01 · THE DESKTOP EXPERIENCE</span>
+        <h2>光落到桌面以后，<br /><em>每一种能力都有形状。</em></h2>
+        <p>不是给网页套一个窗口，而是让流式对话、工具调用、终端与本地文件真正拥有桌面级的秩序。</p>
+      </div>
+
+      <div class="bento-grid">
+        <article class="bento bento-chat reveal" data-glow-card>
+          <div class="card-heading"><span class="card-number">01</span><span class="card-chip chip-blue">Conversation</span></div>
+          <h3>双列对话，像人与 Kimi 真正在协作</h3>
+          <p>用户与 Agent 分侧呈现，工具、审批、提问与终端拥有独立层级。信息密度高，但视线始终知道该落在哪里。</p>
+          <div class="mini-conversation" aria-hidden="true">
+            <div class="mini-bubble mini-user">帮我对比主干更新</div>
+            <div class="mini-agent"><i>K</i><span>已找到 16 个新增提交，正在适配 Workspace 能力。</span></div>
+            <div class="mini-progress"><span></span><span></span><span></span><em>同步中</em></div>
+          </div>
         </article>
-        <article class="card rv">
-          <div class="card-icon">🧩</div>
-          <h3>类型化工具卡</h3>
-          <p>思考 / 工具 / MCP / JSON / 终端 / 审批 / 提问各就其位；文件卡显示工作区相对路径，Bash 卡显示命令概略，扫一眼就懂。</p>
+
+        <article class="bento bento-terminal reveal" data-glow-card>
+          <div class="card-heading"><span class="card-number">02</span><span class="card-chip chip-copper">Native terminal</span></div>
+          <h3>终端不是附件，是工作台的一部分</h3>
+          <p>实时输入、输出、调整尺寸与重连恢复，由本地 daemon 管理生命周期。</p>
+          <div class="mini-terminal" aria-hidden="true">
+            <div class="terminal-bar"><i></i><i></i><i></i><span>workspace — zsh</span></div>
+            <code><span class="prompt">❯</span> pnpm desktop:dev</code>
+            <code class="terminal-success">✓ embedded agent ready</code>
+            <code class="terminal-dim">ws://127.0.0.1:ephemeral</code>
+            <span class="terminal-caret"></span>
+          </div>
         </article>
-        <article class="card rv">
-          <div class="card-icon">🌗</div>
-          <h3>插件市场</h3>
-          <p>服务端代理注册表 + 「发现」页，官方 / 精选 / 社区分层；版本更新一次性提醒，计费插件安装时给出配额提示。</p>
+
+        <article class="bento bento-search reveal" data-glow-card>
+          <div class="card-heading"><span class="card-number">03</span><span class="card-chip chip-blue">Workspace</span></div>
+          <h3>跨会话搜索，也能从 @ 找到工作区文件</h3>
+          <p>主干的新 Workspace 搜索能力直接进入桌面端，不必先创建会话，输入 @ 就能从当前项目开始。</p>
+          <div class="search-demo" aria-hidden="true">
+            <div class="search-input"><span>@</span><b>src/</b><i></i></div>
+            <div class="search-result active"><span>TS</span><p><strong>client.ts</strong><small>src/lib/api/daemon</small></p><kbd>↵</kbd></div>
+            <div class="search-result"><span>SV</span><p><strong>Composer.svelte</strong><small>src/lib/components/chat</small></p></div>
+          </div>
         </article>
-        <article class="card rv">
-          <div class="card-icon">🪪</div>
-          <h3>账号与配额可见</h3>
-          <p>绑定卡显示登录账号 ID，周/短周期配额实时条与重置倒计时——会员权益看得见。</p>
+
+        <article class="bento bento-account reveal" data-glow-card>
+          <div class="card-heading"><span class="card-number">04</span><span class="card-chip chip-copper">Managed account</span></div>
+          <h3>账号、配额与 Booster，不再藏在接口后面</h3>
+          <p>结构化展示全部限额窗口与重置时间，让使用状态和模型选择一样清楚。</p>
+          <div class="quota-demo" aria-hidden="true">
+            <div class="quota-head"><span class="quota-avatar">K</span><p><strong>Kimi Code</strong><small>Managed account</small></p><em>PRO</em></div>
+            <div class="quota-row"><span>Weekly</span><b><i style="--quota: 72%"></i></b><small>72%</small></div>
+            <div class="quota-row"><span>Booster</span><b><i style="--quota: 46%"></i></b><small>46%</small></div>
+          </div>
         </article>
-        <article class="card rv">
-          <div class="card-icon">📦</div>
-          <h3>诊断包导出</h3>
-          <p>会话头部一键导出诊断归档，服务端自动打包脱敏后的桌面端日志，排障不靠猜。</p>
-        </article>
-        <article class="card rv">
-          <div class="card-icon">🔒</div>
-          <h3>私有内嵌 daemon</h3>
-          <p>隔离的 KIMI_CODE_HOME、随机回环端口，随应用启停；浏览器 UI 为可选挂载，无资产时仅以 REST/WS 运行。</p>
-        </article>
-        <article class="card rv">
-          <div class="card-icon">🎨</div>
-          <h3>七套主题</h3>
-          <p>dark / light / clay / neon / glass / aqua / system，同一套设计变量驱动，切换无闪烁。</p>
-        </article>
-        <article class="card rv">
-          <div class="card-icon">⚡</div>
-          <h3>性能精修</h3>
-          <p>流式渲染全链路调优：turns 记忆化、markdown 解析节流、事件按帧合流——长会话与高速 token 流下依旧顺滑。</p>
+
+        <article class="bento bento-safe reveal" data-glow-card>
+          <div class="safe-orbit" aria-hidden="true"><i></i><span>LOCAL</span></div>
+          <div class="card-heading"><span class="card-number">05</span><span class="card-chip chip-neutral">Boundary</span></div>
+          <h3>业务流直连，原生权限收紧</h3>
+          <p>REST 与 WebSocket 从 WebView 直达私有 daemon；Tauri IPC 只负责窗口、文件、终端等原生能力，并对路径与输出做边界限制。</p>
+          <ul class="boundary-list">
+            <li><i></i>随机回环端口</li><li><i></i>隔离 KIMI_CODE_HOME</li><li><i></i>HTTP(S) 外链白名单</li>
+          </ul>
         </article>
       </div>
     </section>
 
-    <section class="section" id="lineage">
-      <h2 class="section-title">与上游</h2>
-      <p class="section-sub">衍生而不遮蔽——持续合并 <a class="up-link" href="https://github.com/MoonshotAI/kimi-code" target="_blank" rel="noopener">MoonshotAI/kimi-code</a> 主干。</p>
-      <div class="diff-list">
-        <div class="diff-item rv"><span class="diff-tag">聚焦</span><p>仅保留 Tauri 桌面路线：移除浏览器版（apps/kimi-web）与 Electron 包装版，daemon 的浏览器 UI 改为可选挂载，无资产时 API-only 启动</p></div>
-        <div class="diff-item rv"><span class="diff-tag">渲染</span><p>聊天体系重做：双列气泡 + 墨色融合 + 类型化卡片 + 技能/插件命令卡片化</p></div>
-        <div class="diff-item rv"><span class="diff-tag">服务端</span><p>插件市场注册表代理 + 管理 REST、智能体档案目录、会话 cron 管理、/oauth/account 账号身份</p></div>
-        <div class="diff-item rv"><span class="diff-tag">诊断</span><p>会话导出打通桌面端日志：渲染进程日志脱敏落盘，导出时由服务端打包</p></div>
-        <div class="diff-item rv"><span class="diff-tag">同步</span><p>持续合并上游 main（引擎重构、WS 即时冲刷、遥测、secondary_model 配置等）并保持客户端对齐</p></div>
+    <section class="section lineage" id="lineage">
+      <div class="section-heading reveal">
+        <span class="section-kicker">02 · THE LINEAGE</span>
+        <h2>月光来自 Kimi，<br /><em>形状由偏食决定。</em></h2>
+        <p>持续合并 MoonshotAI/kimi-code 主干，让引擎能力保持新鲜；同时保留 Tauri-only 的桌面规则与视觉语言。</p>
+      </div>
+
+      <div class="lineage-stage reveal">
+        <a class="lineage-node lineage-upstream" href="https://github.com/MoonshotAI/kimi-code" target="_blank" rel="noopener">
+          <span class="node-orb node-kimi">K</span>
+          <div><small>UPSTREAM</small><strong>MoonshotAI / Kimi Code</strong><p>Agent engine · CLI/TUI · kap-server</p></div>
+          <em>持续吸收 ↗</em>
+        </a>
+        <div class="lineage-beam" aria-hidden="true"><span></span><i></i><i></i><i></i></div>
+        <a class="lineage-node lineage-branch" href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">
+          <span class="node-orb node-eclipse"><i></i></span>
+          <div><small>DESKTOP BRANCH</small><strong>Partial Lunar Eclipse</strong><p>Tauri shell · Svelte workspace · native lifecycle</p></div>
+          <em>查看分支 ↗</em>
+        </a>
+      </div>
+
+      <div class="lineage-notes">
+        <div class="lineage-note reveal"><span>继承</span><p>模型、会话、工具、插件、遥测与新 Workspace 架构。</p></div>
+        <div class="lineage-note reveal"><span>聚焦</span><p>只保留 Tauri 桌面路线，不让浏览器 UI 决定桌面体验。</p></div>
+        <div class="lineage-note reveal"><span>适配</span><p>主干能力按桌面边界迁移，而不是机械复制 Web 表面。</p></div>
       </div>
     </section>
 
-    <section class="section" id="quickstart">
-      <h2 class="section-title">快速开始</h2>
-      <p class="section-sub">需要 Node ≥ 24.15、pnpm 10.33 与 Rust 工具链。</p>
-      <div class="code-block rv">
-        <button class="copy-btn" data-copy aria-label="复制">复制</button>
-        <pre><code>git clone https://github.com/d2rabbit/kimi-code.git
-cd kimi-code
-pnpm install
-pnpm --filter @moonshot-ai/kimi-desktop-tauri run tauri:dev</code></pre>
+    <section class="section quickstart" id="quickstart">
+      <div class="quickstart-shell reveal">
+        <div class="quickstart-copy">
+          <span class="section-kicker">03 · START THE ECLIPSE</span>
+          <h2>把月偏食<br />带到你的工作区。</h2>
+          <p>需要 Node.js ≥ 24.15、pnpm 10.33 与 Rust 工具链。发布包内置 Node runtime，最终用户无需额外安装。</p>
+          <div class="requirements"><span>Node 24.15+</span><span>pnpm 10.33</span><span>Rust stable</span></div>
+        </div>
+        <div class="command-panel">
+          <div class="command-tabs"><span class="active">开发运行</span><span>构建安装包</span></div>
+          <div class="command-code">
+            <div><span class="line-no">1</span><code><b>git</b> clone https://github.com/d2rabbit/kimi-code</code></div>
+            <div><span class="line-no">2</span><code><b>cd</b> kimi-code</code></div>
+            <div><span class="line-no">3</span><code><b>pnpm</b> install</code></div>
+            <div><span class="line-no">4</span><code><b>pnpm</b> desktop:dev</code></div>
+          </div>
+          <button class="copy-button" type="button" data-copy="git clone https://github.com/d2rabbit/kimi-code\ncd kimi-code\npnpm install\npnpm desktop:dev">
+            <span>复制命令</span><i aria-hidden="true">⌘C</i>
+          </button>
+        </div>
       </div>
-      <p class="hint">打包安装包：<code>bash apps/kimi-desktop-tauri/scripts/build-run.sh --dist</code>（或推 <code>desktop-v*</code> 标签走 Actions 四平台构建）</p>
     </section>
   </main>
 
   <footer class="footer">
-    <p>Partial Lunar Eclipse · 月偏食 — fork of <a class="up-link" href="https://github.com/MoonshotAI/kimi-code" target="_blank" rel="noopener">MoonshotAI/kimi-code</a>，致谢 Moonshot AI</p>
-    <p class="footer-links">
-      <a href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">仓库</a>
+    <div class="footer-mark" aria-hidden="true"><span></span><i></i></div>
+    <p><strong>Partial Lunar Eclipse · 月偏食</strong></p>
+    <p>从 Kimi Code 的月光中衍生，为原生桌面重新塑形。</p>
+    <div class="footer-links">
+      <a href="https://github.com/d2rabbit/kimi-code" target="_blank" rel="noopener">Repository</a>
       <a href="https://github.com/d2rabbit/kimi-code/issues" target="_blank" rel="noopener">Issues</a>
       <a href="https://github.com/d2rabbit/kimi-code/releases" target="_blank" rel="noopener">Releases</a>
-      <a href="https://moonshotai.github.io/kimi-code/en/" target="_blank" rel="noopener">上游文档</a>
-    </p>
-    <p class="footer-copy">© <span id="year">2026</span> partial lunar eclipse contributors</p>
+      <a href="https://github.com/MoonshotAI/kimi-code" target="_blank" rel="noopener">Upstream</a>
+    </div>
+    <small>© <span id="year"></span> Partial Lunar Eclipse contributors</small>
   </footer>
 
-  <script src="app.js" defer></script>
+  <script src="app.js"></script>
 </body>
 </html>
