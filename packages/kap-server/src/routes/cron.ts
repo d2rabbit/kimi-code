@@ -8,7 +8,7 @@
  * Thin edge over the Session-scope `ISessionCronService` (the live scheduling
  * engine; `addTask` auto-tags the session id and persists via the App-scope
  * store, `removeTasks` is idempotent). The session is resolved with
- * `ISessionLifecycleService.resume` so a cold session cold-loads instead of
+ * `resumeSessionById` so a cold session cold-loads instead of
  * reporting "not activated" (same gate as /skills).
  *
  * Clients follow firings via the `cron.fired` WS event; these routes are only
@@ -25,8 +25,8 @@
 import {
   ISessionCronService,
   ISessionIndex,
-  ISessionLifecycleService,
   parseCronExpression,
+  resumeSessionById,
   type CronTask,
   type ISessionScopeHandle,
   type Scope,
@@ -90,7 +90,7 @@ async function resolveActivatedSession(
   sessionId: string,
   requestId: string,
 ): Promise<ResolvedSession> {
-  const handle = await core.accessor.get(ISessionLifecycleService).resume(sessionId);
+  const handle = await resumeSessionById(core.accessor, sessionId);
   if (handle !== undefined) return { handle };
 
   const summary = await core.accessor.get(ISessionIndex).get(sessionId);

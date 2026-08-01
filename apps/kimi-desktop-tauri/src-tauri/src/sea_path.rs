@@ -49,8 +49,11 @@ pub fn resolve_agent_script(app: &tauri::AppHandle) -> Result<PathBuf, String> {
             return Ok(dev_path);
         }
 
-        // Path 2: manually placed in src-tauri/resources
-        let local_path = manifest_dir.join("resources").join("main.cjs");
+        // Path 2: manually staged by before-bundle.cjs
+        let local_path = manifest_dir
+            .join("resources")
+            .join("bin")
+            .join("main.cjs");
         if local_path.exists() {
             return Ok(local_path);
         }
@@ -88,8 +91,10 @@ pub fn resolve_node_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         if node_path.exists() {
             Ok(node_path)
         } else {
-            // Fallback to system node if bundled node is missing
-            which_node()
+            Err(format!(
+                "Bundled Node.js runtime not found at {}. Rebuild the installer with scripts/before-bundle.cjs.",
+                node_path.display()
+            ))
         }
     }
 }

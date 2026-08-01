@@ -8,9 +8,10 @@
   import IconButton from '../components/ui/IconButton.svelte';
   import Chip from '../components/ui/Chip.svelte';
   import Segmented from '../components/ui/Segmented.svelte';
+  import Select from '../components/ui/Select.svelte';
   import Switch from '../components/ui/Switch.svelte';
   import type { IconName } from '../lib/icon-types';
-  import type { AppManagedUsage, AppOAuthAccount } from '../api/types';
+  import type { AppManagedUserInfo, AppManagedUsage, AppOAuthAccount, AppUsageRow } from '../api/types';
   import { shortcut } from '../lib/desktopFlag';
   import PluginsSection from '../components/settings/PluginsSection.svelte';
   import MemoryPanel from '../components/settings/MemoryPanel.svelte';
@@ -114,6 +115,37 @@
     return String(n);
   }
 
+  function usagePercent(row: AppUsageRow): number {
+    return row.limit > 0 ? Math.min(100, Math.round((row.used / row.limit) * 100)) : 0;
+  }
+
+  function usageWindowLabel(row: AppUsageRow): string {
+    if (row.name) return row.name;
+    if (!row.window) return '额度';
+    const unit = { minute: '分钟', hour: '小时', day: '天', week: '周' }[row.window.unit];
+    return `${row.window.duration} ${unit}额度`;
+  }
+
+  function resetLabel(resetAt?: string): string {
+    if (!resetAt) return '';
+    const date = new Date(resetAt);
+    if (Number.isNaN(date.getTime())) return resetAt;
+    return `重置于 ${new Intl.DateTimeFormat('zh-CN', {
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date)}`;
+  }
+
+  function money(cents: number, currency: string): string {
+    try {
+      return new Intl.NumberFormat('zh-CN', { style: 'currency', currency }).format(cents / 100);
+    } catch {
+      return `${currency} ${(cents / 100).toFixed(2)}`;
+    }
+  }
+
   // Model/provider CRUD state
 
 
@@ -128,30 +160,67 @@
   // Usage hero: context ring geometry
   const usage = $derived(client.activeSessionUsage());
 
-  // Managed account usage + identity (GET /oauth/usage + /oauth/account) —
-  // fills quota bars and the account row when authenticated.
+  // Managed account usage + identity. Prefer the upstream user profile and
+  // retain the JWT-derived account endpoint as a compatibility fallback.
   let oauthUsage = $state<AppManagedUsage | null>(null);
   let oauthAccount = $state<AppOAuthAccount | null>(null);
+  let oauthUserInfo = $state<AppManagedUserInfo | null>(null);
   $effect(() => {
     if (client.authProvider()?.status === 'authenticated') {
       void client.client.getOauthUsage().then((u) => { oauthUsage = u; });
       void client.client.getOAuthAccount().then((a) => { oauthAccount = a; });
+      void client.client.getManagedUserInfo().then((info) => { oauthUserInfo = info; });
     } else {
       oauthUsage = null;
       oauthAccount = null;
+      oauthUserInfo = null;
     }
   });
-  const summaryPct = $derived.by(() => {
-    const s = oauthUsage?.summary;
-    return s?.limit ? Math.min(100, Math.round(((s.used ?? 0) / s.limit) * 100)) : 0;
+  const accountUserId = $derived(oauthUserInfo?.userId ?? oauthAccount?.userId);
+  const accountDisplayName = $derived(
+    oauthUserInfo?.nickname || oauthUserInfo?.username || oauthUserInfo?.email || accountUserId,
+  );
+  const managedUsageRows = $derived.by(() => {
+    const rows: AppUsageRow[] = [];
+    if (oauthUsage?.summary) rows.push(oauthUsage.summary);
+    rows.push(...(oauthUsage?.limits ?? []));
+    return rows;
   });
+
+  let secondaryModel = $state('');
+  let savingSecondaryModel = $state(false);
+  const secondaryModelOptions = $derived([
+    { value: '', label: '跟随主模型（不单独配置）' },
+    ...client.models().map((model) => ({
+      value: model.id,
+      label: `${model.displayName || model.id} · ${model.provider}`,
+    })),
+  ]);
+  $effect(() => {
+    if (!savingSecondaryModel) secondaryModel = client.config()?.secondaryModel?.model ?? '';
+  });
+
+  async function saveSecondaryModel(): Promise<void> {
+    savingSecondaryModel = true;
+    try {
+      const current = client.config()?.secondaryModel;
+      await client.client.updateConfig({
+        secondaryModel: secondaryModel ? { ...current, model: secondaryModel } : {},
+      });
+      toast.ok(secondaryModel ? '次模型已更新' : '次模型已设为跟随主模型');
+    } catch (error) {
+      toast.err(error instanceof Error ? error.message : String(error));
+    } finally {
+      savingSecondaryModel = false;
+    }
+  }
   /** 账号 id 中段省略（完整 id 放 title / 点击复制）。 */
   function shortUserId(id: string): string {
     return id.length > 14 ? `${id.slice(0, 8)}…${id.slice(-4)}` : id;
   }
   function copyUserId() {
-    if (!oauthAccount) return;
-    void navigator.clipboard.writeText(oauthAccount.userId).then(() => toast.ok('账号 ID 已复制'));
+    if (!accountUserId) return;
+    void navigator.clipboard.writeText(accountUserId).then(() => toast.ok('账号 ID 已复制'));
   }
 
   // 真实聚合：按工作区汇总全部会话的 token 与费用（来自 sessions 的 usage 字段）
@@ -181,6 +250,56 @@
 
 <svelte:window onkeydown={onKeydown} />
 
+{#snippet managedQuotaCards()}
+  {#if managedUsageRows.length > 0 || oauthUsage?.extraUsage}
+    <div class="quota-row quota-grid">
+      {#each managedUsageRows as row, index (`${row.name ?? row.window?.unit ?? 'quota'}-${index}`)}
+        {@const pct = usagePercent(row)}
+        <div class="quota-card">
+          <div class="quota-t">
+            <span>{usageWindowLabel(row)}</span>
+            <span class:purple={index % 2 === 1} class="mono pct">{row.limit > 0 ? `${pct}%` : '—'}</span>
+          </div>
+          <div class:purple={index % 2 === 1} class="bar"><i style={`width:${pct}%`}></i></div>
+          <div class="quota-m mono">
+            {row.used} / {row.limit || '—'}
+            {#if row.resetAt} · {resetLabel(row.resetAt)}{/if}
+          </div>
+        </div>
+      {/each}
+      {#if oauthUsage?.extraUsage}
+        {@const booster = oauthUsage.extraUsage}
+        {@const monthlyPct = booster.monthlyChargeLimitEnabled && booster.monthlyChargeLimitCents > 0
+          ? Math.min(100, Math.round((booster.monthlyUsedCents / booster.monthlyChargeLimitCents) * 100))
+          : 0}
+        <div class="quota-card booster-card">
+          <div class="quota-t">
+            <span>Booster 余额</span>
+            <span class="mono pct">{money(booster.balanceCents, booster.currency)}</span>
+          </div>
+          {#if booster.monthlyChargeLimitEnabled}
+            <div class="bar grad"><i style={`width:${monthlyPct}%`}></i></div>
+            <div class="quota-m mono">
+              本月 {money(booster.monthlyUsedCents, booster.currency)} /
+              {money(booster.monthlyChargeLimitCents, booster.currency)}
+            </div>
+          {:else}
+            <div class="quota-m mono">累计额度 {money(booster.totalCents, booster.currency)} · 未启用月度上限</div>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {:else}
+    <div class="quota-row">
+      <div class="quota-card">
+        <div class="quota-t"><span>账户额度</span><span class="mono pct">—</span></div>
+        <div class="bar"><i style="width:0%"></i></div>
+        <div class="quota-m mono">账户配额由服务端管理，登录后显示</div>
+      </div>
+    </div>
+  {/if}
+{/snippet}
+
 <div class="settings-page">
   <!-- Top header (design draft shell bar) -->
   <header class="sp-header">
@@ -201,8 +320,8 @@
       {/each}
       <div class="sp-divider" style="margin-top:auto"></div>
       <div class="sp-foot">
-        <div class="avatar">{(client.authProvider()?.name || 'U')[0].toUpperCase()}</div>
-        <span class="user-name">{client.authProvider()?.name || '未登录'}</span>
+        <div class="avatar">{(accountDisplayName || client.authProvider()?.name || 'U')[0].toUpperCase()}</div>
+        <span class="user-name">{accountDisplayName || client.authProvider()?.name || '未登录'}</span>
         {#if client.authProvider()?.status === 'authenticated'}<Chip tone="warning">Pro</Chip>{/if}
       </div>
     </nav>
@@ -282,15 +401,23 @@
           <div class="bind-body">
             <div class="bind-plan">
               <span class="t">
-                {#if client.authProvider()?.status === 'authenticated' && oauthAccount}
-                  <button class="acct mono" title={`账号 ID：${oauthAccount.userId}（点击复制）`} onclick={copyUserId} type="button">
-                    {shortUserId(oauthAccount.userId)}
+                {#if client.authProvider()?.status === 'authenticated' && accountUserId}
+                  <button class="acct" title={`账号 ID：${accountUserId}（点击复制）`} onclick={copyUserId} type="button">
+                    {accountDisplayName ?? shortUserId(accountUserId)}
                   </button>
                 {:else}
                   Kimi 账号
                 {/if}
               </span>
-              <span class="d">{#if client.authProvider()?.status === 'authenticated'}订阅生效中 · 第一方模型可用{:else}登录后可使用 Kimi K2 等第一方模型，无需 API Key{/if}</span>
+              <span class="d">
+                {#if client.authProvider()?.status === 'authenticated'}
+                  {oauthUserInfo?.userLevelName || oauthUserInfo?.domainName || '订阅生效中'}
+                  {#if oauthUserInfo?.email} · {oauthUserInfo.email}{/if}
+                  · 第一方模型可用
+                {:else}
+                  登录后可使用 Kimi K2 等第一方模型，无需 API Key
+                {/if}
+              </span>
             </div>
             {#if client.authProvider()?.status === 'authenticated'}
               <Button size="sm" onclick={() => { toast.info('账号管理（浏览器打开）'); }}>管理</Button>
@@ -302,37 +429,21 @@
         </div>
 
         <!-- Quota bars — filled from GET /oauth/usage when authenticated -->
-        <div class="quota-row">
-          <div class="quota-card">
-            <div class="quota-t">
-              <span>{oauthUsage?.summary?.label ?? '周期额度'}</span>
-              <span class="mono pct">{#if oauthUsage?.summary?.limit}{summaryPct}%{:else}—{/if}</span>
-            </div>
-            <div class="bar"><i style="width:{summaryPct}%"></i></div>
-            <div class="quota-m mono">
-              {#if oauthUsage?.summary}
-                {oauthUsage.summary.used ?? 0} / {oauthUsage.summary.limit ?? '—'}
-                {#if oauthUsage.summary.resetHint} · {oauthUsage.summary.resetHint}{/if}
-              {:else}
-                账户配额由服务端管理，登录后在账单页查看
-              {/if}
-            </div>
-          </div>
-          <div class="quota-card">
-            <div class="quota-t">
-              <span>{oauthUsage?.limits?.[0]?.label ?? '短周期额度'}</span>
-              <span class="mono pct purple">{#if oauthUsage?.limits?.[0]?.limit}{Math.min(100, Math.round(((oauthUsage.limits[0].used ?? 0) / oauthUsage.limits[0].limit) * 100))}%{:else}—{/if}</span>
-            </div>
-            <div class="bar purple"><i style="width:{oauthUsage?.limits?.[0]?.limit ? Math.min(100, Math.round(((oauthUsage.limits[0].used ?? 0) / oauthUsage.limits[0].limit) * 100)) : 0}%"></i></div>
-            <div class="quota-m mono">
-              {#if oauthUsage?.limits?.[0]}
-                {oauthUsage.limits[0].used ?? 0} / {oauthUsage.limits[0].limit ?? '—'}
-                {#if oauthUsage.limits[0].resetHint} · {oauthUsage.limits[0].resetHint}{/if}
-              {:else}
-                账户配额由服务端管理，登录后在账单页查看
-              {/if}
-            </div>
-          </div>
+        {@render managedQuotaCards()}
+
+        <h3>次模型</h3>
+        <div class="scard model-select-card">
+          <span class="lab">
+            <span class="t">子智能体次模型</span>
+            <span class="d">为标记为“次模型”的 agent profile 指定独立模型；留空时跟随主模型。</span>
+          </span>
+          <Select
+            class="secondary-model-select"
+            bind:value={secondaryModel}
+            options={secondaryModelOptions}
+            disabled={savingSecondaryModel || client.models().length === 0}
+            onchange={() => { void saveSecondaryModel(); }}
+          />
         </div>
 
         <h3>模型列表</h3>
@@ -471,18 +582,7 @@
         {/if}
 
         <h3>额度概览</h3>
-        <div class="quota-row">
-          <div class="quota-card">
-            <div class="quota-t"><span>模型额度</span><span class="mono pct">—</span></div>
-            <div class="bar"><i style="width:0%"></i></div>
-            <div class="quota-m mono">账户配额由服务端管理，登录后在账单页查看</div>
-          </div>
-          <div class="quota-card">
-            <div class="quota-t"><span>MCP 额度</span><span class="mono pct purple">—</span></div>
-            <div class="bar purple"><i style="width:0%"></i></div>
-            <div class="quota-m mono">账户配额由服务端管理，登录后在账单页查看</div>
-          </div>
-        </div>
+        {@render managedQuotaCards()}
 
 
       {:else if active === 'guide'}
@@ -594,8 +694,9 @@
 
   /* ---- Quota bars ---- */
   .quota-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .quota-grid { flex-wrap: wrap; }
   .quota-card {
-    flex: 1; padding: 16px;
+    flex: 1 1 250px; min-width: 0; padding: 16px;
     background: var(--mat-surface-2, var(--l2));
     backdrop-filter: var(--mat-blur, none);
     -webkit-backdrop-filter: var(--mat-blur, none);
@@ -612,6 +713,9 @@
   .bar.purple i { background: var(--color-done); }
   .bar.grad i { background: linear-gradient(90deg, #4fa8ff, #5bc0be); }
   .quota-m { font-size: 10px; color: var(--tx3); margin-top: 6px; }
+  .booster-card { border-color: var(--ac-bd); }
+  .model-select-card .lab { flex: 1 1 280px; }
+  :global(.secondary-model-select) { flex: 0 1 300px; }
 
   /* ---- Item rows (icon square + title + desc + controls) ---- */
   .item-row {

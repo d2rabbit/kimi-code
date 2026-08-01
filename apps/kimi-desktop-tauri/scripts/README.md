@@ -77,7 +77,7 @@ bash scripts/build-run.sh --build-packages --foreground
    - tsdown 打包 → `dist-native/intermediates/main.cjs`（约 30 秒）
 2. **前端检查 + 构建**：`svelte-check` + `vite build`
 3. **Rust 检查 + 构建**：`cargo check` + `cargo build --release --features custom-protocol`
-4. **agent 就绪**：dev 模式直接引用 `main.cjs`；打包模式由 `before-bundle.cjs` 拷贝到 `resources/bin/`
+4. **agent 就绪**：dev 模式直接引用 `main.cjs`；打包模式由 `before-bundle.cjs` 将 `main.cjs` 和 Node 运行时拷贝到 `resources/bin/`
 5. **启动**：前台运行或后台独立进程
 
 ## 产物位置

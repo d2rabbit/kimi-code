@@ -537,11 +537,26 @@ export interface WireAuthResult {
 }
 
 /** GET /oauth/usage — managed account plan usage (#2027). */
+export interface WireUsageWindow {
+  duration: number;
+  unit: 'minute' | 'hour' | 'day' | 'week';
+}
+
 export interface WireUsageRow {
-  label: string;
-  used?: number;
-  limit?: number;
-  reset_hint?: string;
+  name?: string;
+  window?: WireUsageWindow;
+  used: number;
+  limit: number;
+  reset_at?: string;
+}
+
+export interface WireBoosterWallet {
+  balance_cents: number;
+  total_cents: number;
+  monthly_charge_limit_enabled: boolean;
+  monthly_charge_limit_cents: number;
+  monthly_used_cents: number;
+  currency: string;
 }
 
 export interface WireManagedUsage {
@@ -549,7 +564,7 @@ export interface WireManagedUsage {
   message?: string;
   summary?: WireUsageRow | null;
   limits?: WireUsageRow[];
-  extra_usage?: unknown;
+  extra_usage?: WireBoosterWallet | null;
 }
 
 /** GET /oauth/account — JWT claims of the current access token (null when logged out). */
@@ -558,6 +573,56 @@ export interface WireOAuthAccount {
   scope?: string;
   client_id?: string;
   expires_at?: number;
+}
+
+export interface WireManagedUserInfoProfile {
+  userId: string;
+  nickname: string;
+  status: string;
+  region: string;
+  userLevel: number;
+  userLevelName: string;
+  domain: number;
+  domainName: string;
+  globalId?: string;
+  bio?: string;
+  avatar?: string;
+  username?: string;
+  email?: string;
+  phone?: { countryCode: string; number: string };
+  createdTime?: string;
+  lastLoginTime?: string;
+}
+
+export type WireManagedUserInfo =
+  | { kind: 'ok'; userInfo: WireManagedUserInfoProfile }
+  | { kind: 'error'; message: string; status?: number };
+
+export interface WireMessageSearchHit {
+  session_id: string;
+  workspace_id: string;
+  session_title: string;
+  agent_id: string;
+  role: 'user' | 'assistant' | 'title';
+  snippet: string;
+  time: number;
+  turn?: number;
+  step_id?: string;
+  score: number;
+}
+
+export interface WireMessageSearchPage {
+  items: WireMessageSearchHit[];
+  has_more: boolean;
+  page_token?: string;
+  incomplete?: 'candidate_cap';
+  index_state: {
+    state: string;
+    indexed_sessions: number;
+    total_sessions: number;
+    documents: number;
+  };
+  source: 'live' | 'index';
 }
 
 /** GET /tools — tool descriptors with active state (#2005). */

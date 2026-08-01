@@ -25,6 +25,7 @@
 
   let hostEl = $state<HTMLElement | null>(null);
   const sessionId = $derived(client.activeSessionId());
+  const connectionGeneration = $derived(client.connectionGeneration());
   const term = useTerminal(() => sessionId);
 
   let xterm: XTerm | null = null;
@@ -152,15 +153,17 @@
   }
 
   // Boot when sessionId becomes available (or changes).
-  let prevSessionId = '';
+  let previousConnectionKey = '';
   $effect(() => {
     const sid = sessionId;
+    const generation = connectionGeneration;
     if (!sid) {
-      prevSessionId = '';
+      previousConnectionKey = '';
       return;
     }
-    if (sid === prevSessionId) return;
-    prevSessionId = sid;
+    const connectionKey = `${sid}:${generation}`;
+    if (connectionKey === previousConnectionKey) return;
+    previousConnectionKey = connectionKey;
     xterm?.reset();
     void start();
   });

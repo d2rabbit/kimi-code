@@ -542,6 +542,38 @@ describe('server web asset directory resolution', () => {
     const { resolveServerWebAssetsDir } = await import('#/cli/sub/web/run');
     expect(resolveServerWebAssetsDir(null)).toMatch(/[/\\]dist-web$/);
   });
+
+  it('returns the assets dir when it is built, dev mode or not', async () => {
+    const { serverWebAssetsDir } = await import('#/cli/sub/web/run');
+    const dir = mkdtempSync(join(tmpdir(), 'kimi-web-assets-'));
+    try {
+      writeFileSync(join(dir, 'index.html'), '<html></html>');
+      expect(serverWebAssetsDir({}, dir)).toBe(dir);
+      expect(serverWebAssetsDir({ KIMI_CODE_DEV_SERVER: '1' }, dir)).toBe(dir);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('tolerates missing assets outside dev mode for the Tauri-only build', async () => {
+    const { serverWebAssetsDir } = await import('#/cli/sub/web/run');
+    const dir = mkdtempSync(join(tmpdir(), 'kimi-web-assets-'));
+    try {
+      expect(serverWebAssetsDir({}, dir)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('tolerates missing assets in dev mode (API-only server)', async () => {
+    const { serverWebAssetsDir } = await import('#/cli/sub/web/run');
+    const dir = mkdtempSync(join(tmpdir(), 'kimi-web-assets-'));
+    try {
+      expect(serverWebAssetsDir({ KIMI_CODE_DEV_SERVER: '1' }, dir)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 function makeLegacyKillDeps(overrides: Partial<LegacyKillDeps> = {}): {
@@ -949,6 +981,47 @@ describe('formatHostForUrl', () => {
     const { formatHostForUrl } = await import('#/cli/sub/web/networks');
     expect(formatHostForUrl('192.168.1.5', 'IPv4')).toBe('192.168.1.5');
     expect(formatHostForUrl('fe80::1', 'IPv6')).toBe('[fe80::1]');
+  });
+});
+
+describe('kimi web host identity', () => {
+  it('returns the CLI web identity when no embedding overrides are present', async () => {
+    const { resolveWebHostContext } = await import('#/cli/sub/web/run');
+
+    expect(resolveWebHostContext('1.2.3', {})).toEqual({
+      identity: {
+        productName: 'kimi-code-cli',
+        version: '1.2.3',
+        platform: 'kimi_code_cli',
+        userAgentSuffix: 'web',
+        displayName: undefined,
+      },
+      telemetryUiMode: 'web',
+    });
+  });
+
+  it('returns the desktop identity when the embedding host provides overrides', async () => {
+    const { resolveWebHostContext } = await import('#/cli/sub/web/run');
+
+    expect(
+      resolveWebHostContext('1.2.3', {
+        KIMI_CODE_EMBEDDED_HOST_PRODUCT: 'kimi-code-desktop',
+        KIMI_CODE_EMBEDDED_HOST_VERSION: '0.1.0',
+        KIMI_CODE_EMBEDDED_HOST_PLATFORM: 'kimi_code_desktop',
+        KIMI_CODE_EMBEDDED_HOST_USER_AGENT_SUFFIX: 'desktop',
+        KIMI_CODE_EMBEDDED_HOST_DISPLAY_NAME: 'Kimi Code Desktop',
+        KIMI_CODE_EMBEDDED_HOST_UI_MODE: 'desktop',
+      }),
+    ).toEqual({
+      identity: {
+        productName: 'kimi-code-desktop',
+        version: '0.1.0',
+        platform: 'kimi_code_desktop',
+        userAgentSuffix: 'desktop',
+        displayName: 'Kimi Code Desktop',
+      },
+      telemetryUiMode: 'desktop',
+    });
   });
 });
 

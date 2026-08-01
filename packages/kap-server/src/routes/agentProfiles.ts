@@ -17,7 +17,7 @@
 import {
   ISessionAgentProfileCatalog,
   ISessionIndex,
-  ISessionLifecycleService,
+  resumeSessionById,
   type AgentProfile,
   type ISessionScopeHandle,
   type Scope,
@@ -57,7 +57,7 @@ async function resolveActivatedSession(
   sessionId: string,
   requestId: string,
 ): Promise<ResolvedSession> {
-  const handle = await core.accessor.get(ISessionLifecycleService).resume(sessionId);
+  const handle = await resumeSessionById(core.accessor, sessionId);
   if (handle !== undefined) return { handle };
 
   const summary = await core.accessor.get(ISessionIndex).get(sessionId);

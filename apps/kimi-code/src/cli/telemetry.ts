@@ -1,4 +1,8 @@
-import { createKimiDeviceId, KIMI_CODE_PROVIDER_NAME } from '@moonshot-ai/kimi-code-oauth';
+import {
+  createKimiDeviceId,
+  KIMI_CODE_PROVIDER_NAME,
+  type KimiHostIdentity,
+} from '@moonshot-ai/kimi-code-oauth';
 import {
   KimiAuthFacade,
   loadRuntimeConfigSafe,
@@ -67,6 +71,8 @@ export function initializeCliTelemetry(options: InitializeCliTelemetryOptions): 
 
 export interface InitializeServerTelemetryOptions {
   readonly version: string;
+  readonly identity?: KimiHostIdentity;
+  readonly uiMode?: string;
 }
 
 /**
@@ -91,10 +97,11 @@ export function initializeServerTelemetry(
   const bootstrap = createCliTelemetryBootstrap();
   const configPath = resolveConfigPath({ homeDir: bootstrap.homeDir });
   const config = readServerTelemetryConfig(configPath);
+  const identity = options.identity ?? createKimiCodeHostIdentity(options.version);
   const auth = new KimiAuthFacade({
     homeDir: bootstrap.homeDir,
     configPath,
-    identity: createKimiCodeHostIdentity(options.version),
+    identity,
   });
 
   initializeTelemetry({
@@ -102,8 +109,8 @@ export function initializeServerTelemetry(
     deviceId: bootstrap.deviceId,
     enabled: config.telemetry !== false,
     appName: CLI_USER_AGENT_PRODUCT,
-    version: options.version,
-    uiMode: WEB_UI_MODE,
+    version: identity.version,
+    uiMode: options.uiMode ?? WEB_UI_MODE,
     model: config.defaultModel,
     getAccessToken: async () => (await auth.getCachedAccessToken(KIMI_CODE_PROVIDER_NAME)) ?? null,
   });

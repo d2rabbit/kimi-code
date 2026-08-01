@@ -43,6 +43,21 @@ interface SessionChannel {
   refCount: number;
 }
 const channels = new Map<string, SessionChannel>();
+const channelResetHandlers = new Set<() => void>();
+let channelGeneration = 0;
+
+export function resetTerminalChannels(): void {
+  channelGeneration += 1;
+  for (const channel of channels.values()) {
+    try {
+      channel.conn.close();
+    } catch {
+      // best-effort
+    }
+  }
+  channels.clear();
+  for (const handler of channelResetHandlers) handler();
+}
 
 function acquireChannel(
   sessionId: () => string,
@@ -108,11 +123,15 @@ export function useTerminal(sessionId: () => string): TerminalHandle {
   let readOnly = $state(false);
   let lastSeq = 0;
   let channel: SessionChannel | null = null;
+  let acquiredGeneration = -1;
+  const outputHandlers = new Set<(data: string) => void>();
+  const exitHandlers = new Set<(exitCode: number | null) => void>();
 
   // Per-instance handler bridge: route the shared channel's events into this
   // instance's state + the local terminal buffer (via registered handlers).
   function attachChannel(): void {
-    if (channel) return;
+    if (channel && acquiredGeneration === channelGeneration) return;
+    channel = null;
     channel = acquireChannel(
       sessionId,
       (v) => {
@@ -127,24 +146,45 @@ export function useTerminal(sessionId: () => string): TerminalHandle {
         if (terminal) terminal = { ...terminal, status: 'exited', exitCode };
       },
     );
+    acquiredGeneration = channelGeneration;
+    if (channel) {
+      for (const handler of outputHandlers) channel.outputHandlers.add(handler);
+      for (const handler of exitHandlers) channel.exitHandlers.add(handler);
+    }
   }
 
   /** Register a per-instance output handler. Returns an unsubscribe. */
   function onOutput(handler: (data: string) => void): () => void {
+    outputHandlers.add(handler);
     if (!channel) attachChannel();
     channel?.outputHandlers.add(handler);
     return () => {
+      outputHandlers.delete(handler);
       channel?.outputHandlers.delete(handler);
     };
   }
 
   function onExit(handler: (exitCode: number | null) => void): () => void {
+    exitHandlers.add(handler);
     if (!channel) attachChannel();
     channel?.exitHandlers.add(handler);
     return () => {
+      exitHandlers.delete(handler);
       channel?.exitHandlers.delete(handler);
     };
   }
+
+  function handleChannelReset(): void {
+    channel = null;
+    acquiredGeneration = -1;
+    connected = false;
+    terminal = null;
+    readOnly = false;
+    lastSeq = 0;
+    error = null;
+  }
+
+  channelResetHandlers.add(handleChannelReset);
 
   /** List existing terminals, reuse a running one, else create. */
   async function start(size?: { cols?: number; rows?: number }): Promise<void> {
@@ -221,6 +261,9 @@ export function useTerminal(sessionId: () => string): TerminalHandle {
     }
     if (sid) releaseChannel(sid);
     channel = null;
+    channelResetHandlers.delete(handleChannelReset);
+    outputHandlers.clear();
+    exitHandlers.clear();
   }
 
   return {

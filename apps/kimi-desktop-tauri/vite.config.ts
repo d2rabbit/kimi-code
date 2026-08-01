@@ -35,7 +35,7 @@ export default defineConfig({
         // Preserve the Sec-WebSocket-Protocol header (bearer token subprotocol)
         // so the daemon can authenticate WS connections through the proxy.
         configureWsProxy(proxy) {
-          proxy.on('proxyReqWs', (proxyReq, req, socket, _options, _head) => {
+          proxy.on('proxyReqWs', (proxyReq, req, _socket, _options, _head) => {
             // The browser's WebSocket() sends the protocol in the upgrade request.
             // Vite's http-proxy may strip it — re-add from the raw request headers.
             const proto = req.headers['sec-websocket-protocol'];

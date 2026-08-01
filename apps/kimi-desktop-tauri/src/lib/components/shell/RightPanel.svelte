@@ -73,7 +73,14 @@
     hash: string; shortHash: string; author: string; relativeTime: string; subject: string;
   }[]>([]);
   let gitLogLoading = $state(false);
-  type CommitFile = { path: string; status: string; additions: number; deletions: number; diff: string };
+  type CommitFile = {
+    path: string;
+    status: string;
+    additions: number;
+    deletions: number;
+    diff: string;
+    truncated: boolean;
+  };
   let commitFiles = $state<Record<string, CommitFile[]>>({});
   let expandedCommit = $state<string | null>(null);
   let expandedFile = $state<string | null>(null);

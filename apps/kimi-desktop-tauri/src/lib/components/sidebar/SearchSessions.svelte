@@ -1,5 +1,7 @@
 <!-- SearchSessions.svelte — macOS Spotlight-style session search overlay. -->
 <script lang="ts">
+  import { tick } from 'svelte';
+  import type { AppMessageSearchHit } from '../../api/types';
   import * as client from '../../stores/client.svelte';
   import Icon from '../ui/Icon.svelte';
 
@@ -10,9 +12,28 @@
   let query = $state('');
   let selectedIndex = $state(0);
   let inputEl: HTMLInputElement | null = $state(null);
+  let exact = $state(false);
+  let messageResults = $state<AppMessageSearchHit[]>([]);
+  let searchLoading = $state(false);
+  let searchError = $state('');
+  let searchSource = $state<'live' | 'index' | null>(null);
+  let requestSequence = 0;
+
+  type SearchResult =
+    | {
+        kind: 'session';
+        id: string;
+        title: string;
+        workspaceName: string;
+        modelId: string;
+      }
+    | {
+        kind: 'message';
+        hit: AppMessageSearchHit;
+      };
 
   // Flatten all sessions with their workspace name for display.
-  const results = $derived.by(() => {
+  const sessionResults = $derived.by(() => {
     const sessions = client.sessions();
     const workspaces = client.workspaces();
     const q = query.trim().toLowerCase();
@@ -20,6 +41,7 @@
     const mapped = sessions.map((s) => {
       const ws = workspaces.find((w) => w.id === s.workspaceId || w.root === s.cwd);
       return {
+        kind: 'session' as const,
         id: s.id,
         title: s.title || '新对话',
         workspaceName: ws?.name ?? '',
@@ -27,10 +49,52 @@
       };
     });
 
-    if (!q) return mapped.slice(0, 20);
+    if (!q) return mapped.slice(0, 12);
     return mapped
       .filter((s) => s.title.toLowerCase().includes(q) || s.workspaceName.toLowerCase().includes(q))
-      .slice(0, 20);
+      .slice(0, 8);
+  });
+
+  const results = $derived<SearchResult[]>([
+    ...sessionResults,
+    ...messageResults.map((hit) => ({ kind: 'message' as const, hit })),
+  ]);
+
+  $effect(() => {
+    const searchQuery = query.trim();
+    const searchMode = exact ? 'literal' : 'terms';
+    const sequence = ++requestSequence;
+    searchError = '';
+    searchSource = null;
+
+    if (!open || searchQuery.length < 2) {
+      messageResults = [];
+      searchLoading = false;
+      return;
+    }
+
+    searchLoading = true;
+    const timer = setTimeout(() => {
+      void client.client.searchMessages({
+        query: searchQuery,
+        mode: searchMode,
+        agentId: 'main',
+        sort: searchMode === 'literal' ? undefined : 'score',
+        pageSize: 20,
+      }).then((page) => {
+        if (sequence !== requestSequence) return;
+        messageResults = page.items;
+        searchSource = page.source;
+        searchLoading = false;
+      }).catch((error) => {
+        if (sequence !== requestSequence) return;
+        messageResults = [];
+        searchError = error instanceof Error ? error.message : String(error);
+        searchLoading = false;
+      });
+    }, 220);
+
+    return () => clearTimeout(timer);
   });
 
   function handleKeydown(e: KeyboardEvent) {
@@ -51,7 +115,7 @@
   function selectResult() {
     const r = results[selectedIndex];
     if (r) {
-      void client.client.selectSession(r.id);
+      void client.client.selectSession(r.kind === 'session' ? r.id : r.hit.sessionId);
     }
     close();
   }
@@ -60,6 +124,10 @@
     open = false;
     query = '';
     selectedIndex = 0;
+    exact = false;
+    messageResults = [];
+    searchError = '';
+    searchSource = null;
   }
 
   // Reset selection when results change.
@@ -70,20 +138,12 @@
 
   // Focus input when opened.
   $effect(() => {
-    if (open && inputEl) {
-      setTimeout(() => inputEl?.focus(), 50);
-    }
+    if (!open) return;
+    void tick().then(() => {
+      if (open) inputEl?.focus();
+    });
   });
 </script>
-
-<svelte:window
-  onkeydown={(e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-      e.preventDefault();
-      open = true;
-    }
-  }}
-/>
 
 {#if open}
   <div
@@ -92,7 +152,7 @@
     role="presentation"
   >
     <div
-      class="search-dialog animate-spring-in"
+      class="search-dialog"
       onclick={(e) => e.stopPropagation()}
       onkeydown={(e) => e.stopPropagation()}
       role="dialog"
@@ -105,7 +165,7 @@
           bind:this={inputEl}
           bind:value={query}
           onkeydown={handleKeydown}
-          placeholder="搜索会话…"
+          placeholder="搜索会话标题或消息内容…"
           class="search-input"
           spellcheck="false"
           autocomplete="off"
@@ -113,31 +173,51 @@
         <kbd class="search-kbd">ESC</kbd>
       </div>
 
+      <div class="search-options">
+        <label class="exact-toggle">
+          <input type="checkbox" bind:checked={exact} />
+          <span>精确包含</span>
+        </label>
+        <span class="search-meta">
+          {#if searchLoading}正在搜索消息…{:else if searchSource}{searchSource === 'live' ? '实时会话' : '本地索引'}{:else}输入至少 2 个字符搜索消息{/if}
+        </span>
+      </div>
+
       {#if results.length > 0}
         <div class="search-results">
-          {#each results as r, i (r.id)}
+          {#each results as r, i (`${r.kind}:${r.kind === 'session' ? r.id : `${r.hit.sessionId}:${r.hit.stepId ?? r.hit.turn ?? i}`}`)}
             <button
               class="search-result"
               class:selected={i === selectedIndex}
               onclick={() => { selectedIndex = i; selectResult(); }}
-              onmousemove={() => selectedIndex = i}
+              onpointerenter={() => selectedIndex = i}
             >
-              <div class="result-info">
-                <span class="result-title">{r.title}</span>
-                {#if r.workspaceName}
-                  <span class="result-ws">{r.workspaceName}</span>
+              {#if r.kind === 'session'}
+                <div class="result-info">
+                  <span class="result-title">{r.title}</span>
+                  {#if r.workspaceName}
+                    <span class="result-ws">{r.workspaceName}</span>
+                  {/if}
+                </div>
+                {#if r.modelId}
+                  <span class="result-model">{r.modelId}</span>
                 {/if}
-              </div>
-              {#if r.modelId}
-                <span class="result-model">{r.modelId}</span>
+              {:else}
+                <div class="result-info message-info">
+                  <span class="result-title">{r.hit.sessionTitle || '新对话'}</span>
+                  <span class="result-snippet">{r.hit.snippet}</span>
+                </div>
+                <span class="result-role">{r.hit.role === 'user' ? '用户' : r.hit.role === 'assistant' ? '助手' : '标题'}</span>
               {/if}
             </button>
           {/each}
         </div>
       {:else}
         <div class="search-empty">
-          {#if query.trim()}
-            <p>未找到匹配的会话</p>
+          {#if searchError}
+            <p>消息搜索失败：{searchError}</p>
+          {:else if query.trim()}
+            <p>{searchLoading ? '正在搜索…' : '未找到匹配的会话或消息'}</p>
           {:else}
             <p>开始输入以搜索会话</p>
           {/if}
@@ -157,7 +237,6 @@
     justify-content: center;
     padding-top: 15vh;
     background: var(--overlay);
-    animation: fade-in 0.15s var(--ease);
   }
 
   .search-dialog {
@@ -203,6 +282,20 @@
     color: var(--color-text-faint, #666);
   }
 
+  .search-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 18px;
+    border-bottom: 1px solid var(--bd);
+    color: var(--color-text-faint, #666);
+    font-size: var(--text-xs, 11px);
+  }
+  .exact-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .exact-toggle input { accent-color: var(--ac); }
+  .search-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   .search-results {
     flex: 1;
     overflow-y: auto;
@@ -221,10 +314,22 @@
     background: transparent;
     cursor: pointer;
     text-align: left;
-    transition: background var(--duration-fast, 120ms);
+    position: relative;
   }
   .search-result.selected {
-    background: var(--color-selected, var(--color-hover, rgba(255, 255, 255, 0.08)));
+    background: var(--ac-soft);
+    color: var(--tx);
+  }
+  .search-result.selected::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 2px;
+    height: 60%;
+    border-radius: 1px;
+    background: var(--ac);
+    transform: translateY(-50%);
   }
   .result-info {
     display: flex;
@@ -239,6 +344,15 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .message-info { gap: 4px; }
+  .result-snippet {
+    color: var(--color-text-muted, #999);
+    font-size: var(--text-xs, 11px);
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .result-ws {
     font-size: var(--text-xs, 11px);
     color: var(--color-text-faint, #555);
@@ -249,6 +363,14 @@
     color: var(--color-text-faint, #555);
     font-family: var(--font-mono, monospace);
     flex-shrink: 0;
+  }
+  .result-role {
+    flex-shrink: 0;
+    padding: 2px 6px;
+    border-radius: var(--g-radius-chip, 4px);
+    background: var(--ac-soft);
+    color: var(--ac);
+    font-size: 10px;
   }
 
   .search-empty {

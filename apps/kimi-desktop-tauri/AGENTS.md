@@ -54,7 +54,7 @@ pnpm --filter @moonshot-ai/kimi-desktop-tauri run tauri:build    # package for c
 
 `pnpm run tauri:build` triggers:
 1. `pnpm build` (frontend → dist/)
-2. `node scripts/before-bundle.cjs` (stages SEA into src-tauri/resources/bin/)
+2. `node scripts/before-bundle.cjs` (stages `main.cjs` plus the current Node runtime into `src-tauri/resources/bin/`)
 3. Cargo build + Tauri bundler (produces .dmg/.msi/.deb/.AppImage)
 
 The `before-bundle.cjs` script detects the current platform via `TAURI_PLATFORM` / `TAURI_ARCH` env vars (set by Tauri during build) and stages the matching SEA. If the SEA is missing, the build fails with a clear error.

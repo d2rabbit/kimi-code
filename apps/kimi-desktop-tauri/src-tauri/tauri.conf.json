@@ -44,7 +44,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["bin", "resources/codegraph"],
+    "resources": {
+      "resources/bin/": "",
+      "resources/codegraph/": "codegraph"
+    },
     "copyright": "Copyright © Moonshot AI",
     "category": "DeveloperTool",
     "linux": {

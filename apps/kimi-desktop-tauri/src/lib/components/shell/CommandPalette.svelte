@@ -251,7 +251,6 @@
     font-size: 12.5px;
     cursor: pointer;
     text-align: left;
-    transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
     position: relative;
   }
   .result-item.selected {

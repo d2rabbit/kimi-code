@@ -30,7 +30,7 @@ function detect(): LocaleCode {
 activeLocale = detect();
 
 // Initialise svelte-i18n with the full message catalogue.
-init({
+void init({
   fallbackLocale: 'en',
   initialLocale: activeLocale,
 });
@@ -92,7 +92,7 @@ export const i18n = {
 
 export function setLocale(l: LocaleCode): void {
   activeLocale = l;
-  svelteLocale.set(l);
+  void svelteLocale.set(l);
   safeSetString(STORAGE_KEYS.locale, l);
 }
 

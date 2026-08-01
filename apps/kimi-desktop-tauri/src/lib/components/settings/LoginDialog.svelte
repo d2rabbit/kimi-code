@@ -77,7 +77,7 @@
   async function openVerify() {
     const url = verifyUrlComplete || verifyUrl;
     try {
-      if (isTauri) await invoke('open_path', { path: url });
+      if (isTauri) await invoke('open_external_url', { url });
       else window.open(url, '_blank');
     } catch { window.open(url, '_blank'); }
   }

@@ -2,7 +2,7 @@
 
   两个分区：
   1. 可委派的 agent profile 目录 — 来自 GET /sessions/{id}/agent-profiles
-     （agent-core-v2 的 Session 合并目录：内置 + 用户/项目/额外/显式文件 agent）。
+     （agent-core-v2 的 Session 合并目录：内置 + 用户/项目/额外/显式文件 + 插件 agent）。
   2. 当前会话活跃的子 agent（来自 tasks 中 kind=subagent 的实时事件）。
 
   「委派」按钮把委派指令预填到对话输入框，由主 agent 通过 Agent/Task 工具
@@ -86,7 +86,7 @@
 <h3 class="section-title">可委派</h3>
 <div class="list-meta">
   <span>{profiles.length} 个可用 profile</span>
-  <span class="dim-i">内置 + 文件 agent（~/.kimi-code/agents、.kimi-code/agents/）</span>
+  <span class="dim-i">内置 + 文件 + 插件 agent（~/.kimi-code/agents、.kimi-code/agents/）</span>
 </div>
 
 {#if !activeSessionId}

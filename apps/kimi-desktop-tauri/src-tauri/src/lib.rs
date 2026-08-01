@@ -34,7 +34,7 @@ const WINDOW_STATE_FILE: &str = "window-state.json";
 /// Kept as a separate function so the release path does not introduce a
 /// spurious `mut` binding (which would trigger `unused_mut` since the
 /// conditional reassignment only happens under `#[cfg(debug_assertions)]`).
-#[cfg(debug_assertions)]
+#[cfg(feature = "mcp-debug")]
 fn install_mcp_debug_plugin(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder.plugin(tauri_plugin_mcp::init_with_config(
         tauri_plugin_mcp::PluginConfig::new("Kimi Code Desktop".to_string())
@@ -43,7 +43,7 @@ fn install_mcp_debug_plugin(builder: tauri::Builder<tauri::Wry>) -> tauri::Build
     ))
 }
 
-#[cfg(not(debug_assertions))]
+#[cfg(not(feature = "mcp-debug"))]
 fn install_mcp_debug_plugin(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder // release: no MCP plugin
 }
@@ -51,14 +51,12 @@ fn install_mcp_debug_plugin(builder: tauri::Builder<tauri::Wry>) -> tauri::Build
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_shell::init());
+        .plugin(tauri_plugin_os::init());
 
-    // MCP debug plugin — debug builds only. Release builds ship without it
-    // (and without the tauri_plugin_mcp dependency in the public Cargo.toml).
+    // MCP debug plugin — enabled explicitly by the `mcp-debug` Cargo feature.
+    // Release builds ship without the plugin code or its socket server.
     let builder = install_mcp_debug_plugin(builder);
 
     builder
@@ -130,7 +128,7 @@ pub fn run() {
             // (common on Linux desktop environments), log and continue.
             let app_handle = app.handle().clone();
             let _ = app.global_shortcut()
-                .on_shortcut("Super+Shift+K", move |_app, _shortcut, _event| {
+                .on_shortcut("CommandOrControl+Shift+K", move |_app, _shortcut, _event| {
                     if let Some(window) = app_handle.get_webview_window("main") {
                         if window.is_visible().unwrap_or(false) {
                             let _ = window.hide();
@@ -160,10 +158,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::ensure_server,
-            commands::read_server_token,
-            commands::get_server_log_path,
             commands::append_desktop_log,
-            commands::open_path,
+            commands::open_external_url,
             commands::set_window_title,
             commands::win_minimize,
             commands::win_toggle_maximize,
@@ -172,15 +168,11 @@ pub fn run() {
             commands::git_checkout,
             commands::git_log,
             commands::git_commit_files,
-            commands::get_kimi_home,
             commands::read_text_file,
             commands::write_text_file,
             commands::list_installed_plugins,
             commands::update_codegraph_index,
             commands::set_badge_count,
-            commands::list_user_skills,
-            commands::write_user_skill,
-            commands::delete_user_skill,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

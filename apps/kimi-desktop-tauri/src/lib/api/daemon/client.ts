@@ -12,7 +12,10 @@ import type {
   AppMarketplaceEntry,
   AppPluginSummary,
   AppGoal,
+  AppManagedUserInfo,
   AppManagedUsage,
+  AppMessageSearchInput,
+  AppMessageSearchPage,
   AppOAuthAccount,
   AppUsageRow,
   AppMessage,
@@ -78,6 +81,8 @@ import type {
   WireFsEntry,
   WireFsHomeResult,
   WireManagedUsage,
+  WireManagedUserInfo,
+  WireMessageSearchPage,
   WireOAuthAccount,
   WireUsageRow,
   WireMessage,
@@ -1074,7 +1079,7 @@ export class DaemonKimiWebApi implements KimiWebApi {
   }
 
   async searchFiles(
-    sessionId: string,
+    workspace: string,
     input: { query: string; limit?: number },
   ): Promise<{
     items: Array<{
@@ -1086,10 +1091,10 @@ export class DaemonKimiWebApi implements KimiWebApi {
     }>;
     truncated: boolean;
   }> {
-    const body: Record<string, unknown> = { query: input.query };
+    const body: Record<string, unknown> = { workspace, query: input.query };
     if (input.limit !== undefined) body['limit'] = input.limit;
     const data = await this.http.post<WireSearchFilesResult>(
-      `/sessions/${encodeURIComponent(sessionId)}/fs:search`,
+      `/workspace/fs:search`,
       body,
     );
     return {
@@ -1487,12 +1492,29 @@ export class DaemonKimiWebApi implements KimiWebApi {
       const data = await this.http.get<WireManagedUsage>('/oauth/usage');
       if (data.kind !== 'ok') return null;
       const row = (r?: WireUsageRow | null): AppUsageRow | undefined =>
-        r == null
+        r === null || r === undefined
           ? undefined
-          : { label: r.label, used: r.used, limit: r.limit, resetHint: r.reset_hint };
+          : {
+              name: r.name,
+              window: r.window,
+              used: r.used,
+              limit: r.limit,
+              resetAt: r.reset_at,
+            };
       return {
         summary: row(data.summary),
         limits: (data.limits ?? []).map((r) => row(r)!),
+        extraUsage:
+          data.extra_usage === null || data.extra_usage === undefined
+            ? undefined
+            : {
+                balanceCents: data.extra_usage.balance_cents,
+                totalCents: data.extra_usage.total_cents,
+                monthlyChargeLimitEnabled: data.extra_usage.monthly_charge_limit_enabled,
+                monthlyChargeLimitCents: data.extra_usage.monthly_charge_limit_cents,
+                monthlyUsedCents: data.extra_usage.monthly_used_cents,
+                currency: data.extra_usage.currency,
+              },
       };
     } catch {
       // Non-managed accounts or unconfigured providers return errors — treat as null.
@@ -1510,6 +1532,51 @@ export class DaemonKimiWebApi implements KimiWebApi {
     } catch {
       return null;
     }
+  }
+
+  /** GET /oauth/userinfo — managed account profile from the upstream account service. */
+  async getManagedUserInfo(): Promise<AppManagedUserInfo | null> {
+    try {
+      const data = await this.http.get<WireManagedUserInfo>('/oauth/userinfo');
+      return data.kind === 'ok' ? data.userInfo : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** POST /search — cross-session full-text search over messages and titles. */
+  async searchMessages(input: AppMessageSearchInput): Promise<AppMessageSearchPage> {
+    const data = await this.http.post<WireMessageSearchPage>('/search', {
+      query: input.query,
+      mode: input.mode,
+      op: input.op,
+      container:
+        input.sessionId === undefined && input.agentId === undefined
+          ? undefined
+          : { session_id: input.sessionId, agent_id: input.agentId },
+      role: input.role,
+      sort: input.sort,
+      page_size: input.pageSize,
+      page_token: input.pageToken,
+    });
+    return {
+      items: data.items.map((hit) => ({
+        sessionId: hit.session_id,
+        workspaceId: hit.workspace_id,
+        sessionTitle: hit.session_title,
+        agentId: hit.agent_id,
+        role: hit.role,
+        snippet: hit.snippet,
+        time: hit.time,
+        turn: hit.turn,
+        stepId: hit.step_id,
+        score: hit.score,
+      })),
+      hasMore: data.has_more,
+      pageToken: data.page_token,
+      incomplete: data.incomplete,
+      source: data.source,
+    };
   }
 
   // -------------------------------------------------------------------------

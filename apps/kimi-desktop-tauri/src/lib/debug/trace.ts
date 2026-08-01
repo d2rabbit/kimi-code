@@ -23,6 +23,6 @@ export function traceWsIn(_entry: unknown): void {
 export function traceWsOut(_entry: unknown): void {
   void _entry;
 }
-export function traceWsLifecycle(_event: string, _data?: Record<string, unknown> | unknown): void {
+export function traceWsLifecycle(_event: string, _data?: unknown): void {
   void _event; void _data;
 }

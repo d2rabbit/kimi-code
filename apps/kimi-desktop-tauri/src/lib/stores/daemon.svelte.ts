@@ -9,7 +9,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import { setCredential } from '../api/daemon/serverAuth';
+import { clearCredential, setCredential } from '../api/daemon/serverAuth';
 
 export type DaemonStatus = 'connecting' | 'connected' | 'error';
 
@@ -98,10 +98,8 @@ class DaemonStore {
         try {
           this.unlisteners.push(
             await listen<string>('daemon:error', (event) => {
-              if (this.state.status !== 'connected') {
-                this.state.status = 'error';
-                this.state.error = event.payload;
-              }
+              this.state.status = 'error';
+              this.state.error = event.payload;
             }),
           );
         } catch {
@@ -109,13 +107,12 @@ class DaemonStore {
         }
       }
 
-      const [{ origin }, token] = await Promise.all([
-        invoke<{ origin: string }>('ensure_server'),
-        invoke<string | null>('read_server_token').catch(() => null),
-      ]);
+      const { origin, token } = await invoke<{ origin: string; token: string | null }>('ensure_server');
+      this.state.token = token;
       if (token) {
-        this.state.token = token;
         setCredential(token);
+      } else {
+        clearCredential();
       }
       // Final confirmation from the WebView side (Rust already health-checked,
       // but this proves reachability from our origin context, incl. CSP).

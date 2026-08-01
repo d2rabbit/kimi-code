@@ -158,6 +158,7 @@ export class DaemonEventSocket {
     // Cap at 30s; after 10 attempts give up (daemon likely down or unreachable).
     if (this.reconnectAttempts >= 10) {
       traceWsLifecycle('reconnect-giving-up', { attempt: this.reconnectAttempts });
+      this.handlers.onError(0, 'WebSocket reconnect attempts exhausted', true);
       return;
     }
     const base = Math.min(30_000, 1000 * 2 ** this.reconnectAttempts);

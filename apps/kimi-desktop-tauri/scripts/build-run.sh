@@ -188,7 +188,7 @@ fi
 if [[ "$DIST" == "1" ]]; then
   # Tauri 构建链会自动触发：
   #   beforeBuildCommand   = pnpm build            （Svelte 前端 → dist/）
-  #   beforeBundleCommand  = node before-bundle.cjs （stage SEA → resources/bin/）
+  #   beforeBundleCommand  = node before-bundle.cjs （stage main.cjs + Node → resources/bin/）
   # bundle.targets = "all"，按当前平台产出全部格式（.deb/.dmg/.msi/.AppImage）。
   log "Tauri 打包（tauri build，产出安装包）…"
   # 透传平台信息给 before-bundle.cjs（与 CI workflow 的环境变量保持一致）。

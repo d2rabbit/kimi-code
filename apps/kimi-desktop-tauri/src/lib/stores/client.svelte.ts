@@ -8,7 +8,7 @@
 // and core runtime controls (permission, model). Advanced features (swarm,
 // goal, side chat, task polling) will be layered on in Phase 4.
 
-import { getKimiWebApi } from '../api';
+import { getKimiWebApi, resetKimiWebApi } from '../api';
 import { setCredential } from '../api/daemon/serverAuth';
 import type { KimiWebApi } from '../api/types';
 import type {
@@ -37,6 +37,7 @@ import { setDaemonOrigin } from '../api/config';
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { daemon } from './daemon.svelte';
 import { toast } from './toast.svelte';
+import { resetTerminalChannels } from '../composables/useTerminal.svelte';
 
 // ---------------------------------------------------------------------------
 // Reactive state (Svelte 5 runes)
@@ -63,10 +64,11 @@ const ui = $state({
   connected: false,
   loading: false,
   sessionLoading: false,
+  connectionGeneration: 0,
 
   // Runtime controls (per-session, but stored flat for simplicity in Phase 2).
   permission: 'manual' as 'manual' | 'auto' | 'yolo',
-  thinking: 'off' as 'off' | 'on' | string,
+  thinking: 'off' as string,
   planMode: false,
   swarmMode: false,
   goalMode: false,
@@ -101,6 +103,13 @@ const ui = $state({
 
 // The WS event connection.
 let eventConn: KimiEventConnection | null = null;
+const subscribedSessionIds = new Set<string>();
+const resyncsInFlight = new Map<string, Promise<void>>();
+let backendGeneration = 0;
+let loadToken = 0;
+let selectToken = 0;
+let lifecycleListenersAttached = false;
+let connectionRecovery: Promise<void> | null = null;
 
 // The API singleton (lazily created on first use).
 let api: KimiWebApi | null = null;
@@ -110,6 +119,58 @@ function getApi(): KimiWebApi {
     api = getKimiWebApi();
   }
   return api;
+}
+
+function resetBackendClient(): number {
+  backendGeneration += 1;
+  selectToken += 1;
+  eventConn?.close();
+  eventConn = null;
+  subscribedSessionIds.clear();
+  resyncsInFlight.clear();
+  api = null;
+  resetKimiWebApi();
+  resetTerminalChannels();
+  ui.connected = false;
+  return backendGeneration;
+}
+
+function shouldKeepSessionSubscription(sessionId: string): boolean {
+  return rawState.activeSessionId === sessionId || sideChatTargetBySession[sessionId] !== undefined;
+}
+
+function subscribeSessionEvents(sessionId: string): void {
+  if (!eventConn || subscribedSessionIds.has(sessionId)) return;
+  eventConn?.subscribe(sessionId, { seq: rawState.lastSeqBySession[sessionId] ?? 0 });
+  subscribedSessionIds.add(sessionId);
+}
+
+function resubscribeSessionEvents(
+  sessionId: string,
+  cursor: { seq: number; epoch?: string },
+): void {
+  if (!eventConn) return;
+  eventConn.subscribe(sessionId, cursor);
+  subscribedSessionIds.add(sessionId);
+}
+
+function unsubscribeSessionEvents(sessionId: string): void {
+  subscribedSessionIds.delete(sessionId);
+  eventConn?.unsubscribe(sessionId);
+}
+
+function releaseSessionSubscription(sessionId: string): void {
+  if (!shouldKeepSessionSubscription(sessionId)) {
+    unsubscribeSessionEvents(sessionId);
+  }
+}
+
+function setActiveSessionId(sessionId: string | undefined): void {
+  const previousSessionId = rawState.activeSessionId;
+  rawState.activeSessionId = sessionId;
+  if (previousSessionId && previousSessionId !== sessionId) {
+    releaseSessionSubscription(previousSessionId);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -279,6 +340,7 @@ export const defaultModel = () => ui.config?.defaultModel ?? '';
 
 // Starred models.
 export const starredModelIds = () => ui.starredModelIds;
+export const connectionGeneration = () => ui.connectionGeneration;
 
 // ---------------------------------------------------------------------------
 // Actions
@@ -286,8 +348,11 @@ export const starredModelIds = () => ui.starredModelIds;
 
 /** Load initial data: meta, auth, sessions, workspaces, config, models. */
 async function load(): Promise<void> {
+  const myLoadToken = ++loadToken;
   ui.loading = true;
+  ui.initialized = false;
   try {
+    const generation = resetBackendClient();
     // Set the daemon origin BEFORE creating the API singleton.
     setDaemonOrigin(daemon.state.origin ?? '');
 
@@ -336,6 +401,8 @@ async function load(): Promise<void> {
         a.listModels(),
       ]);
 
+    if (myLoadToken !== loadToken || generation !== backendGeneration) return;
+
 
     if (metaR.status === 'fulfilled') {
       ui.serverVersion = metaR.value.serverVersion ?? '';
@@ -369,7 +436,7 @@ async function load(): Promise<void> {
       });
       // Auto-select the first session if any.
       if (rawState.sessions.length > 0 && !rawState.activeSessionId) {
-        selectSession(rawState.sessions[0].id);
+        void selectSession(rawState.sessions[0].id);
       }
     }
 
@@ -379,15 +446,19 @@ async function load(): Promise<void> {
     // only needed in the Tauri desktop app where WS works natively.)
     if ('__TAURI_INTERNALS__' in globalThis) {
       connectEvents();
+      attachConnectionLifecycle();
     }
 
     // One-time-per-version plugin update notice (fire-and-forget; see
     // lib/pluginUpdates.ts — mirrors the CLI's plugin-update-notifier).
     void notifyPluginUpdatesOnce();
 
+    ui.connectionGeneration += 1;
     ui.initialized = true;
   } finally {
-    ui.loading = false;
+    if (myLoadToken === loadToken) {
+      ui.loading = false;
+    }
   }
 }
 
@@ -501,13 +572,13 @@ function connectEvents(): void {
       }
     },
     onResync(sessionId: string, _currentSeq: number, _epoch?: string) {
-      void sessionId;
-      void resyncActiveSession();
+      void resyncSession(sessionId);
     },
     onError(code: number, msg: string, fatal: boolean) {
       // Suppress non-fatal WS errors (browser dev proxy 403 is expected).
       if (fatal) {
         console.error(`[kimi-desktop-tauri] WS error (code=${code} fatal=${fatal}): ${msg}`);
+        void recoverBackendConnection();
       }
     },
     onConnectionChange(connected: boolean) {
@@ -516,30 +587,103 @@ function connectEvents(): void {
   };
 
   eventConn = a.connectEvents(handlers);
-}
 
-/** Re-sync the active session after a resync_required signal. */
-async function resyncActiveSession(): Promise<void> {
-  const sid = rawState.activeSessionId;
-  if (!sid) return;
-  try {
-    const a = getApi();
-    const snapshot = await a.getSessionSnapshot(sid);
-    if (snapshot && eventConn) {
-      eventConn.seedSnapshot(sid, snapshot);
-    }
-  } catch {
-    // Best-effort.
+  const sessionsToSubscribe = new Set(Object.keys(sideChatTargetBySession));
+  if (rawState.activeSessionId) sessionsToSubscribe.add(rawState.activeSessionId);
+  for (const sessionId of sessionsToSubscribe) {
+    subscribeSessionEvents(sessionId);
+  }
+  for (const target of Object.values(sideChatTargetBySession)) {
+    eventConn.markSideChannelAgent(target.agentId);
   }
 }
 
-/** Incremented on each selectSession call to guard against stale async results. */
-let selectToken = 0;
+function attachConnectionLifecycle(): void {
+  if (lifecycleListenersAttached || typeof document === 'undefined') return;
+  document.addEventListener('visibilitychange', handleForegroundRecovery);
+  window.addEventListener('focus', handleForegroundRecovery);
+  window.addEventListener('online', handleForegroundRecovery);
+  lifecycleListenersAttached = true;
+}
+
+function detachConnectionLifecycle(): void {
+  if (!lifecycleListenersAttached || typeof document === 'undefined') return;
+  document.removeEventListener('visibilitychange', handleForegroundRecovery);
+  window.removeEventListener('focus', handleForegroundRecovery);
+  window.removeEventListener('online', handleForegroundRecovery);
+  lifecycleListenersAttached = false;
+}
+
+function handleForegroundRecovery(): void {
+  if (document.hidden || daemon.state.status !== 'connected') return;
+  const health = eventConn?.health();
+  if (!health || health.stale || !health.open || !health.connected) {
+    void recoverBackendConnection();
+  }
+}
+
+function recoverBackendConnection(): Promise<void> {
+  if (connectionRecovery) return connectionRecovery;
+  connectionRecovery = (async () => {
+    try {
+      await getApi().getHealth();
+      eventConn?.reconnect();
+      return;
+    } catch {
+      await daemon.retry();
+      if (daemon.state.status === 'connected') {
+        await load();
+      }
+    }
+  })().finally(() => {
+    connectionRecovery = null;
+  });
+  return connectionRecovery;
+}
+
+function destroy(): void {
+  loadToken += 1;
+  selectToken += 1;
+  detachConnectionLifecycle();
+  resetBackendClient();
+}
+
+/** Rebuild one subscribed session from an atomic snapshot. */
+function resyncSession(sessionId: string): Promise<void> {
+  const existing = resyncsInFlight.get(sessionId);
+  if (existing) return existing;
+
+  const generation = backendGeneration;
+  const resync = (async () => {
+    try {
+      const snapshot = await getApi().getSessionSnapshot(sessionId);
+      if (generation !== backendGeneration) return;
+      rawState.messagesBySession[sessionId] = snapshot.messages;
+      rawState.sessions = rawState.sessions.map((session) =>
+        session.id === sessionId ? snapshot.session : session,
+      );
+      rawState.lastSeqBySession[sessionId] = snapshot.asOfSeq;
+      eventConn?.seedSnapshot(sessionId, snapshot);
+      if (shouldKeepSessionSubscription(sessionId)) {
+        resubscribeSessionEvents(sessionId, { seq: snapshot.asOfSeq, epoch: snapshot.epoch });
+      }
+    } catch {
+      // Best-effort. A later reconnect or selection retries the snapshot path.
+    }
+  })().finally(() => {
+    if (resyncsInFlight.get(sessionId) === resync) {
+      resyncsInFlight.delete(sessionId);
+    }
+  });
+
+  resyncsInFlight.set(sessionId, resync);
+  return resync;
+}
 
 /** Select a session: set active + subscribe to its event stream. */
 async function selectSession(sessionId: string): Promise<void> {
   const myToken = ++selectToken;
-  rawState.activeSessionId = sessionId;
+  setActiveSessionId(sessionId);
   ui.sessionLoading = true;
   void refreshPromptQueue();
 
@@ -568,18 +712,20 @@ async function selectSession(sessionId: string): Promise<void> {
     }
     // Subscribe to events — only if this selection is still current.
     if (myToken === selectToken && eventConn) {
-      eventConn.subscribe(sessionId);
+      subscribeSessionEvents(sessionId);
     }
   } catch {
     // Non-fatal.
   } finally {
-    ui.sessionLoading = false;
+    if (myToken === selectToken) {
+      ui.sessionLoading = false;
+    }
   }
 }
 
 /** Clear the active session (enter "new session" draft mode). */
 function clearActiveSession(): void {
-  rawState.activeSessionId = undefined;
+  setActiveSessionId(undefined);
 }
 
 /** Open a workspace. */
@@ -666,14 +812,14 @@ async function startSessionAndSendPrompt(
   try {
     const session = await a.createSession({ workspaceId });
     rawState.sessions = [...rawState.sessions, session];
-    rawState.activeSessionId = session.id;
+    setActiveSessionId(session.id);
 
     // Load messages (empty for new session).
     rawState.messagesBySession[session.id] = [];
 
     // Subscribe.
     if (eventConn) {
-      await eventConn.subscribe(session.id);
+      subscribeSessionEvents(session.id);
     }
 
     const content: AppMessageContent[] = [{ type: 'text', text }];
@@ -851,9 +997,11 @@ async function archiveSession(sessionId: string): Promise<void> {
   const a = getApi();
   await a.archiveSession(sessionId);
   rawState.sessions = rawState.sessions.filter((s) => s.id !== sessionId);
+  removeSideChatForSession(sessionId);
   if (rawState.activeSessionId === sessionId) {
-    rawState.activeSessionId = undefined;
+    setActiveSessionId(undefined);
   }
+  unsubscribeSessionEvents(sessionId);
 }
 
 /** Fork a session. */
@@ -906,7 +1054,7 @@ function setPermission(mode: 'manual' | 'auto' | 'yolo'): void {
 }
 
 /** Set the thinking level. Persists to daemon via updateSession. */
-function setThinking(level: 'off' | 'on' | string): void {
+function setThinking(level: string): void {
   ui.thinking = level;
   void persistRuntimeControl({ thinking: level as never });
 }
@@ -942,13 +1090,9 @@ function toggleGoalMode(): void {
 async function setGoalObjective(objective: string): Promise<void> {
   const sid = rawState.activeSessionId;
   if (!sid) return;
-  try {
-    const a = getApi();
-    await a.updateSession(sid, { goalObjective: objective });
-    ui.goalMode = objective.trim().length > 0;
-  } catch (e) {
-    throw e;
-  }
+  const a = getApi();
+  await a.updateSession(sid, { goalObjective: objective });
+  ui.goalMode = objective.trim().length > 0;
 }
 
 /** Fire-and-forget runtime control persistence to the daemon. */
@@ -1397,7 +1541,7 @@ async function openSideChatOn(parent: string, initialPrompt?: string): Promise<v
     // doesn't exist yet (e.g. browser dev mode defers WS setup), so make
     // sure the parent session's event stream is attached before the btw
     // agent starts streaming.
-    eventConn?.subscribe(parent);
+    subscribeSessionEvents(parent);
     eventConn?.markSideChannelAgent(agentId);
   }
   requestOpenBtwPanel();
@@ -1452,12 +1596,29 @@ async function sendSideChatPrompt(text: string): Promise<void> {
   await sendSideChatPromptOn(target.parentId, text);
 }
 
+function removeSideChatForSession(sessionId: string): void {
+  const target = sideChatTargetBySession[sessionId];
+  if (!target) return;
+
+  const { [sessionId]: _target, ...remainingTargets } = sideChatTargetBySession;
+  const { [sessionId]: _messageIds, ...remainingMessageIds } = sideChatUserMessageIdsBySession;
+  const { [target.agentId]: _messages, ...remainingMessages } = sideChatMessagesByAgent;
+  const { [target.agentId]: _sending, ...remainingSending } = sideChatSendingByAgent;
+  void _target;
+  void _messageIds;
+  void _messages;
+  void _sending;
+  sideChatTargetBySession = remainingTargets;
+  sideChatUserMessageIdsBySession = remainingMessageIds;
+  sideChatMessagesByAgent = remainingMessages;
+  sideChatSendingByAgent = remainingSending;
+}
+
 function closeSideChat(): void {
   const sid = rawState.activeSessionId;
   if (!sid) return;
-  const { [sid]: _removed, ...rest } = sideChatTargetBySession;
-  void _removed;
-  sideChatTargetBySession = rest;
+  removeSideChatForSession(sid);
+  releaseSessionSubscription(sid);
 }
 
 // ---------------------------------------------------------------------------
@@ -1520,6 +1681,7 @@ export const client = {
 
   // Session / workspace actions.
   load,
+  destroy,
   selectSession,
   clearActiveSession,
   openWorkspace,
@@ -1597,6 +1759,10 @@ export const client = {
   getOauthUsage: () => getApi().getOauthUsage(),
   /** Account identity from the access token's JWT claims (GET /oauth/account). */
   getOAuthAccount: () => getApi().getOAuthAccount(),
+  /** Rich managed-account profile (GET /oauth/userinfo). */
+  getManagedUserInfo: () => getApi().getManagedUserInfo(),
+  /** Cross-session full-text search over messages and titles (POST /search). */
+  searchMessages: (input: import('../api/types').AppMessageSearchInput) => getApi().searchMessages(input),
   /** List attached WebSocket connections for diagnostics (GET /connections). */
   getConnections: () => getApi().getConnections(),
   /** Gracefully shut down the embedded daemon (POST /shutdown). */

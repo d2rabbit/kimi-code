@@ -4,8 +4,11 @@
 // Business data (REST + WS) flows directly from the WebView to the daemon;
 // Tauri IPC is reserved for native-only operations.
 
+use std::ffi::OsStr;
 use std::fs;
-use std::path::PathBuf;
+use std::io::Read as _;
+use std::path::{Component, Path, PathBuf};
+use std::process::Stdio;
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
@@ -21,13 +24,15 @@ const SERVER_TOKEN_FILE: &str = "server.token";
 pub struct EnsureServerResult {
     /// Embedded agent origin, e.g. "http://127.0.0.1:58731" (ephemeral port).
     pub origin: String,
+    /// Bearer token created by the embedded agent under its private home.
+    pub token: Option<String>,
 }
 
 /// Start (or return the running) app-owned embedded agent and return its origin.
 ///
 /// Called once on app startup. The agent is a private child process with its
 /// own KIMI_CODE_HOME (~/.kimi-code/desktop) and an ephemeral port — never a
-//  shared/foreign daemon. Emits `daemon:ready` with the origin.
+/// shared/foreign daemon. Emits `daemon:ready` with the origin.
 ///
 /// `log_level` overrides the daemon's Pino log level (default `info`; one of
 /// fatal|error|warn|info|debug|trace|silent). `debug_endpoints` mounts the
@@ -43,15 +48,15 @@ pub async fn ensure_server(app: AppHandle) -> Result<EnsureServerResult, String>
         debug_endpoints: std::env::var("KIMI_DESKTOP_DEBUG_ENDPOINTS").as_deref() == Ok("1"),
     };
     let origin = start_embedded_agent(&app, opts).await?;
+    let token = read_server_token();
     let _ = app.emit("daemon:ready", &origin);
-    Ok(EnsureServerResult { origin })
+    Ok(EnsureServerResult { origin, token })
 }
 
 /// Read the embedded agent's bearer token so the frontend can authenticate
 /// without showing the manual token dialog on a fresh launch.
 /// Returns null when the token cannot be read (frontend falls back to the dialog).
-#[tauri::command]
-pub fn read_server_token() -> Option<String> {
+fn read_server_token() -> Option<String> {
     let token_path = agent_home().join(SERVER_TOKEN_FILE);
     match fs::read_to_string(&token_path) {
         Ok(raw) => {
@@ -60,16 +65,6 @@ pub fn read_server_token() -> Option<String> {
         }
         Err(_) => None,
     }
-}
-
-/// Return the embedded agent's log file path (for the "Open server log" menu item).
-#[tauri::command]
-pub fn get_server_log_path() -> String {
-    agent_home()
-        .join("server")
-        .join("server.log")
-        .to_string_lossy()
-        .into_owned()
 }
 
 // ---- Desktop renderer log --------------------------------------------------
@@ -81,6 +76,8 @@ pub fn get_server_log_path() -> String {
 const DESKTOP_LOG_FILE: &str = "kimi-code-desktop.log";
 /// Rotate once the log grows past this size; one previous generation is kept.
 const DESKTOP_LOG_MAX_BYTES: u64 = 4 * 1024 * 1024;
+const DESKTOP_LOG_MAX_BATCH_BYTES: usize = 256 * 1024;
+const DESKTOP_LOG_MAX_BATCH_LINES: usize = 512;
 
 /// Resolve the desktop app log path (<agent home>/logs/kimi-code-desktop.log).
 pub fn desktop_log_path() -> PathBuf {
@@ -95,12 +92,33 @@ pub fn append_desktop_log(lines: Vec<String>) -> Result<(), String> {
     if lines.is_empty() {
         return Ok(());
     }
+    if lines.len() > DESKTOP_LOG_MAX_BATCH_LINES {
+        return Err(format!(
+            "desktop log batch exceeds the {DESKTOP_LOG_MAX_BATCH_LINES} line limit"
+        ));
+    }
+    let batch_bytes = lines
+        .iter()
+        .fold(0usize, |total, line| total.saturating_add(line.len() + 1));
+    if batch_bytes > DESKTOP_LOG_MAX_BATCH_BYTES {
+        return Err(format!(
+            "desktop log batch exceeds the {} KiB limit",
+            DESKTOP_LOG_MAX_BATCH_BYTES / 1024
+        ));
+    }
     let path = desktop_log_path();
     let dir = path.parent().ok_or("desktop log path has no parent")?;
     fs::create_dir_all(dir).map_err(|e| format!("create desktop log dir: {e}"))?;
+    let mut out = String::new();
+    for line in &lines {
+        out.push_str(&line.replace(['\r', '\n'], " "));
+        out.push('\n');
+    }
     if let Ok(meta) = fs::metadata(&path) {
-        if meta.len() > DESKTOP_LOG_MAX_BYTES {
-            let _ = fs::rename(&path, dir.join(format!("{DESKTOP_LOG_FILE}.1")));
+        if meta.len().saturating_add(out.len() as u64) > DESKTOP_LOG_MAX_BYTES {
+            let rotated = dir.join(format!("{DESKTOP_LOG_FILE}.1"));
+            let _ = fs::remove_file(&rotated);
+            fs::rename(&path, rotated).map_err(|e| format!("rotate desktop log: {e}"))?;
         }
     }
     use std::io::Write as _;
@@ -109,11 +127,6 @@ pub fn append_desktop_log(lines: Vec<String>) -> Result<(), String> {
         .append(true)
         .open(&path)
         .map_err(|e| format!("open desktop log: {e}"))?;
-    let mut out = String::new();
-    for line in &lines {
-        out.push_str(&line.replace(['\r', '\n'], " "));
-        out.push('\n');
-    }
     f.write_all(out.as_bytes())
         .map_err(|e| format!("write desktop log: {e}"))
 }
@@ -122,9 +135,10 @@ pub fn append_desktop_log(lines: Vec<String>) -> Result<(), String> {
 
 /// Run `git` in `cwd` and return stdout on success.
 fn run_git(cwd: &str, args: &[&str]) -> Result<String, String> {
+    let cwd = canonical_directory(cwd, "git workspace")?;
     let output = std::process::Command::new("git")
         .args(args)
-        .current_dir(cwd)
+        .current_dir(&cwd)
         .output()
         .map_err(|e| format!("spawn git: {e}"))?;
     if !output.status.success() {
@@ -136,6 +150,66 @@ fn run_git(cwd: &str, args: &[&str]) -> Result<String, String> {
         ));
     }
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+fn run_git_limited(cwd: &str, args: &[&str], max_bytes: usize) -> Result<(String, bool), String> {
+    let cwd = canonical_directory(cwd, "git workspace")?;
+    let mut child = std::process::Command::new("git")
+        .args(args)
+        .current_dir(&cwd)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("spawn git: {e}"))?;
+    let stdout = child.stdout.take().ok_or("git stdout was not captured")?;
+    let mut stderr = child.stderr.take().ok_or("git stderr was not captured")?;
+    let stderr_reader = std::thread::spawn(move || {
+        let mut bytes = Vec::new();
+        let _ = stderr.read_to_end(&mut bytes);
+        bytes
+    });
+
+    let mut bytes = Vec::with_capacity(max_bytes.min(64 * 1024));
+    let read_result = stdout
+        .take(max_bytes.saturating_add(1) as u64)
+        .read_to_end(&mut bytes);
+    let truncated = bytes.len() > max_bytes;
+    if truncated || read_result.is_err() {
+        let _ = child.kill();
+    }
+    let status = child.wait().map_err(|e| format!("wait for git: {e}"))?;
+    let stderr = stderr_reader.join().unwrap_or_default();
+    read_result.map_err(|e| format!("read git output: {e}"))?;
+
+    if !status.success() && !truncated {
+        return Err(format!(
+            "git {:?} failed ({}): {}",
+            args,
+            status,
+            String::from_utf8_lossy(&stderr).trim()
+        ));
+    }
+    bytes.truncate(max_bytes);
+    Ok((String::from_utf8_lossy(&bytes).to_string(), truncated))
+}
+
+fn canonical_directory(raw_path: &str, label: &str) -> Result<PathBuf, String> {
+    let path = Path::new(raw_path);
+    if !path.is_absolute() {
+        return Err(format!("{label} path must be absolute"));
+    }
+    if path
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return Err(format!("{label} path must not contain parent traversal"));
+    }
+    let canonical =
+        fs::canonicalize(path).map_err(|error| format!("Cannot resolve {label} path: {error}"))?;
+    if !canonical.is_dir() {
+        return Err(format!("{label} path is not a directory"));
+    }
+    Ok(canonical)
 }
 
 /// List local branches of the repo at `cwd` (current first).
@@ -221,7 +295,13 @@ pub struct GitCommitFile {
     pub additions: u32,
     pub deletions: u32,
     pub diff: String,
+    pub truncated: bool,
 }
+
+const GIT_COMMIT_MAX_FILES: usize = 256;
+const GIT_COMMIT_NAMES_MAX_BYTES: usize = 256 * 1024;
+const GIT_COMMIT_DIFF_MAX_BYTES: usize = 128 * 1024;
+const GIT_COMMIT_TOTAL_DIFF_MAX_BYTES: usize = 4 * 1024 * 1024;
 
 /// Return the changed files and compact patches for a commit.
 #[tauri::command]
@@ -229,19 +309,81 @@ pub fn git_commit_files(cwd: String, hash: String) -> Result<Vec<GitCommitFile>,
     if hash.is_empty() || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
         return Err("invalid commit hash".to_string());
     }
-    let names = run_git(&cwd, &["diff-tree", "--root", "--no-commit-id", "--name-status", "-r", &hash])?;
+    let (names, names_truncated) = run_git_limited(
+        &cwd,
+        &[
+            "diff-tree",
+            "--root",
+            "--no-commit-id",
+            "--name-status",
+            "--no-renames",
+            "-r",
+            &hash,
+        ],
+        GIT_COMMIT_NAMES_MAX_BYTES,
+    )?;
+    if names_truncated {
+        return Err("commit file list exceeds the desktop IPC limit".to_string());
+    }
+    let changed_files: Vec<&str> = names
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .collect();
+    if changed_files.len() > GIT_COMMIT_MAX_FILES {
+        return Err(format!(
+            "commit changes {} files; the desktop viewer supports at most {GIT_COMMIT_MAX_FILES}",
+            changed_files.len()
+        ));
+    }
+
     let mut files = Vec::new();
-    for line in names.lines().filter(|line| !line.trim().is_empty()) {
+    let mut total_diff_bytes = 0usize;
+    for line in changed_files {
         let mut parts = line.splitn(2, '\t');
         let status = parts.next().unwrap_or("?").to_string();
         let path = parts.next().unwrap_or("").to_string();
         if path.is_empty() {
             continue;
         }
-        let diff = run_git(&cwd, &["show", "--format=", "--no-ext-diff", "--unified=3", &hash, "--", &path])?;
-        let additions = diff.lines().filter(|line| line.starts_with('+') && !line.starts_with("+++")).count() as u32;
-        let deletions = diff.lines().filter(|line| line.starts_with('-') && !line.starts_with("---")).count() as u32;
-        files.push(GitCommitFile { path, status, additions, deletions, diff });
+        let remaining = GIT_COMMIT_TOTAL_DIFF_MAX_BYTES.saturating_sub(total_diff_bytes);
+        let limit = remaining.min(GIT_COMMIT_DIFF_MAX_BYTES);
+        let (mut diff, truncated) = if limit == 0 {
+            (String::new(), true)
+        } else {
+            run_git_limited(
+                &cwd,
+                &[
+                    "show",
+                    "--format=",
+                    "--no-ext-diff",
+                    "--unified=3",
+                    &hash,
+                    "--",
+                    &path,
+                ],
+                limit,
+            )?
+        };
+        total_diff_bytes = total_diff_bytes.saturating_add(diff.len());
+        if truncated {
+            diff.push_str("\n… diff truncated by the desktop viewer …\n");
+        }
+        let additions = diff
+            .lines()
+            .filter(|line| line.starts_with('+') && !line.starts_with("+++"))
+            .count() as u32;
+        let deletions = diff
+            .lines()
+            .filter(|line| line.starts_with('-') && !line.starts_with("---"))
+            .count() as u32;
+        files.push(GitCommitFile {
+            path,
+            status,
+            additions,
+            deletions,
+            diff,
+            truncated,
+        });
     }
     Ok(files)
 }
@@ -304,50 +446,78 @@ pub fn set_window_title(app: AppHandle, title: String) -> Result<(), String> {
     }
 }
 
-/// Open a URL or file path in the system's default application.
-/// URLs must use http/https; file paths are opened as-is (Tauri IPC is only
-/// reachable from our own WebView, so the attack surface is limited, but we
-/// still validate to prevent accidental shell injection on Windows).
+/// Open an HTTP(S) URL in the system browser.
 #[tauri::command]
-pub fn open_path(path: String) -> Result<(), String> {
-    // Allow only http(s) URLs and local file paths; reject anything that
-    // looks like a command (e.g. "cmd /c ..." on Windows).
-    let trimmed = path.trim();
-    if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
-        open::that(trimmed).map_err(|e| format!("Failed to open URL: {e}"))
-    } else if trimmed.starts_with('/')
-        || trimmed.starts_with('\\')
-        || trimmed.chars().nth(1) == Some(':')
+pub fn open_external_url(url: String) -> Result<(), String> {
+    let trimmed = url.trim();
+    if trimmed.chars().any(char::is_control)
+        || !(trimmed.starts_with("http://") || trimmed.starts_with("https://"))
     {
-        // Looks like a file path (Unix absolute, Windows drive letter, or UNC).
-        open::that(trimmed).map_err(|e| format!("Failed to open path: {e}"))
-    } else {
-        Err(format!("Refused to open (not a URL or absolute path): {trimmed}"))
+        return Err("Refused to open a non-HTTP(S) URL".into());
     }
-}
-
-/// Resolve the kimi-code home directory (useful for the frontend to build paths).
-#[tauri::command]
-pub fn get_kimi_home() -> String {
-    kimi_home().to_string_lossy().into_owned()
+    open::that(trimmed).map_err(|e| format!("Failed to open URL: {e}"))
 }
 
 // ---------------------------------------------------------------------------
 // File read/write for AGENTS.md memory management
 // ---------------------------------------------------------------------------
 
-/// Read a text file (e.g. AGENTS.md) from an absolute path.
-/// Returns the file content as a string, or an error if the file doesn't exist.
-#[tauri::command]
-pub fn read_text_file(path: String) -> Result<String, String> {
-    stdfs::read_to_string(&path).map_err(|e| format!("Cannot read file {path}: {e}"))
+const AGENTS_MD_FILE: &str = "AGENTS.md";
+const AGENTS_MD_MAX_BYTES: u64 = 2 * 1024 * 1024;
+
+fn validate_agents_md_path(raw_path: &str) -> Result<PathBuf, String> {
+    let requested = Path::new(raw_path);
+    if !requested.is_absolute() {
+        return Err("AGENTS.md path must be absolute".into());
+    }
+    if requested
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return Err("AGENTS.md path must not contain parent traversal".into());
+    }
+    if requested.file_name() != Some(OsStr::new(AGENTS_MD_FILE)) {
+        return Err(format!("Only {AGENTS_MD_FILE} files can be accessed"));
+    }
+
+    let parent = requested
+        .parent()
+        .ok_or_else(|| "AGENTS.md path has no parent directory".to_string())?;
+    let canonical_parent = fs::canonicalize(parent)
+        .map_err(|error| format!("Cannot resolve AGENTS.md parent directory: {error}"))?;
+    let resolved = canonical_parent.join(AGENTS_MD_FILE);
+
+    match fs::symlink_metadata(&resolved) {
+        Ok(metadata) if metadata.file_type().is_symlink() => {
+            Err("Refusing to access AGENTS.md through a symbolic link".into())
+        }
+        Ok(metadata) if !metadata.is_file() => Err("AGENTS.md path is not a regular file".into()),
+        Ok(_) => Ok(resolved),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(resolved),
+        Err(error) => Err(format!("Cannot inspect AGENTS.md path: {error}")),
+    }
 }
 
-/// Write text content to a file (e.g. AGENTS.md) at an absolute path.
-/// Creates the file if it doesn't exist, overwrites if it does.
+/// Read a workspace AGENTS.md from an absolute path.
+#[tauri::command]
+pub fn read_text_file(path: String) -> Result<String, String> {
+    let path = validate_agents_md_path(&path)?;
+    let metadata = fs::metadata(&path)
+        .map_err(|error| format!("Cannot inspect AGENTS.md: {error}"))?;
+    if metadata.len() > AGENTS_MD_MAX_BYTES {
+        return Err(format!("AGENTS.md exceeds the {} MiB limit", AGENTS_MD_MAX_BYTES / 1024 / 1024));
+    }
+    fs::read_to_string(&path).map_err(|error| format!("Cannot read AGENTS.md: {error}"))
+}
+
+/// Write a workspace AGENTS.md at an absolute path.
 #[tauri::command]
 pub fn write_text_file(path: String, content: String) -> Result<(), String> {
-    stdfs::write(&path, &content).map_err(|e| format!("Cannot write file {path}: {e}"))
+    if content.len() as u64 > AGENTS_MD_MAX_BYTES {
+        return Err(format!("AGENTS.md exceeds the {} MiB limit", AGENTS_MD_MAX_BYTES / 1024 / 1024));
+    }
+    let path = validate_agents_md_path(&path)?;
+    fs::write(&path, &content).map_err(|error| format!("Cannot write AGENTS.md: {error}"))
 }
 
 // ---------------------------------------------------------------------------
@@ -385,7 +555,7 @@ pub struct PluginInfo {
 /// dir → 0). Used for the plugin bundle chips (N 技能 / N 命令).
 fn count_subdir_entries(root: &str, subdir: &str) -> u32 {
     let dir = std::path::PathBuf::from(root).join(subdir);
-    match stdfs::read_dir(&dir) {
+    match fs::read_dir(&dir) {
         Ok(entries) => entries.flatten().count() as u32,
         Err(_) => 0,
     }
@@ -417,7 +587,7 @@ pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
         return Ok(Vec::new());
     };
 
-    let installed_content = stdfs::read_to_string(&installed_path)
+    let installed_content = fs::read_to_string(&installed_path)
         .map_err(|e| format!("Cannot read installed.json: {e}"))?;
 
     let installed: serde_json::Value = serde_json::from_str(&installed_content)
@@ -445,7 +615,7 @@ pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
 
         // Try kimi.plugin.json first.
         let kimi_manifest = std::path::PathBuf::from(&root).join("kimi.plugin.json");
-        if let Ok(content) = stdfs::read_to_string(&kimi_manifest) {
+        if let Ok(content) = fs::read_to_string(&kimi_manifest) {
             if let Ok(manifest) = serde_json::from_str::<serde_json::Value>(&content) {
                 if let Some(name) = manifest.get("interface").and_then(|v| v.get("displayName")).and_then(|v| v.as_str()) {
                     display_name = name.to_string();
@@ -472,7 +642,7 @@ pub fn list_installed_plugins() -> Result<Vec<PluginInfo>, String> {
         // Fall back to package.json.
         if version == "unknown" {
             let pkg_path = std::path::PathBuf::from(&root).join("package.json");
-            if let Ok(content) = stdfs::read_to_string(&pkg_path) {
+            if let Ok(content) = fs::read_to_string(&pkg_path) {
                 if let Ok(pkg) = serde_json::from_str::<serde_json::Value>(&content) {
                     if let Some(name) = pkg.get("name").and_then(|v| v.as_str()) {
                         if display_name == id { display_name = name.to_string(); }
@@ -589,10 +759,7 @@ fn resolve_codegraph_cli() -> Result<std::path::PathBuf, String> {
 /// the frontend toast.
 #[tauri::command]
 pub async fn update_codegraph_index(cwd: String) -> Result<String, String> {
-    let project_path = std::path::PathBuf::from(&cwd);
-    if !project_path.is_dir() {
-        return Err(format!("project directory does not exist: {cwd}"));
-    }
+    let project_path = canonical_directory(&cwd, "codegraph workspace")?;
     let codegraph_bin = match resolve_codegraph_cli() {
         Ok(p) => p,
         Err(_) => {
@@ -651,139 +818,14 @@ pub fn set_badge_count(app: AppHandle, count: u32) -> Result<(), String> {
     Ok(())
 }
 
-// ---------------------------------------------------------------------------
-// Skill file management (filesystem CRUD)
-// ---------------------------------------------------------------------------
-// The daemon does NOT expose REST endpoints for creating/editing/deleting
-// skills — only list + activate. These commands operate directly on the
-// filesystem under ~/.kimi-code/skills/ to provide a GUI management layer.
-
-use std::fs as stdfs;
-
-/// The embedded agent's skills directory: <agent-home>/skills/
-/// (Kept in sync with what the embedded agent serves.)
-fn user_skills_dir() -> PathBuf {
-    agent_home().join("skills")
-}
-
-/// List user-level skills by scanning <home>/skills/ for SKILL.md files.
-/// Returns a list of { name, path, content } for each skill found.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SkillFileInfo {
-    pub name: String,
-    /// Absolute path to the SKILL.md file.
-    pub path: String,
-    /// Full file content (frontmatter + body).
-    pub content: String,
-}
-
-#[tauri::command]
-pub fn list_user_skills() -> Result<Vec<SkillFileInfo>, String> {
-    let dir = user_skills_dir();
-    if !dir.exists() {
-        return Ok(Vec::new());
-    }
-    let mut skills = Vec::new();
-    let entries = stdfs::read_dir(&dir).map_err(|e| format!("Cannot read skills dir: {e}"))?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let name = if path.is_dir() {
-            // Directory form: <name>/SKILL.md
-            let skill_file = path.join("SKILL.md");
-            if !skill_file.exists() {
-                continue;
-            }
-            // Skip unreadable files instead of aborting the entire list.
-            let content = match stdfs::read_to_string(&skill_file) {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-            SkillFileInfo {
-                name: path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
-                path: skill_file.to_string_lossy().into_owned(),
-                content,
-            }
-        } else if path.extension().and_then(|e| e.to_str()) == Some("md") {
-            // Flat form: <name>.md
-            let content = match stdfs::read_to_string(&path) {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-            let name = path
-                .file_stem()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_default();
-            // Skip SKILL.md at the top level (not a skill itself)
-            if name.eq_ignore_ascii_case("SKILL") {
-                continue;
-            }
-            SkillFileInfo {
-                name,
-                path: path.to_string_lossy().into_owned(),
-                content,
-            }
-        } else {
-            continue;
-        };
-        skills.push(name);
-    }
-    // Deterministic order for stable UI rendering.
-    skills.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-    Ok(skills)
-}
-
-/// Create or overwrite a skill file.
-/// Writes to <home>/skills/<name>/SKILL.md (directory form).
-#[tauri::command]
-pub fn write_user_skill(name: String, content: String) -> Result<String, String> {
-    let trimmed_name = name.trim();
-    if trimmed_name.is_empty() {
-        return Err("Skill name cannot be empty".into());
-    }
-    // Validate name: no path separators, no dots (avoid directory traversal).
-    if trimmed_name.contains('/') || trimmed_name.contains('\\') || trimmed_name.contains("..") {
-        return Err("Invalid skill name".into());
-    }
-    let skill_dir = user_skills_dir().join(trimmed_name);
-    stdfs::create_dir_all(&skill_dir).map_err(|e| format!("Cannot create skill dir: {e}"))?;
-    let skill_path = skill_dir.join("SKILL.md");
-    stdfs::write(&skill_path, &content)
-        .map_err(|e| format!("Cannot write skill file: {e}"))?;
-    Ok(skill_path.to_string_lossy().into_owned())
-}
-
-/// Delete a user-level skill (removes the entire <name>/ directory or <name>.md file).
-#[tauri::command]
-pub fn delete_user_skill(name: String) -> Result<(), String> {
-    let trimmed_name = name.trim();
-    if trimmed_name.contains('/') || trimmed_name.contains('\\') || trimmed_name.contains("..") {
-        return Err("Invalid skill name".into());
-    }
-    let skill_dir = user_skills_dir().join(trimmed_name);
-    if skill_dir.exists() {
-        stdfs::remove_dir_all(&skill_dir)
-            .map_err(|e| format!("Cannot delete skill directory: {e}"))?;
-        return Ok(());
-    }
-    // Try flat form
-    let flat = user_skills_dir().join(format!("{trimmed_name}.md"));
-    if flat.exists() {
-        stdfs::remove_file(&flat)
-            .map_err(|e| format!("Cannot delete skill file: {e}"))?;
-        return Ok(());
-    }
-    Err(format!("Skill '{trimmed_name}' not found"))
-}
-
 #[cfg(test)]
-mod desktop_log_tests {
+mod tests {
     use super::*;
 
     /// append_desktop_log writes to <agent home>/logs/kimi-code-desktop.log —
     /// the exact file the daemon's session export bundles on `desktop: true`.
     /// KIMI_CODE_HOME drives both kimi_home() and (transitively) agent_home().
-    /// Single test function: env mutation is process-global and must not race.
+    /// This is the only env-mutating test in this module, so it cannot race.
     #[test]
     fn append_desktop_log_lifecycle() {
         let tmp = tempfile::tempdir().unwrap();
@@ -820,5 +862,69 @@ mod desktop_log_tests {
         assert_eq!(content, "after rotation\n");
 
         unsafe { std::env::remove_var("KIMI_CODE_HOME") };
+    }
+
+    #[test]
+    fn append_desktop_log_rejects_an_oversized_batch() {
+        let result = append_desktop_log(vec!["x".repeat(DESKTOP_LOG_MAX_BATCH_BYTES + 1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn native_path_validation_rejects_relative_and_parent_traversal() {
+        let temp = tempfile::tempdir().unwrap();
+        assert!(canonical_directory("relative", "workspace").is_err());
+        assert!(canonical_directory(
+            &temp.path().join("nested/..").to_string_lossy(),
+            "workspace",
+        )
+        .is_err());
+        assert!(open_external_url("file:///tmp/example".into()).is_err());
+    }
+
+    #[test]
+    fn agents_md_file_access_is_scoped_and_bounded() {
+        let temp = tempfile::tempdir().unwrap();
+        let agents_path = temp.path().join(AGENTS_MD_FILE);
+        let agents_path_string = agents_path.to_string_lossy().into_owned();
+
+        write_text_file(agents_path_string.clone(), "# Workspace rules\n".into()).unwrap();
+        assert_eq!(
+            read_text_file(agents_path_string.clone()).unwrap(),
+            "# Workspace rules\n"
+        );
+
+        assert!(write_text_file("AGENTS.md".into(), "x".into()).is_err());
+        assert!(write_text_file(
+            temp.path().join("notes.md").to_string_lossy().into_owned(),
+            "x".into(),
+        )
+        .is_err());
+        assert!(write_text_file(
+            temp.path()
+                .join("nested")
+                .join("..")
+                .join(AGENTS_MD_FILE)
+                .to_string_lossy()
+                .into_owned(),
+            "x".into(),
+        )
+        .is_err());
+        assert!(write_text_file(
+            agents_path_string,
+            "x".repeat(AGENTS_MD_MAX_BYTES as usize + 1),
+        )
+        .is_err());
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::symlink;
+
+            let target = temp.path().join("target.md");
+            fs::write(&target, "target").unwrap();
+            fs::remove_file(&agents_path).unwrap();
+            symlink(&target, &agents_path).unwrap();
+            assert!(read_text_file(agents_path.to_string_lossy().into_owned()).is_err());
+        }
     }
 }

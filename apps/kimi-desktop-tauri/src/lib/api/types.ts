@@ -536,18 +536,34 @@ export interface AppTranscriptPlanResponse {
 }
 
 /** Managed account plan usage (GET /oauth/usage). */
-/** One quota row of the managed account (label + used/limit + reset hint). */
+export interface AppUsageWindow {
+  duration: number;
+  unit: 'minute' | 'hour' | 'day' | 'week';
+}
+
+/** One structured quota row of the managed account. */
 export interface AppUsageRow {
-  label: string;
-  used?: number;
-  limit?: number;
-  resetHint?: string;
+  name?: string;
+  window?: AppUsageWindow;
+  used: number;
+  limit: number;
+  resetAt?: string;
+}
+
+export interface AppBoosterWallet {
+  balanceCents: number;
+  totalCents: number;
+  monthlyChargeLimitEnabled: boolean;
+  monthlyChargeLimitCents: number;
+  monthlyUsedCents: number;
+  currency: string;
 }
 
 /** Managed account usage (GET /oauth/usage, kind=ok 时返回) */
 export interface AppManagedUsage {
   summary?: AppUsageRow;
   limits: AppUsageRow[];
+  extraUsage?: AppBoosterWallet;
 }
 
 /** Current account identity from the access token's JWT claims (GET /oauth/account). */
@@ -555,6 +571,59 @@ export interface AppOAuthAccount {
   userId: string;
   scope?: string;
   expiresAt?: number;
+}
+
+/** Managed account profile returned by GET /oauth/userinfo. */
+export interface AppManagedUserInfo {
+  userId: string;
+  nickname: string;
+  status: string;
+  region: string;
+  userLevel: number;
+  userLevelName: string;
+  domain: number;
+  domainName: string;
+  globalId?: string;
+  bio?: string;
+  avatar?: string;
+  username?: string;
+  email?: string;
+  phone?: { countryCode: string; number: string };
+  createdTime?: string;
+  lastLoginTime?: string;
+}
+
+export interface AppMessageSearchInput {
+  query: string;
+  mode?: 'terms' | 'literal';
+  op?: 'AND' | 'OR';
+  sessionId?: string;
+  agentId?: string;
+  role?: 'user' | 'assistant' | 'title';
+  sort?: 'score' | 'time_desc' | 'time_asc';
+  pageSize?: number;
+  pageToken?: string;
+}
+
+export interface AppMessageSearchHit {
+  sessionId: string;
+  workspaceId: string;
+  sessionTitle: string;
+  agentId: string;
+  role: 'user' | 'assistant' | 'title';
+  snippet: string;
+  time: number;
+  turn?: number;
+  stepId?: string;
+  score: number;
+}
+
+export interface AppMessageSearchPage {
+  items: AppMessageSearchHit[];
+  hasMore: boolean;
+  pageToken?: string;
+  incomplete?: 'candidate_cap';
+  source: 'live' | 'index';
 }
 
 /** Tool descriptor with active state (GET /tools). */
@@ -885,7 +954,8 @@ export interface KimiWebApi {
   closeTerminal(sessionId: string, terminalId: string): Promise<{ closed: true }>;
   listDirectory(sessionId: string, input: { path?: string; depth?: number; includeGitStatus?: boolean }): Promise<{ items: FsEntry[]; childrenByPath?: Record<string, FsEntry[]>; truncated: boolean }>;
   readFile(sessionId: string, input: { path: string; offset?: number; length?: number }): Promise<{ path: string; content: string; encoding: 'utf-8' | 'base64'; size: number; truncated: boolean; etag: string; mime: string; languageId?: string; lineCount?: number; isBinary: boolean }>;
-  searchFiles(sessionId: string, input: { query: string; limit?: number }): Promise<{ items: Array<{ path: string; name: string; kind: FsKind; score: number; matchPositions: number[] }>; truncated: boolean }>;
+  /** Search files in a workspace (no session required) — POST /workspace/fs:search. `workspace` accepts a registered workspace id or an absolute root. */
+  searchFiles(workspace: string, input: { query: string; limit?: number }): Promise<{ items: Array<{ path: string; name: string; kind: FsKind; score: number; matchPositions: number[] }>; truncated: boolean }>;
   grepFiles(sessionId: string, input: { pattern: string; regex?: boolean; caseSensitive?: boolean }): Promise<{ files: Array<{ path: string; matches: Array<{ line: number; col: number; text: string; before: string[]; after: string[] }> }>; filesScanned: number; truncated: boolean; elapsedMs: number }>;
   getGitStatus(sessionId: string, paths?: string[]): Promise<{ branch: string; ahead: number; behind: number; entries: Record<string, string>; additions: number; deletions: number; pullRequest: { number: number; state: string; url: string } | null }>;
   getFileDiff(sessionId: string, path: string): Promise<{ path: string; diff: string }>;
@@ -966,6 +1036,10 @@ export interface KimiWebApi {
   // OAuth usage — GET /oauth/usage (managed account plan usage, #2027)
   getOauthUsage(): Promise<AppManagedUsage | null>;
   getOAuthAccount(): Promise<AppOAuthAccount | null>;
+  getManagedUserInfo(): Promise<AppManagedUserInfo | null>;
+
+  // Search — POST /search (cross-session messages and titles)
+  searchMessages(input: AppMessageSearchInput): Promise<AppMessageSearchPage>;
 
   // Connections — GET /connections (attached WS clients diagnostic)
   getConnections(): Promise<AppConnection[]>;

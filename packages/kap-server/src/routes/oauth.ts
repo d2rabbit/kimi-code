@@ -1,12 +1,13 @@
 /**
  * `/oauth/*` REST routes.
  *
- *   POST   /oauth/login   start a device-code flow → OAuthFlowStart
- *   GET    /oauth/login   poll current flow state  → OAuthFlowSnapshot | null
- *   DELETE /oauth/login   cancel pending flow       → { cancelled, status }
- *   POST   /oauth/logout  logout                    → { logged_out, provider }
- *   GET    /oauth/usage   managed-account usage     → ManagedUsageResult
- *   GET    /oauth/account current account identity  → JWT claims | null
+ *   POST   /oauth/login     start a device-code flow → OAuthFlowStart
+ *   GET    /oauth/login     poll current flow state  → OAuthFlowSnapshot | null
+ *   DELETE /oauth/login     cancel pending flow       → { cancelled, status }
+ *   POST   /oauth/logout    logout                    → { logged_out, provider }
+ *   GET    /oauth/usage     managed-account usage     → ManagedUsageResult
+ *   GET    /oauth/account   access-token JWT claims   → JWT claims | null
+ *   GET    /oauth/userinfo  managed-account profile   → ManagedUserInfoResult
  *
  * Backed by the v2 `IOAuthService` (Core scope), which already returns the
  * protocol wire types, so the handlers only swap the v1 accessor
@@ -15,6 +16,7 @@
 
 import { IOAuthService, type Scope } from '@moonshot-ai/agent-core-v2';
 import {
+  managedUserInfoResultSchema,
   managedUsageResultSchema,
   oauthFlowSnapshotSchema,
   oauthFlowStartSchema,
@@ -229,7 +231,8 @@ export function registerOAuthRoutes(app: RouteHost, core: Scope): void {
       const sub = claims['sub'] ?? claims['user_id'];
       reply.send(okEnvelope(
         {
-          user_id: typeof sub === 'string' ? sub : String(sub ?? ''),
+          user_id:
+            typeof sub === 'string' ? sub : typeof sub === 'number' ? String(sub) : '',
           scope: typeof claims['scope'] === 'string' ? claims['scope'] : undefined,
           client_id: typeof claims['client_id'] === 'string' ? claims['client_id'] : undefined,
           expires_at: typeof claims['exp'] === 'number' ? claims['exp'] : undefined,
@@ -242,6 +245,27 @@ export function registerOAuthRoutes(app: RouteHost, core: Scope): void {
     accountRoute.path,
     accountRoute.options,
     accountRoute.handler as Parameters<RouteHost['get']>[2],
+  );
+
+  // GET /oauth/userinfo — managed-account profile ------------------------------
+  const userInfoRoute = defineRoute(
+    {
+      method: 'GET',
+      path: '/oauth/userinfo',
+      querystring: oauthLoginQuerySchema,
+      success: { data: managedUserInfoResultSchema },
+      description: 'Get the managed account profile',
+      tags: ['auth'],
+    },
+    async (req, reply) => {
+      const result = await core.accessor.get(IOAuthService).getManagedUserInfo(req.query.provider);
+      reply.send(okEnvelope(result, req.id));
+    },
+  );
+  app.get(
+    userInfoRoute.path,
+    userInfoRoute.options,
+    userInfoRoute.handler as Parameters<RouteHost['get']>[2],
   );
 }
 
@@ -269,8 +293,20 @@ function toWireUsage(result: ManagedUsageDomainResult): ManagedUsageResult {
 }
 
 type ManagedUsageDomainResult = Awaited<ReturnType<IOAuthService['getManagedUsage']>>;
-type DomainUsageRow = { label: string; used: number; limit: number; resetHint?: string };
+type DomainUsageRow = {
+  name?: string;
+  window?: { duration: number; unit: 'minute' | 'hour' | 'day' | 'week' };
+  used: number;
+  limit: number;
+  resetAt?: string;
+};
 
 function toWireUsageRow(row: DomainUsageRow): UsageRow {
-  return { label: row.label, used: row.used, limit: row.limit, reset_hint: row.resetHint };
+  return {
+    name: row.name,
+    window: row.window,
+    used: row.used,
+    limit: row.limit,
+    reset_at: row.resetAt,
+  };
 }

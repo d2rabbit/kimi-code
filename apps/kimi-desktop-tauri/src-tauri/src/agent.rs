@@ -481,6 +481,7 @@ pub async fn start_embedded_agent(
     // The agent is the kimi-code JS bundle (tsdown output), executed by the
     // Node runtime. No SEA injection needed — just node + main.cjs.
     let mut cmd = tokio::process::Command::new(&node_bin);
+    let desktop_version = app.package_info().version.to_string();
     cmd.arg(&agent_script);
     cmd.args([
         "web",
@@ -496,6 +497,12 @@ pub async fn start_embedded_agent(
 
     let mut child = cmd
         .env("KIMI_CODE_HOME", &home)
+        .env("KIMI_CODE_EMBEDDED_HOST_PRODUCT", "kimi-code-desktop")
+        .env("KIMI_CODE_EMBEDDED_HOST_VERSION", desktop_version)
+        .env("KIMI_CODE_EMBEDDED_HOST_PLATFORM", "kimi_code_desktop")
+        .env("KIMI_CODE_EMBEDDED_HOST_USER_AGENT_SUFFIX", "desktop")
+        .env("KIMI_CODE_EMBEDDED_HOST_DISPLAY_NAME", "Kimi Code Desktop")
+        .env("KIMI_CODE_EMBEDDED_HOST_UI_MODE", "desktop")
         // The WebView runs on Tauri's custom protocol (tauri.localhost), which
         // is cross-origin to the agent's 127.0.0.1 origin. The daemon's CORS
         // middleware is whitelist-based (KIMI_CODE_CORS_ORIGINS), so whitelist

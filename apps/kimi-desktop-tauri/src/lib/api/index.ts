@@ -11,3 +11,7 @@ export function getKimiWebApi(): KimiWebApi {
   singleton ??= new DaemonKimiWebApi(readKimiApiConfig());
   return singleton;
 }
+
+export function resetKimiWebApi(): void {
+  singleton = undefined;
+}

@@ -578,7 +578,6 @@ body::before {
   z-index: 0;
   pointer-events: none;
   animation: aurora-drift var(--duration-aurora, 40s) linear infinite;
-  will-change: transform;
 }
 /* #app 在极光层之上（z-index 在 APP SHELL BASE 的 #app 规则中设置） */
 
@@ -635,29 +634,6 @@ button:active,
 .mention-menu {
   transform-origin: bottom right;
 }
-
-/* ---- 首屏 stagger：列表/卡片级联出现（Aero entrance，纯装饰不阻塞交互） ---- */
-@keyframes stagger-in {
-  from { opacity: 0; transform: scale(0.94) translateY(6px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-.sess-list .s-row,
-.sp-col > .scard,
-.sp-col > .item-row,
-.sp-col > .key-row,
-.page-body > .card,
-.page-body > .item-row {
-  animation: stagger-in var(--duration-aero-in, 200ms) var(--ease-out) backwards;
-}
-.sess-list .s-row:nth-child(n+2), .sp-col > *:nth-child(n+2), .page-body > *:nth-child(n+2) { animation-delay: 30ms; }
-.sess-list .s-row:nth-child(n+3), .sp-col > *:nth-child(n+3), .page-body > *:nth-child(n+3) { animation-delay: 60ms; }
-.sess-list .s-row:nth-child(n+4), .sp-col > *:nth-child(n+4), .page-body > *:nth-child(n+4) { animation-delay: 90ms; }
-.sess-list .s-row:nth-child(n+5), .sp-col > *:nth-child(n+5), .page-body > *:nth-child(n+5) { animation-delay: 120ms; }
-.sess-list .s-row:nth-child(n+6), .sp-col > *:nth-child(n+6), .page-body > *:nth-child(n+6) { animation-delay: 150ms; }
-.sess-list .s-row:nth-child(n+7), .sp-col > *:nth-child(n+7), .page-body > *:nth-child(n+7) { animation-delay: 180ms; }
-.sess-list .s-row:nth-child(n+8), .sp-col > *:nth-child(n+8), .page-body > *:nth-child(n+8) { animation-delay: 210ms; }
-.sess-list .s-row:nth-child(n+9), .sp-col > *:nth-child(n+9), .page-body > *:nth-child(n+9) { animation-delay: 240ms; }
-.sess-list .s-row:nth-child(n+10), .sp-col > *:nth-child(n+10), .page-body > *:nth-child(n+10) { animation-delay: 270ms; }
 
 ::selection {
   background: var(--p-selection, rgba(79, 168, 255, 0.22));
@@ -842,7 +818,7 @@ body {
   to { opacity: 1; transform: scale(1); }
 }
 @keyframes spring-in {
-  from { opacity: 0; transform: scale(0.92) translateY(6px); }
+  from { opacity: 0; transform: scale(0.97) translateY(4px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 @keyframes fade-in {
@@ -2073,83 +2049,18 @@ button,
   50% { box-shadow: 0 2px 12px rgba(79, 168, 255, 0.38); }
 }
 
-/* ---- 运行中 chip 呼吸（标题栏的"运行中"徽章） ---- */
-@keyframes chip-run-breathe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.72; }
-}
-.chip-run {
-  animation: chip-run-breathe 1.8s ease-in-out infinite;
-}
-
-/* ---- Welcome chips 集合呼吸（错峰，波浪感；仅 Aurora 的有机签名） ---- */
-@keyframes chip-breathe {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
-}
-html[data-color-scheme="dark"] .chip,
-html[data-color-scheme="light"] .chip,
-html[data-color-scheme="system"] .chip {
-  animation: chip-breathe 4s ease-in-out infinite;
-}
-html[data-color-scheme="dark"] .chip:nth-child(2),
-html[data-color-scheme="light"] .chip:nth-child(2),
-html[data-color-scheme="system"] .chip:nth-child(2) { animation-delay: 0.5s; }
-html[data-color-scheme="dark"] .chip:nth-child(3),
-html[data-color-scheme="light"] .chip:nth-child(3),
-html[data-color-scheme="system"] .chip:nth-child(3) { animation-delay: 1s; }
-html[data-color-scheme="dark"] .chip:nth-child(4),
-html[data-color-scheme="light"] .chip:nth-child(4),
-html[data-color-scheme="system"] .chip:nth-child(4) { animation-delay: 1.5s; }
-
-/* ---- body 背景层极慢色彩偏移（雾晕呼吸，~10s 周期） ---- */
-@keyframes haze-drift {
-  0%, 100% { background-position: 0% 0%; }
-  50% { background-position: 2% 1%; }
-}
 body {
   background-size: 100% 100%;
-  animation: haze-drift 10s ease-in-out infinite;
-}
-
-/* ---- session 状态点 glow 呼吸增强（加深光晕脉动） ---- */
-.s-status-dot[data-status="running"],
-.dot-run {
-  animation: dot-glow 1.6s ease-in-out infinite;
-}
-@keyframes dot-glow {
-  0%, 100% { box-shadow: 0 0 4px currentColor; opacity: 1; }
-  50% { box-shadow: 0 0 10px currentColor; opacity: 0.6; }
-}
-
-/* ---- Goal active 状态点加深呼吸 ---- */
-.st-active .gs-dot {
-  animation: goal-glow 1.8s ease-in-out infinite;
-}
-@keyframes goal-glow {
-  0%, 100% { box-shadow: 0 0 6px var(--ac); opacity: 1; }
-  50% { box-shadow: 0 0 14px var(--ac); opacity: 0.5; }
-}
-
-/* ---- Composer 输入框边框微呼吸（运行中状态） ---- */
-.composer-card:focus-within {
-  animation: focus-breathe 2.8s ease-in-out infinite;
-}
-@keyframes focus-breathe {
-  0%, 100% { box-shadow: 0 0 0 3px var(--ac-soft); }
-  50% { box-shadow: 0 0 0 4px var(--ac-soft); }
 }
 
 /* ---- reduced-motion 守护（呼吸感） ---- */
 @media (prefers-reduced-motion: reduce) {
   .avatar.a,
-  .chip-run,
   .chip,
   body,
   .s-status-dot[data-status="running"],
   .dot-run,
-  .st-active .gs-dot,
-  .composer-card:focus-within {
+  .st-active .gs-dot {
     animation: none;
   }
 }
@@ -2165,9 +2076,7 @@ body {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .bento-cell,
-.tool-card,
-.plugin-card,
-.scard {
+.tool-card {
   animation: var(--motion-enter-anim, none);
 }
 /* Stagger: each child delays slightly more */
@@ -2177,16 +2086,6 @@ body {
 .bento-grid > .bento-cell:nth-child(4) { animation-delay: 120ms; }
 .bento-grid > .bento-cell:nth-child(5) { animation-delay: 160ms; }
 .bento-grid > .bento-cell:nth-child(6) { animation-delay: 200ms; }
-
-/* ---- 微脉动呼吸（状态指示器/active 元素） ---- */
-@keyframes soft-breathe {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.7; }
-}
-.s-status-dot[data-status="running"],
-.dot-run {
-  animation: soft-breathe 1.8s ease-in-out infinite, kimi-pulse 1.5s infinite;
-}
 
 /* ---- 数字增长指示（token/cost 变化时微弹） ---- */
 @keyframes number-pop {

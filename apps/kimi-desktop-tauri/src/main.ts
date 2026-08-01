@@ -27,12 +27,13 @@ try {
   document.documentElement.dataset.colorScheme = 'dark';
 }
 
-// MCP debug plugin — local only (not committed). Lets AI agents screenshot,
-// inspect DOM, click, type, and execute JS in the webview.
-// Unconditional init: tauri dev mode may not set import.meta.env.DEV.
-import('tauri-plugin-mcp')
-  .then(({ setupPluginListeners }) => setupPluginListeners())
-  .catch(() => {});
+// MCP debug plugin — Vite dev builds only. The matching Rust plugin is behind
+// the `mcp-debug` Cargo feature, so production bundles contain neither side.
+if (import.meta.env.DEV && '__TAURI_INTERNALS__' in globalThis) {
+  void import('tauri-plugin-mcp')
+    .then(({ setupPluginListeners }) => setupPluginListeners())
+    .catch(() => {});
+}
 
 const app = mount(App, {
   target: document.getElementById('app')!,

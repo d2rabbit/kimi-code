@@ -1,24 +1,28 @@
 # Partial Lunar Eclipse · 月偏食
 
-> A desktop client for [Kimi Code](https://github.com/MoonshotAI/kimi-code), eclipsed onto the desktop.
-> 基于 [Kimi Code](https://github.com/MoonshotAI/kimi-code) 衍生的桌面客户端——月偏食：月在（Kimi / Moonshot）之上，偏食成形。
+> A native desktop workspace for [Kimi Code](https://github.com/MoonshotAI/kimi-code), shaped by a partial lunar eclipse.
+> 基于 [Kimi Code](https://github.com/MoonshotAI/kimi-code) 衍生的原生桌面工作区——月偏食：Kimi 的蓝紫月光穿过偏食边缘，落到本地工作台。
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Site](https://img.shields.io/badge/site-github%20pages-blue)](https://d2rabbit.github.io/kimi-code/) <br>
-[原始项目 · Upstream](https://github.com/MoonshotAI/kimi-code) · [站点](https://d2rabbit.github.io/kimi-code/) · [Issues](https://github.com/d2rabbit/kimi-code/issues)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Site](https://img.shields.io/badge/site-github%20pages-786fff)](https://d2rabbit.github.io/kimi-code/) [![Desktop](https://img.shields.io/badge/desktop-Tauri%202-e79a70)](apps/kimi-desktop-tauri) <br>
+[官网](https://d2rabbit.github.io/kimi-code/) · [下载](https://github.com/d2rabbit/kimi-code/releases) · [Issues](https://github.com/d2rabbit/kimi-code/issues) · [原始项目 · Upstream](https://github.com/MoonshotAI/kimi-code)
 
 ## 是什么 · What is this
 
-**Partial Lunar Eclipse（月偏食）** 是 Kimi Code 的 Tauri 桌面客户端仓库，从上游 [Kimi Code](https://github.com/MoonshotAI/kimi-code)（Moonshot AI 的终端 AI 编码代理）衍生而来：月亮（Kimi）依旧，只是换了一个被"偏食"过的形态——同一个 daemon、同一套会话与工具链，换上原生桌面外壳。
+**Partial Lunar Eclipse（月偏食）** 是 Kimi Code 的 Tauri 桌面客户端仓库，从上游 [Kimi Code](https://github.com/MoonshotAI/kimi-code)（Moonshot AI 的终端 AI 编码代理）衍生而来：保留同一套 agent 引擎、会话、工具链与协议能力，再为它构建独立的原生桌面工作台。
 
 名字的含义：**月，是 Kimi / Moonshot；偏食，是衍生而不遮蔽**——我们跟踪上游主干，同时沉淀自己的桌面体验。
 
-- **Tauri 2 + Svelte 5 + Rust**：与 Electron 平行的轻量桌面形态，本仓库已移除 `apps/kimi-web`（浏览器版）与 Electron 包装版，聚焦单一路线
-- **QQ 式双列聊天**：用户/agent 分侧气泡，墨色融合的 markdown 渲染
-- **类型化工具卡**：思考 / 工具 / MCP / JSON / 终端 / 审批 / 提问，各就其位，文件名与命令概略一目了然
-- **插件市场**：服务端代理注册表 + 发现页 + 更新提醒
-- **私有内嵌 daemon**：隔离 home、随机回环端口、随应用启停
-- **诊断包导出**：一键打包会话与桌面日志
-- **七套主题**：dark / light / clay / neon / glass / aqua / system
+### 桌面能力
+
+- **工作区与检索**：Workspace 分组、跨会话消息搜索、工作区文件提及与文件定位
+- **会话与工具**：双列对话、类型化工具卡、审批与提问、流式终端、MCP 和插件命令
+- **模型与账号**：主模型 / 辅助模型配置、Kimi 托管账号信息、结构化配额与 Booster 用量
+- **原生运行边界**：私有内嵌 daemon、隔离 home、随机回环端口、自包含 Node runtime、受限 Tauri 权限
+- **桌面体验**：七套主题、克制动效、诊断包导出、后台恢复与本机身份适配
+
+### 与主干的关系
+
+本仓库持续同步上游 `main`，但不会机械复制所有 Web 或 CLI 表面：agent 引擎、协议、模型、会话、工具、插件与 SDK 等通用能力会随主干迁移；适合原生桌面的交互能力会在 Tauri 中重新设计；浏览器专属页面与 Electron 包装层则不进入当前产品路线。
 
 ## 构建 · Build
 
@@ -29,17 +33,20 @@ git clone https://github.com/d2rabbit/kimi-code.git
 cd kimi-code
 pnpm install
 
-# 开发运行（内嵌 daemon + 前端热更新）
-pnpm --filter @moonshot-ai/kimi-desktop-tauri run tauri:dev
+# 快速开发（构建内嵌 agent，并启动 Tauri）
+pnpm desktop:dev
+
+# 构建后直接运行桌面客户端
+pnpm desktop:run
 
 # 产出可执行程序（本地调试版）
-bash apps/kimi-desktop-tauri/scripts/build-run.sh
+pnpm desktop:build
 
 # 产出安装包（.deb/.rpm/.AppImage/.dmg/.msi）
 bash apps/kimi-desktop-tauri/scripts/build-run.sh --dist
 ```
 
-GitHub Actions 已配置四平台打包（`desktop-v*` 标签触发，产物挂到 Release）。
+完整的 Tauri 热更新开发仍可运行 `pnpm --filter @moonshot-ai/kimi-desktop-tauri run tauri:dev`。GitHub Actions 已配置多平台打包（`desktop-v*` 标签触发，产物挂到 Release）。
 
 ## 仓库结构 · Layout
 
@@ -51,6 +58,8 @@ packages/              # agent 引擎与协议包（上游主干）
 ```
 
 与上游的主要差异：移除了 `apps/kimi-web`（浏览器版，daemon 改为可选挂载、无资产时仅提供 REST/WS）与 Electron 包装版；daemon 的浏览器 UI 变为可选——没有 `dist-web` 时照常以 API-only 模式启动。
+
+Fork 层面的版本记录见 [CHANGELOG.md](CHANGELOG.md)；各上游 package 的发布历史仍保留在对应目录的 `CHANGELOG.md` 中。
 
 ## 原始项目 · Upstream
 

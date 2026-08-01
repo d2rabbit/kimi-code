@@ -22,20 +22,16 @@
   let mentionSearchSeq = 0;
 
   async function searchMention(query: string) {
-    let sid = client.activeSessionId();
-    if (!sid) {
-      const wsId = client.activeWorkspaceId();
-      const pool = wsId ? client.sessions().filter((x) => x.workspaceId === wsId) : client.sessions();
-      sid = pool[0]?.id ?? client.sessions()[0]?.id ?? '';
-    }
-    if (!sid) { mentionResults = []; return; }
+    const session = client.activeSession();
+    const workspace = session?.workspaceId ?? session?.cwd ?? client.activeWorkspaceId();
+    if (!workspace) { mentionResults = []; return; }
     // Note: query can be '' (just typed @ alone) — we still surface a few
     // recent / popular files so the menu isn't empty. searchFiles with an
     // empty query returns the daemon's default ranking.
     const seq = ++mentionSearchSeq;
     try {
       const api = getKimiWebApi();
-      const result = await api.searchFiles(sid, { query, limit: 10 });
+      const result = await api.searchFiles(workspace, { query, limit: 10 });
       // Drop stale results.
       if (seq !== mentionSearchSeq) return;
       mentionResults = result.items.map((i) => ({ path: i.path, name: i.name, kind: (i as { kind?: string }).kind }));

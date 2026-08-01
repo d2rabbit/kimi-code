@@ -9,10 +9,8 @@ name: desktop-tauri-build
 # runtime by Node. Only the Rust shell and the installers are per-platform,
 # so each OS builds on its own runner.
 #
-# Note: the packaged app currently resolves the Node runtime from
-# <resource_dir>/node[.exe] and falls back to the system Node on PATH
-# (>= 24.15 required) — bundling a per-platform Node runtime is a known gap,
-# not handled by this workflow yet.
+# The packaging hook copies the runner's Node >=24.15 runtime alongside
+# main.cjs, so installers are self-contained and never depend on system Node.
 #
 # Triggers:
 #   - workflow_dispatch: manual ad-hoc builds from the Actions tab.
@@ -105,8 +103,15 @@ jobs:
       - name: Build embedded agent (tsdown → main.cjs)
         run: pnpm -C apps/kimi-code exec tsdown --config tsdown.native.config.ts
 
+      - name: Typecheck desktop frontend
+        working-directory: apps/kimi-desktop-tauri
+        run: pnpm run typecheck
+
+      - name: Test desktop Rust shell
+        run: cargo test --manifest-path apps/kimi-desktop-tauri/src-tauri/Cargo.toml
+
       # Package installers. beforeBuildCommand builds the Svelte frontend
-      # (vite), beforeBundleCommand stages main.cjs into the bundle.
+      # (vite), beforeBundleCommand stages main.cjs + Node into the bundle.
       - name: Build Tauri app
         working-directory: apps/kimi-desktop-tauri
         run: pnpm run tauri:build

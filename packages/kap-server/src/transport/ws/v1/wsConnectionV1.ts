@@ -19,10 +19,16 @@
  */
 
 import {
+  terminalAttachMessageSchema,
+  terminalCloseMessageSchema,
+  terminalDetachMessageSchema,
+  terminalInputMessageSchema,
+  terminalResizeMessageSchema,
   unsubscribeV2PayloadSchema,
   WS_PROTOCOL_VERSION,
   type SessionCursor,
 } from '../../../protocol/ws-control';
+import { ErrorCode } from '../../../protocol/error-codes';
 import {
   detachGrades,
   transcriptSubscribeV2PayloadSchema,
@@ -51,6 +57,8 @@ import {
   type TargetSubscription,
 } from './sessionEventBroadcaster';
 import { FsWatchBridge } from './fsWatchBridge';
+import type { TerminalBridge } from './terminalBridge';
+import type { TerminalFrame } from '@moonshot-ai/agent-core-v2/os/interface/terminal';
 
 const DEFAULT_MAX_BUFFER_SIZE = 1000;
 
@@ -77,6 +85,7 @@ export interface WsConnectionV1Options {
   readonly socket: WebSocket;
   readonly broadcaster: SessionEventBroadcaster;
   readonly fsWatchBridge?: FsWatchBridge;
+  readonly terminalBridge?: TerminalBridge;
   readonly connectionRegistry: IConnectionRegistry;
   /**
    * Present-only credential check for the post-connect `client_hello`
@@ -107,6 +116,7 @@ export class WsConnectionV1 implements BroadcastTarget {
   private readonly socket: WebSocket;
   private readonly broadcaster: SessionEventBroadcaster;
   private readonly fsWatchBridge?: FsWatchBridge;
+  private readonly terminalBridge?: TerminalBridge;
   private readonly validateCredential?: CredentialValidator;
   private readonly maxBufferSize: number;
   private readonly flushIntervalMs: number;
@@ -142,6 +152,7 @@ export class WsConnectionV1 implements BroadcastTarget {
     this.socket = opts.socket;
     this.broadcaster = opts.broadcaster;
     this.fsWatchBridge = opts.fsWatchBridge;
+    this.terminalBridge = opts.terminalBridge;
     this.validateCredential = opts.validateCredential;
     this.logger = opts.logger;
     this.maxBufferSize = opts.maxBufferSize ?? DEFAULT_MAX_BUFFER_SIZE;
@@ -214,9 +225,23 @@ export class WsConnectionV1 implements BroadcastTarget {
       case 'watch_fs_remove':
         this.enqueueControl(() => this.onWatchFs(frame, false));
         return;
+      case 'terminal_attach':
+        this.enqueueControl(() => this.onTerminalAttach(frame));
+        return;
+      case 'terminal_detach':
+        this.enqueueControl(() => this.onTerminalDetach(frame));
+        return;
+      case 'terminal_input':
+        this.enqueueControl(() => this.onTerminalInput(frame));
+        return;
+      case 'terminal_resize':
+        this.enqueueControl(() => this.onTerminalResize(frame));
+        return;
+      case 'terminal_close':
+        this.enqueueControl(() => this.onTerminalClose(frame));
+        return;
       default:
-        // Unknown / not-yet-implemented control frame (e.g. terminal_*, abort)
-        // — ignore for now; terminal/abort stay on REST.
+        // Unknown / not-yet-implemented control frame (e.g. abort) — ignore.
         return;
     }
   }
@@ -421,6 +446,101 @@ export class WsConnectionV1 implements BroadcastTarget {
     );
   }
 
+  private async onTerminalAttach(frame: InboundFrame): Promise<void> {
+    const parsed = terminalAttachMessageSchema.safeParse(frame);
+    if (!parsed.success) {
+      this.sendInvalidControlAck(frame, 'invalid terminal_attach payload');
+      return;
+    }
+    const bridge = this.terminalBridge;
+    if (bridge === undefined) {
+      this.sendImmediateFrame(buildAck(parsed.data.id, 1, 'terminal unavailable', {}));
+      return;
+    }
+    const payload = parsed.data.payload;
+    const result = await bridge.attach(
+      this,
+      payload.session_id,
+      payload.terminal_id,
+      payload.since_seq,
+    );
+    this.sendImmediateFrame(buildAck(parsed.data.id, result.code, result.msg, result.payload));
+  }
+
+  private async onTerminalDetach(frame: InboundFrame): Promise<void> {
+    const parsed = terminalDetachMessageSchema.safeParse(frame);
+    if (!parsed.success) {
+      this.sendInvalidControlAck(frame, 'invalid terminal_detach payload');
+      return;
+    }
+    const bridge = this.terminalBridge;
+    if (bridge === undefined) {
+      this.sendImmediateFrame(buildAck(parsed.data.id, 1, 'terminal unavailable', {}));
+      return;
+    }
+    const payload = parsed.data.payload;
+    const result = await bridge.detach(this, payload.session_id, payload.terminal_id);
+    this.sendImmediateFrame(buildAck(parsed.data.id, result.code, result.msg, result.payload));
+  }
+
+  private async onTerminalInput(frame: InboundFrame): Promise<void> {
+    const parsed = terminalInputMessageSchema.safeParse(frame);
+    if (!parsed.success) {
+      this.sendInvalidControlAck(frame, 'invalid terminal_input payload');
+      return;
+    }
+    const bridge = this.terminalBridge;
+    if (bridge === undefined) {
+      this.sendImmediateFrame(buildAck(parsed.data.id, 1, 'terminal unavailable', {}));
+      return;
+    }
+    const payload = parsed.data.payload;
+    const result = await bridge.input(this, payload.session_id, payload.terminal_id, payload.data);
+    this.sendImmediateFrame(buildAck(parsed.data.id, result.code, result.msg, result.payload));
+  }
+
+  private async onTerminalResize(frame: InboundFrame): Promise<void> {
+    const parsed = terminalResizeMessageSchema.safeParse(frame);
+    if (!parsed.success) {
+      this.sendInvalidControlAck(frame, 'invalid terminal_resize payload');
+      return;
+    }
+    const bridge = this.terminalBridge;
+    if (bridge === undefined) {
+      this.sendImmediateFrame(buildAck(parsed.data.id, 1, 'terminal unavailable', {}));
+      return;
+    }
+    const payload = parsed.data.payload;
+    const result = await bridge.resize(
+      this,
+      payload.session_id,
+      payload.terminal_id,
+      payload.cols,
+      payload.rows,
+    );
+    this.sendImmediateFrame(buildAck(parsed.data.id, result.code, result.msg, result.payload));
+  }
+
+  private async onTerminalClose(frame: InboundFrame): Promise<void> {
+    const parsed = terminalCloseMessageSchema.safeParse(frame);
+    if (!parsed.success) {
+      this.sendInvalidControlAck(frame, 'invalid terminal_close payload');
+      return;
+    }
+    const bridge = this.terminalBridge;
+    if (bridge === undefined) {
+      this.sendImmediateFrame(buildAck(parsed.data.id, 1, 'terminal unavailable', {}));
+      return;
+    }
+    const payload = parsed.data.payload;
+    const result = await bridge.close(this, payload.session_id, payload.terminal_id);
+    this.sendImmediateFrame(buildAck(parsed.data.id, result.code, result.msg, result.payload));
+  }
+
+  private sendInvalidControlAck(frame: InboundFrame, msg: string): void {
+    this.sendImmediateFrame(buildAck(frame.id ?? '', ErrorCode.VALIDATION_FAILED, msg, {}));
+  }
+
   /**
    * Shared attach path behind `client_hello` (legacy inline subscriptions)
    * and `subscribe`. Subscribes the connection via the broadcaster, then
@@ -519,6 +639,11 @@ export class WsConnectionV1 implements BroadcastTarget {
     this.scheduleFlush();
   }
 
+  /** Queue a volatile terminal output/exit frame for this connection only. */
+  sendTerminalFrame(frame: TerminalFrame): void {
+    this.sendSubscribedFrame(frame);
+  }
+
   /**
    * Public/control frames do not start a timer. They join the FIFO and flush it
    * immediately, so no later frame can overtake earlier subscription traffic.
@@ -614,6 +739,7 @@ export class WsConnectionV1 implements BroadcastTarget {
     this.broadcaster.removeGlobalTarget(this);
     for (const sid of this.subscriptions.keys()) this.broadcaster.unsubscribe(sid, this);
     this.fsWatchBridge?.detachConnection(this);
+    this.terminalBridge?.detachConnection(this);
     // registry removal is handled by registerWsV1 on the socket 'close' event.
   }
 }

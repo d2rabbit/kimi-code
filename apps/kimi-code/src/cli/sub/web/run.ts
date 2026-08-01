@@ -11,13 +11,17 @@
 import { statSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { hostRequestHeadersSeed } from '@moonshot-ai/agent-core-v2';
-import { createServerLogger, startServer, type ServerLogger } from '@moonshot-ai/kap-server';
+import {
+  createServerLogger,
+  startServer,
+  type ServerHostIdentity,
+  type ServerLogger,
+} from '@moonshot-ai/kap-server';
 import { shutdownTelemetry, track } from '@moonshot-ai/kimi-telemetry';
 import chalk from 'chalk';
 import { type Command } from 'commander';
 
-import { CLI_SHUTDOWN_TIMEOUT_MS } from '#/constant/app';
+import { CLI_SHUTDOWN_TIMEOUT_MS, WEB_USER_AGENT_SUFFIX } from '#/constant/app';
 import { getNativeWebAssetsDir } from '#/native/web-assets';
 import { darkColors } from '#/tui/theme/colors';
 import { openUrl as defaultOpenUrl } from '#/utils/open-url';
@@ -25,7 +29,7 @@ import { getDataDir } from '#/utils/paths';
 
 import { initializeServerTelemetry } from '../../telemetry';
 import {
-  buildKimiDefaultHeaders,
+  createKimiCodeHostIdentity,
   getHostPackageRoot,
   getVersion,
 } from '../../version';
@@ -49,6 +53,41 @@ import {
 } from './shared';
 
 const WEB_ASSETS_DIR = 'dist-web';
+const EMBEDDED_HOST_PRODUCT_ENV = 'KIMI_CODE_EMBEDDED_HOST_PRODUCT';
+const EMBEDDED_HOST_VERSION_ENV = 'KIMI_CODE_EMBEDDED_HOST_VERSION';
+const EMBEDDED_HOST_PLATFORM_ENV = 'KIMI_CODE_EMBEDDED_HOST_PLATFORM';
+const EMBEDDED_HOST_USER_AGENT_SUFFIX_ENV = 'KIMI_CODE_EMBEDDED_HOST_USER_AGENT_SUFFIX';
+const EMBEDDED_HOST_DISPLAY_NAME_ENV = 'KIMI_CODE_EMBEDDED_HOST_DISPLAY_NAME';
+const EMBEDDED_HOST_UI_MODE_ENV = 'KIMI_CODE_EMBEDDED_HOST_UI_MODE';
+
+export interface WebHostContext {
+  readonly identity: ServerHostIdentity;
+  readonly telemetryUiMode: string;
+}
+
+function nonEmptyEnv(env: NodeJS.ProcessEnv, name: string): string | undefined {
+  const value = env[name]?.trim();
+  return value === undefined || value.length === 0 ? undefined : value;
+}
+
+/** Resolve the identity of `kimi web` or an embedding desktop host. */
+export function resolveWebHostContext(
+  version: string,
+  env: NodeJS.ProcessEnv = process.env,
+): WebHostContext {
+  const cliIdentity = createKimiCodeHostIdentity(version);
+  return {
+    identity: {
+      productName: nonEmptyEnv(env, EMBEDDED_HOST_PRODUCT_ENV) ?? cliIdentity.productName,
+      version: nonEmptyEnv(env, EMBEDDED_HOST_VERSION_ENV) ?? cliIdentity.version,
+      platform: nonEmptyEnv(env, EMBEDDED_HOST_PLATFORM_ENV) ?? cliIdentity.platform,
+      userAgentSuffix:
+        nonEmptyEnv(env, EMBEDDED_HOST_USER_AGENT_SUFFIX_ENV) ?? WEB_USER_AGENT_SUFFIX,
+      displayName: nonEmptyEnv(env, EMBEDDED_HOST_DISPLAY_NAME_ENV),
+    },
+    telemetryUiMode: nonEmptyEnv(env, EMBEDDED_HOST_UI_MODE_ENV) ?? 'web',
+  };
+}
 
 /**
  * Minimal surface `runServerInProcess` needs from the server. kap-server's
@@ -239,9 +278,10 @@ async function runServerInProcess(
   onReady?: (origin: string) => void,
 ): Promise<never> {
   const version = getVersion();
+  const host = resolveWebHostContext(version);
   // Registers the telemetry provider for `track` / `shutdownTelemetry`; the
   // client itself is not passed into kap-server.
-  initializeServerTelemetry({ version });
+  initializeServerTelemetry({ version, identity: host.identity, uiMode: host.telemetryUiMode });
 
   let running: RoutedServer | undefined;
   let stopping = false;
@@ -267,12 +307,24 @@ async function runServerInProcess(
   // logger, close }`, so adapt it to the `RoutedServer` surface the rest of
   // this runner consumes.
   const logger = createServerLogger({ level: options.logLevel });
+  const webAssetsDir = serverWebAssetsDir();
+  if (webAssetsDir === undefined) {
+    logger.info(
+      'dev mode: web assets not built; starting the API server without the web UI',
+    );
+  }
   const v2 = await startServer({
     host: options.host,
     port: options.port,
     // Report the CLI's product version as `server_version` (/meta, web UI)
     // rather than kap-server's private package version.
-    version,
+    serverVersion: version,
+    // The CLI's host identity: feeds the engine's bootstrap client identity
+    // and the derived outbound headers (User-Agent + X-Msh-*), so web-UI
+    // OAuth flows and model / WebSearch requests carry the CLI identity. The
+    // `web` User-Agent suffix distinguishes web-UI traffic from direct CLI
+    // runs upstream (same product token, same platform).
+    hostIdentity: host.identity,
     logLevel: options.logLevel,
     logger,
     debugEndpoints: options.debugEndpoints,
@@ -285,11 +337,7 @@ async function runServerInProcess(
     // `telemetry` toggle). Complements the v1 client registered above, which
     // only covers host-level events.
     telemetry: true,
-    // Seed the CLI's Kimi identity headers so the engine's outbound
-    // requests (model, WebSearch, FetchURL) carry the same User-Agent +
-    // X-Msh-* identity as direct CLI runs.
-    seeds: hostRequestHeadersSeed(buildKimiDefaultHeaders(version)),
-    webAssetsDir: serverWebAssetsDir(),
+    webAssetsDir,
   });
   logger.info('serving the REST/WS API and the bundled web UI');
   running = {
@@ -316,22 +364,24 @@ async function runServerInProcess(
   });
 }
 
-function serverWebAssetsDir(): string | undefined {
-  return resolveServerWebAssetsDir();
+/**
+ * Resolve the optional browser assets passed to kap-server.
+ *
+ * Partial Lunar Eclipse ships the API server for the embedded Tauri client
+ * without bundling kimi-web, so missing assets are valid in every mode.
+ */
+export function serverWebAssetsDir(
+  _env: NodeJS.ProcessEnv = process.env,
+  nativeWebAssetsDir: string | null = getNativeWebAssetsDir(),
+): string | undefined {
+  const dir = resolveServerWebAssetsDir(nativeWebAssetsDir);
+  return statSync(join(dir, 'index.html'), { throwIfNoEntry: false })?.isFile() ? dir : undefined;
 }
 
 export function resolveServerWebAssetsDir(
   nativeWebAssetsDir: string | null = getNativeWebAssetsDir(),
-): string | undefined {
-  const dir = nativeWebAssetsDir ?? join(getHostPackageRoot(), WEB_ASSETS_DIR);
-  // Tolerate a missing web UI bundle: kap-server treats `webAssetsDir` as
-  // optional (REST/WS keep serving when it is undefined), so a Tauri-focused
-  // build without the browser UI still boots. When dist-web exists the
-  // behavior is unchanged.
-  if (!statSync(join(dir, 'index.html'), { throwIfNoEntry: false })?.isFile()) {
-    return undefined;
-  }
-  return dir;
+): string {
+  return nativeWebAssetsDir ?? join(getHostPackageRoot(), WEB_ASSETS_DIR);
 }
 
 interface FormatReadyBannerOptions {

@@ -18,15 +18,29 @@
   let showSearch = $state(false);
   let showPalette = $state(false);
 
+  async function loadClient(): Promise<void> {
+    await client.client.load();
+    if (!client.onboarded()) showOnboarding = true;
+  }
+
+  async function retryConnection(): Promise<void> {
+    await daemon.retry();
+    if (daemon.state.status === 'connected') {
+      await loadClient().catch(() => {});
+    }
+  }
+
   onMount(async () => {
     await daemon.connect();
     if (daemon.state.status === 'connected') {
-      await client.client.load().catch(() => {});
-      if (!client.onboarded()) showOnboarding = true;
+      await loadClient().catch(() => {});
     }
   });
 
-  onDestroy(() => daemon.destroy());
+  onDestroy(() => {
+    client.client.destroy();
+    daemon.destroy();
+  });
 
   $effect(() => { void client.unreadCount(); client.client.updateBadge(); });
 
@@ -94,7 +108,7 @@
   {:else if daemon.state.status === 'error'}
     <div class="launch">
       <p class="err-text">{daemon.state.error}</p>
-      <button class="retry-btn" onclick={() => daemon.retry()}>重试</button>
+      <button class="retry-btn" onclick={() => void retryConnection()}>重试</button>
     </div>
   {:else if !client.initialized()}
     <div class="launch"><div class="spinner"></div><p>加载中…</p></div>
