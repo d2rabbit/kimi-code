@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141b3d"/>
+      <stop offset="0.55" stop-color="#0b1026"/>
+      <stop offset="1" stop-color="#070a1a"/>
+    </linearGradient>
+    <radialGradient id="moon" cx="0.42" cy="0.40" r="0.75">
+      <stop offset="0" stop-color="#fdf8ec"/>
+      <stop offset="0.7" stop-color="#f2e9d2"/>
+      <stop offset="1" stop-color="#e2d5b6"/>
+    </radialGradient>
+    <radialGradient id="umbra" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#2a1316"/>
+      <stop offset="0.75" stop-color="#1c0d12"/>
+      <stop offset="1" stop-color="#120811"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.62" stop-color="#f5ead0" stop-opacity="0.28"/>
+      <stop offset="0.8" stop-color="#f5ead0" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#f5ead0" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="moonClip">
+      <circle cx="512" cy="520" r="300"/>
+    </clipPath>
+  </defs>
+
+  <!-- night sky -->
+  <rect width="1024" height="1024" rx="180" fill="url(#sky)"/>
+
+  <!-- stars -->
+  <g fill="#cdd6ff">
+    <circle cx="150" cy="180" r="5" opacity="0.9"/>
+    <circle cx="260" cy="110" r="3.5" opacity="0.7"/>
+    <circle cx="840" cy="150" r="4.5" opacity="0.85"/>
+    <circle cx="910" cy="300" r="3" opacity="0.6"/>
+    <circle cx="120" cy="430" r="3" opacity="0.55"/>
+    <circle cx="200" cy="820" r="4" opacity="0.75"/>
+    <circle cx="880" cy="760" r="3.5" opacity="0.7"/>
+    <circle cx="760" cy="900" r="5" opacity="0.8"/>
+    <circle cx="420" cy="900" r="3" opacity="0.55"/>
+    <circle cx="940" cy="540" r="3" opacity="0.5"/>
+    <path d="M700 96 l7 18 18 7 -18 7 -7 18 -7 -18 -18 -7 18 -7 z" opacity="0.9"/>
+    <path d="M180 600 l5 13 13 5 -13 5 -5 13 -5 -13 -13 -5 13 -5 z" opacity="0.7"/>
+  </g>
+
+  <!-- halo around the moon -->
+  <circle cx="512" cy="520" r="430" fill="url(#glow)"/>
+
+  <!-- moon disc -->
+  <circle cx="512" cy="520" r="300" fill="url(#moon)"/>
+
+  <!-- maria (subtle darker patches on the lit part) -->
+  <g clip-path="url(#moonClip)" fill="#d9cba8" opacity="0.55">
+    <circle cx="400" cy="430" r="52"/>
+    <circle cx="350" cy="540" r="38"/>
+    <circle cx="455" cy="610" r="46"/>
+    <circle cx="390" cy="680" r="26"/>
+    <circle cx="485" cy="470" r="24"/>
+  </g>
+
+  <!-- earth's shadow (umbra) sliding across the lower-right of the moon:
+       the partial eclipse — roughly half the disc is covered -->
+  <g clip-path="url(#moonClip)">
+    <circle cx="730" cy="710" r="330" fill="url(#umbra)" opacity="0.96"/>
+    <!-- coppery penumbra rim where the shadow meets the lit surface -->
+    <circle cx="730" cy="710" r="330" fill="none" stroke="#b04a2f" stroke-width="10" opacity="0.5"/>
+  </g>
+
+  <!-- crisp moon outline -->
+  <circle cx="512" cy="520" r="300" fill="none" stroke="#f8efdb" stroke-width="4" opacity="0.5"/>
+</svg>
