@@ -38,6 +38,8 @@ export const pluginMarketplaceEntrySchema = z.object({
   description: z.string().optional(),
   homepage: z.string().optional(),
   keywords: z.array(z.string()).optional(),
+  /** Server-injected built-in capability row (kimi-cu / kimi-webbridge). */
+  built_in: z.boolean().optional(),
   /** Merged install state (absent when not installed). */
   installed: z.boolean(),
   installed_version: z.string().optional(),

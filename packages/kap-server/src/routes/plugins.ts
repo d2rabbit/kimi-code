@@ -25,7 +25,13 @@
  * imports.
  */
 
-import { IPluginService, type PluginSummary, type Scope } from '@moonshot-ai/agent-core-v2';
+import {
+  ICapabilityService,
+  IPluginService,
+  type CapabilityStatus,
+  type PluginSummary,
+  type Scope,
+} from '@moonshot-ai/agent-core-v2';
 import { z } from 'zod';
 
 import { errEnvelope, okEnvelope } from '../envelope';
@@ -113,6 +119,47 @@ function isNewerVersion(latest: string, local: string): boolean {
   return false;
 }
 
+/**
+ * The env override that replaces the default marketplace catalog. Mirrors the
+ * CLI's `isDefaultMarketplaceCatalog`: capability injection is part of the
+ * DEFAULT catalog experience only — an explicit replacement opts out.
+ */
+const MARKETPLACE_URL_ENV = 'KIMI_CODE_PLUGIN_MARKETPLACE_URL';
+
+/** Source prefix marking a built-in capability row (`capability:kimi-cu`). */
+const CAPABILITY_SOURCE_PREFIX = 'capability:';
+
+function capabilityMarketplaceEntry(capability: CapabilityStatus): PluginMarketplaceEntry {
+  const installed = capability.state !== 'not_installed';
+  return {
+    id: capability.id,
+    display_name: capability.displayName,
+    description: capability.description,
+    tier: 'official',
+    source: `${CAPABILITY_SOURCE_PREFIX}${capability.id}`,
+    built_in: true,
+    version: capability.version,
+    installed,
+    installed_version: installed ? capability.version : undefined,
+    enabled: installed ? true : undefined,
+  };
+}
+
+/**
+ * Load the built-in capability rows for marketplace injection. Returns an
+ * empty array when the capability service is unavailable (older engine) or
+ * detection fails — the catalog still serves, just without the built-ins.
+ */
+async function loadCapabilityEntries(core: Scope): Promise<PluginMarketplaceEntry[]> {
+  if (process.env[MARKETPLACE_URL_ENV] !== undefined) return [];
+  try {
+    const capabilities = await core.accessor.get(ICapabilityService).listCapabilities();
+    return capabilities.map(capabilityMarketplaceEntry);
+  } catch {
+    return [];
+  }
+}
+
 export function registerPluginsRoutes(app: PluginsRouteHost, core: Scope): void {
   // GET /plugins ---------------------------------------------------------
   const listRoute = defineRoute(
@@ -142,33 +189,42 @@ export function registerPluginsRoutes(app: PluginsRouteHost, core: Scope): void 
       operationId: 'getPluginMarketplace',
     },
     async (req, reply) => {
-      const [marketplace, installed] = await Promise.all([
+      const [marketplace, installed, capabilityEntries] = await Promise.all([
         loadPluginMarketplaceCached({ workDir: process.cwd() }),
         core.accessor.get(IPluginService).listPlugins(),
+        loadCapabilityEntries(core),
       ]);
       const byId = new Map(installed.map((p) => [p.id, p]));
-      const entries: PluginMarketplaceEntry[] = marketplace.plugins.map((entry) => {
-        const local = byId.get(entry.id);
-        const updateAvailable =
-          local !== undefined && entry.version !== undefined && local.version !== undefined
-            ? isNewerVersion(entry.version, local.version)
-            : false;
-        return {
-          id: entry.id,
-          display_name: entry.displayName,
-          source: entry.source,
-          tier: entry.tier,
-          version: entry.version,
-          description: entry.description,
-          homepage: entry.homepage,
-          keywords: entry.keywords ? [...entry.keywords] : undefined,
-          installed: local !== undefined,
-          installed_version: local?.version,
-          enabled: local?.enabled,
-          update_available: updateAvailable,
-        };
-      });
-      reply.send(okEnvelope({ source: marketplace.source, plugins: entries }, req.id));
+      // Built-in capability rows win over catalog entries with the same id
+      // (mirrors the CLI's withBuiltInEntries), so a catalog copy of e.g.
+      // kimi-webbridge never shows up twice.
+      const capabilityIds = new Set(capabilityEntries.map((entry) => entry.id));
+      const entries: PluginMarketplaceEntry[] = marketplace.plugins
+        .filter((entry) => !capabilityIds.has(entry.id))
+        .map((entry) => {
+          const local = byId.get(entry.id);
+          const updateAvailable =
+            local !== undefined && entry.version !== undefined && local.version !== undefined
+              ? isNewerVersion(entry.version, local.version)
+              : false;
+          return {
+            id: entry.id,
+            display_name: entry.displayName,
+            source: entry.source,
+            tier: entry.tier,
+            version: entry.version,
+            description: entry.description,
+            homepage: entry.homepage,
+            keywords: entry.keywords ? [...entry.keywords] : undefined,
+            installed: local !== undefined,
+            installed_version: local?.version,
+            enabled: local?.enabled,
+            update_available: updateAvailable,
+          };
+        });
+      reply.send(
+        okEnvelope({ source: marketplace.source, plugins: [...capabilityEntries, ...entries] }, req.id),
+      );
     },
   );
   app.get(
@@ -193,6 +249,41 @@ export function registerPluginsRoutes(app: PluginsRouteHost, core: Scope): void 
     },
     async (req, reply) => {
       try {
+        // Built-in capability rows install through the capability service
+        // (managed runtime + plugin together), not the plugin manager.
+        if (req.body.source.startsWith(CAPABILITY_SOURCE_PREFIX)) {
+          const id = req.body.source.slice(CAPABILITY_SOURCE_PREFIX.length);
+          const status = await core.accessor.get(ICapabilityService).installCapability(id);
+          // The capability bundles a plugin of the same id — surface its
+          // summary when it materialized, else a minimal capability summary.
+          const plugin = (await core.accessor.get(IPluginService).listPlugins()).find(
+            (p) => p.id === id,
+          );
+          reply.send(
+            okEnvelope(
+              {
+                plugin: plugin !== undefined
+                  ? toProtocolSummary(plugin)
+                  : {
+                      id: status.id,
+                      display_name: status.displayName,
+                      version: status.version,
+                      enabled: true,
+                      state: 'ok' as const,
+                      skill_count: 0,
+                      mcp_server_count: 0,
+                      hook_count: 0,
+                      command_count: 0,
+                      has_errors: false,
+                      source: 'local-path' as const,
+                      original_source: req.body.source,
+                    },
+              },
+              req.id,
+            ),
+          );
+          return;
+        }
         const plugin = await core.accessor
           .get(IPluginService)
           .installPlugin({ source: req.body.source });

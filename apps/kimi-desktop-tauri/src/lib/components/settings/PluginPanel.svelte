@@ -36,6 +36,10 @@
   let plugins = $state<PluginInfo[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  // Official/curated tiers from the daemon marketplace, keyed by plugin id —
+  // an installed plugin's raw source ('github' etc.) says nothing about
+  // first-party provenance, so the trust chip cross-references this map.
+  let marketplaceTiers = $state<Record<string, string>>({});
 
   // ---- Plugin type classification (skill / mcp / kimi / claude) ----
   // The user wants plugins grouped into 4 conceptual buckets. We infer the
@@ -104,6 +108,12 @@
     loading = true;
     error = null;
     try {
+      // Best-effort tier map; the registry being down must not break the list.
+      getKimiWebApi().getPluginMarketplace().then((r) => {
+        marketplaceTiers = Object.fromEntries(
+          r.plugins.filter((e) => e.tier).map((e) => [e.id, e.tier as string]),
+        );
+      }).catch(() => {});
       if (isTauri) {
         plugins = await tauriInvoke<PluginInfo[]>('list_installed_plugins');
       } else {
@@ -152,10 +162,15 @@
     }
   }
 
-  function trustLevel(source: string): { label: string; color: string } {
+  function trustLevel(plugin: PluginInfo): { label: string; color: string } {
+    // Official-tier ids (marketplace catalog or built-in capabilities) are
+    // first-party no matter which source form they were installed from.
+    if (marketplaceTiers[plugin.id] === 'official') return { label: '官方', color: 'success' };
+    if (plugin.source === 'builtin') return { label: '内置', color: 'success' };
+    if (marketplaceTiers[plugin.id] === 'curated') return { label: '精选', color: 'info' };
     // Trust heuristics: official marketplace = high, github = medium, zip-url = low
-    if (source === 'marketplace') return { label: '官方', color: 'success' };
-    if (source === 'github') return { label: '社区', color: 'info' };
+    if (plugin.source === 'marketplace') return { label: '官方', color: 'success' };
+    if (plugin.source === 'github') return { label: '社区', color: 'info' };
     return { label: '第三方', color: 'warning' };
   }
 
@@ -346,7 +361,7 @@
             <div class="cat-empty">尚无{meta.label}插件</div>
           {:else}
             {#each items as plugin (plugin.id)}
-              {@const trust = trustLevel(plugin.source)}
+              {@const trust = trustLevel(plugin)}
               <Card variant="raised" padding="none">
                 <div class="plugin-card" class:disabled={!plugin.enabled}>
                 <div class="plugin-card-top">
