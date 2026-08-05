@@ -1,9 +1,9 @@
 [Desktop Entry]
 Categories=Development;
-Comment=Kimi Code desktop client (Tauri)
+Comment=Partial Lunar Eclipse desktop client (Tauri)
 Exec=kimi-desktop-tauri
 Icon=kimi-desktop-tauri
-Name=Kimi Code Desktop
+Name=Partial Lunar Eclipse
 StartupWMClass=ai.moonshot.kimi.desktop.tauri
 Terminal=false
 Type=Application

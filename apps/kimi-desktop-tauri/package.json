@@ -3,7 +3,7 @@
   "version": "0.1.0-internal.0",
   "private": true,
   "license": "MIT",
-  "description": "Kimi Code desktop client (Tauri) — a Svelte 5 shell around the Kimi server.",
+  "description": "Partial Lunar Eclipse desktop client (Tauri) — a Svelte 5 shell around the Kimi server.",
   "author": "Moonshot AI",
   "type": "module",
   "scripts": {

@@ -1,4 +1,4 @@
-# Kimi Code Desktop (Tauri) — 设计文档
+# Partial Lunar Eclipse (Tauri) — 设计文档
 
 > **状态**：设计中（MVP 阶段一进行中）
 > **日期**：2026-07-10
@@ -205,7 +205,7 @@ ensure_daemon(sea_path) -> Result<Origin>
 - 托盘/快捷键/通知/Dock 角标在 main.rs 用 Tauri 插件注册。
 
 ### 7.4 Tauri 配置要点
-- `tauri.conf.json`：窗口（1280x860，min 720x480）、标题 "Kimi Code Desktop"、图标、打包目标（macOS dmg+app、Windows nsis、Linux AppImage+deb）。
+- `tauri.conf.json`：窗口（1280x860，min 720x480）、标题 "Partial Lunar Eclipse"、图标、打包目标（macOS dmg+app、Windows nsis、Linux AppImage+deb）。
 - 能力（capabilities）：允许前端调用 ensure_server/open_path 等 command；HTTP/WS 由 WebView 直连（需 `http` 插件或 CSP 放行 127.0.0.1）。
 - 打包前同样需要 stage SEA（类似 before-pack.cjs），用 `beforeBundleCommand` 脚本。
 

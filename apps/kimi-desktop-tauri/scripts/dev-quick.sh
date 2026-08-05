@@ -16,7 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 AGENT_LOG="$HOME/.kimi-code/desktop/server/server.log"
 
-printf '\033[1;36m▸ Kimi Code Desktop · 快速启动\033[0m\n'
+printf '\033[1;36m▸ Partial Lunar Eclipse · 快速启动\033[0m\n'
 printf '  模式：前台（Ctrl+C 退出）\n'
 printf '  daemon 日志：%s\n' "$AGENT_LOG"
 printf '  停止：Ctrl+C，或 kill 会话进程\n\n'

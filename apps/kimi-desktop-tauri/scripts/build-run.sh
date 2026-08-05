@@ -290,8 +290,8 @@ if [[ -d "$APPS_DIR" ]]; then
   cat > "$APPS_DIR/$DESKTOP_ID.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Kimi Code Desktop
-Comment=Kimi Code desktop client (Tauri)
+Name=Partial Lunar Eclipse
+Comment=Partial Lunar Eclipse desktop client (Tauri)
 Exec=$BIN
 Icon=$APP_DIR/src-tauri/icons/128x128.png
 StartupWMClass=$DESKTOP_ID

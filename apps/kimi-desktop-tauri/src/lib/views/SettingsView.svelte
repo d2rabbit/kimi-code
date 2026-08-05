@@ -363,7 +363,7 @@
           <Chip tone="success">● {daemon.state.status === 'connected' ? '已连接' : '未连接'}</Chip>
         </div>
         <div class="scard">
-          <span class="lab"><span class="t">版本</span><span class="d">Kimi Code Desktop · daemon {client.serverVersion() || '未知'}</span></span>
+          <span class="lab"><span class="t">版本</span><span class="d">Partial Lunar Eclipse · daemon {client.serverVersion() || '未知'}</span></span>
           <Button size="sm" onclick={() => { toast.ok('已是最新版本'); }}>检查更新</Button>
         </div>
 

@@ -1,7 +1,7 @@
 [package]
 name = "kimi-desktop-tauri"
 version = "0.1.0"
-description = "Kimi Code desktop client (Tauri)"
+description = "Partial Lunar Eclipse desktop client (Tauri)"
 authors = ["Moonshot AI"]
 edition = "2021"
 rust-version = "1.77"

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Kimi Code Desktop (Tauri) — Windows build + run script.
+  Partial Lunar Eclipse (Tauri) — Windows build + run script.
   PowerShell port of scripts/build-run.sh.
 
 .DESCRIPTION

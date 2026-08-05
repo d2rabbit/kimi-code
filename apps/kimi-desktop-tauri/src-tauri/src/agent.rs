@@ -501,7 +501,7 @@ pub async fn start_embedded_agent(
         .env("KIMI_CODE_EMBEDDED_HOST_VERSION", desktop_version)
         .env("KIMI_CODE_EMBEDDED_HOST_PLATFORM", "kimi_code_desktop")
         .env("KIMI_CODE_EMBEDDED_HOST_USER_AGENT_SUFFIX", "desktop")
-        .env("KIMI_CODE_EMBEDDED_HOST_DISPLAY_NAME", "Kimi Code Desktop")
+        .env("KIMI_CODE_EMBEDDED_HOST_DISPLAY_NAME", "Partial Lunar Eclipse")
         .env("KIMI_CODE_EMBEDDED_HOST_UI_MODE", "desktop")
         // The WebView runs on Tauri's custom protocol (tauri.localhost), which
         // is cross-origin to the agent's 127.0.0.1 origin. The daemon's CORS

@@ -25,7 +25,7 @@ use tauri_plugin_global_shortcut::GlobalShortcutExt;
 /// title-bar overlay window carries no title on its own). Gated so the
 /// constant isn't flagged dead_code on Linux/Windows.
 #[cfg(target_os = "macos")]
-const WINDOW_TITLE: &str = "Kimi Code Desktop";
+const WINDOW_TITLE: &str = "Partial Lunar Eclipse";
 /// Path to the window state file (under KIMI_CODE_HOME).
 const WINDOW_STATE_FILE: &str = "window-state.json";
 
@@ -37,7 +37,7 @@ const WINDOW_STATE_FILE: &str = "window-state.json";
 #[cfg(feature = "mcp-debug")]
 fn install_mcp_debug_plugin(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder.plugin(tauri_plugin_mcp::init_with_config(
-        tauri_plugin_mcp::PluginConfig::new("Kimi Code Desktop".to_string())
+        tauri_plugin_mcp::PluginConfig::new("Partial Lunar Eclipse".to_string())
             .start_socket_server(true)
             .socket_path(std::path::PathBuf::from("/tmp/tauri-mcp.sock")),
     ))
@@ -82,7 +82,7 @@ pub fn run() {
 
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("Kimi Code Desktop")
+                .tooltip("Partial Lunar Eclipse")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {

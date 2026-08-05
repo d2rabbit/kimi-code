@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Kimi Code Desktop — tester / developer one-click launch (Windows).
+  Partial Lunar Eclipse — tester / developer one-click launch (Windows).
   PowerShell port of scripts/dev-quick.sh.
 
 .DESCRIPTION
@@ -29,7 +29,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $AgentLog = Join-Path $env:USERPROFILE '.kimi-code\desktop\server\server.log'
 
-Write-Host "[ Kimi Code Desktop - Quick Launch ]" -ForegroundColor Cyan
+Write-Host "[ Partial Lunar Eclipse - Quick Launch ]" -ForegroundColor Cyan
 Write-Host "  Mode: foreground (Ctrl+C to stop)"
 Write-Host "  Daemon log: $AgentLog"
 Write-Host ""

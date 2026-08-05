@@ -1,6 +1,6 @@
 # kimi-desktop-tauri 构建脚本
 
-本目录包含构建和运行 Kimi Code Desktop (Tauri) 的脚本。根据你的平台选择对应脚本。
+本目录包含构建和运行 Partial Lunar Eclipse (Tauri) 的脚本。根据你的平台选择对应脚本。
 
 ## 前置检查（仅 Windows，首次运行）
 

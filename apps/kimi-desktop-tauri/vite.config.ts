@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 
-// Kimi Code Desktop (Tauri) — Vite config.
+// Partial Lunar Eclipse (Tauri) — Vite config.
 //
 // In Tauri mode the Svelte frontend talks directly to the daemon
 // (http://127.0.0.1:58627) over REST + WS — no proxy needed (no CORS in a

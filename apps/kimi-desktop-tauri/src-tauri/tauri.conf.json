@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Kimi Code Desktop",
+  "productName": "Partial Lunar Eclipse",
   "version": "0.1.0",
   "identifier": "ai.moonshot.kimi.desktop.tauri",
   "build": {
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Kimi Code Desktop",
+        "title": "Partial Lunar Eclipse",
         "width": 1280,
         "height": 860,
         "minWidth": 720,
@@ -52,7 +52,7 @@
     "category": "DeveloperTool",
     "linux": {
       "deb": {
-        "desktopTemplate": "deb/Kimi Code Desktop.desktop"
+        "desktopTemplate": "deb/Partial Lunar Eclipse.desktop"
       }
     },
     "macOS": {
