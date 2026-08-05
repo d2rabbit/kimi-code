@@ -18,6 +18,12 @@ import {
 import { toast } from '../stores/toast.svelte';
 import { shortcut } from './desktopFlag';
 
+/** Issue tracker opened by /feedback and /bug (mirrors the CLI's fallback). */
+const FEEDBACK_ISSUE_URL = 'https://github.com/MoonshotAI/kimi-code/issues';
+
+/** Thinking levels accepted by /effort and /thinking (matches the model dialog). */
+const THINKING_LEVELS = new Set(['off', 'on', 'minimal', 'low', 'medium', 'high', 'max']);
+
 export type Client = typeof client;
 
 export type DispatchResult =
@@ -36,6 +42,9 @@ const LOCAL_COMMANDS = new Set([
   '/goal', '/swarm',
   // /btw opens the side chat in the right panel (optionally with a first prompt).
   '/btw',
+  // /feedback (+/bug alias) opens the issue tracker; /secondary_model and
+  // /effort (upstream rename of /thinking) map to GUI surfaces.
+  '/feedback', '/bug', '/secondary_model', '/effort', '/thinking',
 ]);
 
 /** Quick guard: does this input string look like a local slash command? */
@@ -124,6 +133,36 @@ export async function dispatchSlash(
       case '/logout':
         await c.logout();
         return { handled: true, message: '已退出登录' };
+
+      case '/feedback':
+      case '/bug': {
+        // The CLI collects feedback in-app via the authenticated channel; the
+        // desktop GUI has no feedback form, so open the issue tracker instead
+        // (same fallback the CLI uses for signed-out users).
+        if ('__TAURI_INTERNALS__' in globalThis) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          await invoke('open_external_url', { url: FEEDBACK_ISSUE_URL });
+          return { handled: true, message: '已在浏览器中打开反馈页面' };
+        }
+        return { handled: true, message: `反馈渠道：${FEEDBACK_ISSUE_URL}` };
+      }
+
+      case '/secondary_model':
+        // The settings panel owns the secondary-model picker (SettingsView).
+        return { handled: true, message: `使用 ${shortcut(',')} 打开设置 → 辅助模型（子 Agent）` };
+
+      case '/effort':
+      case '/thinking': {
+        const level = arg.trim().toLowerCase();
+        if (!level) {
+          return { handled: true, message: `用法：${cmd} <off|minimal|low|medium|high>，或在模型对话框中切换思考级别` };
+        }
+        if (!THINKING_LEVELS.has(level)) {
+          return { handled: true, message: `未知思考级别：${level}（可选：off / minimal / low / medium / high）` };
+        }
+        c.setThinking(level);
+        return { handled: true, message: `思考级别：${level}` };
+      }
 
       case '/goal':
         // GUI surfaces this through the Goal mini-toggle → GoalDialog.

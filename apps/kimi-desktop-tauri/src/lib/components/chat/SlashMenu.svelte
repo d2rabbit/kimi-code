@@ -1,6 +1,7 @@
 <!-- SlashMenu.svelte — slash command menu with categorized sections.
      Shows commands / skills / files / plugins. Keyboard navigable. -->
 <script lang="ts">
+  import { t } from 'svelte-i18n';
   import { SLASH_COMMANDS } from '../../lib/slashCommands';
   import type { AppSkill } from '../../api/types';
   import type { IconName } from '../../lib/icon-types';
@@ -101,7 +102,7 @@
         >
           <span class="slash-item-icon"><Icon name={item.icon} size="sm" /></span>
           <span class="slash-name">{item.name}</span>
-          <span class="slash-desc">{item.desc}</span>
+          <span class="slash-desc">{item.category === 'command' ? $t(item.desc) : item.desc}</span>
         </button>
       {/each}
     {/each}
