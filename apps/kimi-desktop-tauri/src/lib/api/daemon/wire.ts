@@ -187,6 +187,8 @@ export interface WireMarketplaceEntry {
   description?: string;
   homepage?: string;
   keywords?: string[];
+  /** Server-injected built-in capability row (kimi-cu / kimi-webbridge). */
+  built_in?: boolean;
   installed: boolean;
   installed_version?: string;
   enabled?: boolean;

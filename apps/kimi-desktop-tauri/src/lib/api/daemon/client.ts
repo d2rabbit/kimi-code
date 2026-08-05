@@ -546,6 +546,7 @@ export class DaemonKimiWebApi implements KimiWebApi {
         description: e.description,
         homepage: e.homepage,
         keywords: e.keywords,
+        builtIn: e.built_in,
         installed: e.installed,
         installedVersion: e.installed_version,
         enabled: e.enabled,

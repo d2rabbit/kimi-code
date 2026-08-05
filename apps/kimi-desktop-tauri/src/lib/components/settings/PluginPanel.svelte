@@ -40,6 +40,11 @@
   // an installed plugin's raw source ('github' etc.) says nothing about
   // first-party provenance, so the trust chip cross-references this map.
   let marketplaceTiers = $state<Record<string, string>>({});
+  // Installed built-in capabilities (Computer Use / WebBridge) are NOT plugin
+  // registry entries — they install through the capability service — so the
+  // registry read alone never lists them. They are merged into the list as
+  // read-only rows in the Kimi bucket.
+  let installedCaps = $state<{ id: string; displayName: string; version?: string; description?: string }[]>([]);
 
   // ---- Plugin type classification (skill / mcp / kimi / claude) ----
   // The user wants plugins grouped into 4 conceptual buckets. We infer the
@@ -66,7 +71,7 @@
   const TYPE_META: Record<PluginType, { label: string; icon: IconName; color: string; desc: string }> = {
     skill:  { label: 'Skill',  icon: 'sparkles',    color: 'var(--ac)',   desc: '可调用技能包（核心）' },
     mcp:    { label: 'MCP',    icon: 'globe',       color: 'var(--ok)',   desc: 'Model Context Protocol 服务器（核心）' },
-    kimi:   { label: 'Kimi',   icon: 'star',        color: 'var(--warn)', desc: 'Kimi 原生插件格式（占位，未实现）' },
+    kimi:   { label: 'Kimi',   icon: 'star',        color: 'var(--warn)', desc: 'Kimi 官方插件与内置能力（非 Skill/MCP 形态）' },
     claude: { label: 'Claude', icon: 'code',        color: 'var(--err)',  desc: 'Claude Code 插件格式（占位，未实现）' },
   };
 
@@ -101,8 +106,33 @@
     for (const p of plugins) {
       g[pluginType(p)].push(p);
     }
+    // Installed built-in capabilities (Computer Use / WebBridge) are not in
+    // the plugin registry — merge them as read-only Kimi-bucket rows so an
+    // installed capability is visible under 已安装 too.
+    for (const cap of installedCaps) {
+      if (plugins.some((p) => p.id === cap.id)) continue;
+      g.kimi.push({
+        id: cap.id,
+        root: '',
+        source: 'builtin',
+        enabled: true,
+        installedAt: '',
+        originalSource: '',
+        displayName: cap.displayName,
+        version: cap.version ?? '内置',
+        description: cap.description ?? '',
+        developer: 'Moonshot AI',
+        hasMcp: false,
+        skillCount: 0,
+        commandCount: 0,
+      });
+    }
     return g;
   });
+
+  const totalCount = $derived(
+    plugins.length + installedCaps.filter((c) => !plugins.some((p) => p.id === c.id)).length,
+  );
 
   async function loadPlugins() {
     loading = true;
@@ -113,6 +143,9 @@
         marketplaceTiers = Object.fromEntries(
           r.plugins.filter((e) => e.tier).map((e) => [e.id, e.tier as string]),
         );
+        installedCaps = r.plugins
+          .filter((e) => e.builtIn === true && e.installed)
+          .map((e) => ({ id: e.id, displayName: e.displayName, version: e.installedVersion ?? e.version, description: e.description }));
       }).catch(() => {});
       if (isTauri) {
         plugins = await tauriInvoke<PluginInfo[]>('list_installed_plugins');
@@ -149,6 +182,7 @@
       case 'github': return 'GitHub';
       case 'zip-url': return 'ZIP URL';
       case 'marketplace': return '官方市场';
+      case 'builtin': return '内置能力';
       default: return source;
     }
   }
@@ -326,7 +360,7 @@
       <p>{error}</p>
       <Button size="sm" onclick={loadPlugins}>重试</Button>
     </div>
-  {:else if plugins.length === 0}
+  {:else if totalCount === 0}
     <div class="plugin-empty">
       <Icon name="plugin" size="lg" />
       <h4>暂无已安装插件</h4>
@@ -344,7 +378,7 @@
         {@const cat = catKey as 'skill' | 'mcp' | 'kimi' | 'claude'}
         {@const items = grouped[cat]}
         {@const meta = TYPE_META[cat]}
-        {@const isPlaceholder = cat === 'kimi' || cat === 'claude'}
+        {@const isPlaceholder = cat === 'claude'}
         <section class="plugin-category" data-cat={cat}>
           <header class="cat-head">
             <span class="cat-icon" style="color: {meta.color}"><Icon name={meta.icon} size="md" /></span>
@@ -417,7 +451,7 @@
                         源
                       </a>
                     {/if}
-                    {#if !plugin.id.startsWith('__builtin_')}
+                    {#if !plugin.id.startsWith('__builtin_') && plugin.source !== 'builtin'}
                       <Button size="sm" onclick={() => togglePlugin(plugin.id, plugin.enabled)}>
                         {plugin.enabled ? '禁用' : '启用'}
                       </Button>

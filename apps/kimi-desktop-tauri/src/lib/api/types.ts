@@ -853,6 +853,8 @@ export interface AppMarketplaceEntry {
   description?: string;
   homepage?: string;
   keywords?: string[];
+  /** Server-injected built-in capability row (Computer Use / WebBridge). */
+  builtIn?: boolean;
   installed: boolean;
   installedVersion?: string;
   enabled?: boolean;
