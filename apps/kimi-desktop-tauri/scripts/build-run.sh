@@ -25,8 +25,6 @@ set -euo pipefail
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$APP_DIR/../.." && pwd)"
 PKG="@moonshot-ai/kimi-desktop-tauri"
-CLI_PKG="@moonshot-ai/kimi-code"
-WEB_PKG="@moonshot-ai/kimi-web"
 NO_RUN=0
 FOREGROUND=0
 DIST=0
@@ -42,7 +40,21 @@ LOG_LEVEL="${KIMI_DESKTOP_LOG_LEVEL:-info}"
 DEBUG_ENDPOINTS=0
 
 usage() {
-  sed -n '5,18p' "$0"
+  cat <<'EOF'
+用法：
+  bash scripts/build-run.sh               # 完整构建 + 独立启动（后台 setsid）
+  bash scripts/build-run.sh --foreground  # 完整构建 + 前台运行（Ctrl+C 退出）
+  bash scripts/build-run.sh --no-run      # 只构建，不启动
+  bash scripts/build-run.sh --dist        # 构建并打包成安装包（产出 bundle/）
+  bash scripts/build-run.sh --dist --skip-sea   # 打包，但复用已有 main.cjs（不重编 kimi-code）
+  bash scripts/build-run.sh --skip-agent  # 跳过 kimi-code 构建（前端/Rust 调试用）
+  bash scripts/build-run.sh --no-typecheck # 跳过 svelte-check / cargo check（更快）
+  bash scripts/build-run.sh --clean       # 清空 target/release 后重编（诊断奇怪编译错误）
+  bash scripts/build-run.sh --build-packages  # 先 pnpm build:packages（上游 merge 后必须）
+  bash scripts/build-run.sh --log-level debug   # 诊断模式：daemon 写 debug 级日志
+  bash scripts/build-run.sh --debug-endpoints   # 挂载 /api/v1/debug/* 内省路由
+  bash scripts/build-run.sh --help
+EOF
 }
 
 while [[ $# -gt 0 ]]; do
@@ -133,16 +145,8 @@ elif [[ "$SKIP_SEA" == "1" ]]; then
   fi
   log "复用已有 main.cjs（--skip-sea）: $AGENT_SCRIPT"
 else
-  if [[ -d "$REPO_ROOT/apps/kimi-web" ]]; then
-    log "构建 kimi-web 前端（agent 内嵌用）…"
-    pnpm --filter "$WEB_PKG" run build
-
-    log "拷贝 kimi-web 资源到 kimi-code/dist-web …"
-    node "$REPO_ROOT/apps/kimi-code/scripts/copy-web-assets.mjs"
-  else
-    log "apps/kimi-web 不存在——跳过浏览器 UI 资源（daemon 仅提供 REST/WS）"
-  fi
-
+  # 本分支已移除 apps/kimi-web（Tauri-only 方向）：daemon 仅提供 REST/WS，
+  # 没有浏览器 UI 资源需要构建/拷贝。
   log "构建内嵌 agent（tsdown，约 30 秒）…"
   # 只跑 bundle 步骤（tsdown native config），跳过 SEA 注入步骤。
   # 先构建 vis asset（native 构建的前置依赖），再 tsdown。

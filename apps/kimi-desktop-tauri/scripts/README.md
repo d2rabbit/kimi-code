@@ -71,10 +71,7 @@ bash scripts/build-run.sh --build-packages --foreground
 脚本执行的完整步骤：
 
 0. **（可选）构建 packages/**（`--build-packages`）：上游 merge 后必须，否则 main.cjs 引用旧 dist
-1. **构建内嵌 agent**（除非 `--skip-agent`）：
-   - `pnpm --filter @moonshot-ai/kimi-web run build`（kimi-web 前端）
-   - `node apps/kimi-code/scripts/copy-web-assets.mjs`（拷贝到 kimi-code/dist-web）
-   - tsdown 打包 → `dist-native/intermediates/main.cjs`（约 30 秒）
+1. **构建内嵌 agent**（除非 `--skip-agent`）：tsdown 打包 kimi-code → `dist-native/intermediates/main.cjs`（约 30 秒）。本分支为 Tauri-only 方向，没有浏览器 UI 资源需要构建，daemon 仅提供 REST/WS
 2. **前端检查 + 构建**：`svelte-check` + `vite build`
 3. **Rust 检查 + 构建**：`cargo check` + `cargo build --release --features custom-protocol`
 4. **agent 就绪**：dev 模式直接引用 `main.cjs`；打包模式由 `before-bundle.cjs` 将 `main.cjs` 和 Node 运行时拷贝到 `resources/bin/`
