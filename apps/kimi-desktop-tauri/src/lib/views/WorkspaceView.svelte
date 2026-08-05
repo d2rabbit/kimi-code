@@ -46,7 +46,7 @@
 </div>
 
 <style>
-  .workspace { display: flex; height: 100%; width: 100%; overflow: hidden; }
+  .workspace { display: flex; height: 100%; width: 100%; overflow: hidden; position: relative; }
   .sidebar-col { flex: none; height: 100%; overflow: hidden; }
   .chat-col { flex: 1; min-width: 0; height: 100%; overflow: hidden; background: transparent; }
   .chat-col, .workspace > :global(.page) { animation: view-in 0.18s var(--motion-ease-enter, var(--ease)); }

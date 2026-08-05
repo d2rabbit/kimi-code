@@ -97,6 +97,8 @@
 <svelte:window onkeydown={onKey} />
 
 {#if open && filePath}
+  <!-- Mask: click-outside closes (the drawer sits one layer above it). -->
+  <button class="dd-mask" type="button" aria-label="关闭 diff 面板" onclick={() => { open = false; }}></button>
   <div class="diff-drawer" role="dialog" aria-modal="false" aria-label="工作区改动 diff" tabindex="-1">
     <header class="dd-head">
       <div class="dd-title-wrap">
@@ -127,6 +129,22 @@
 {/if}
 
 <style>
+  /* Mask + drawer are layered on the workspace z scale: above the rail and
+     its dropdowns (sticky 100 / dropdown 200), below modals (400) and toasts
+     (600). The drawer must outrank the TitleBar (z-100) it visually abuts. */
+  .dd-mask {
+    position: absolute;
+    inset: 0;
+    border: none; padding: 0; margin: 0;
+    background: rgba(8, 10, 16, 0.28);
+    cursor: default;
+    z-index: var(--z-overlay, 300);
+    animation: dd-fade-in 160ms var(--motion-ease-enter, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+  @keyframes dd-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
   .diff-drawer {
     position: absolute;
     top: 0; right: 0; bottom: 0;
@@ -139,7 +157,7 @@
     box-shadow: var(--elev-overlay, -8px 0 32px rgba(0, 0, 0, 0.18));
     display: flex;
     flex-direction: column;
-    z-index: 50;
+    z-index: calc(var(--z-overlay, 300) + 1);
     animation: dd-slide-in 200ms var(--motion-ease-enter, cubic-bezier(0.16, 1, 0.3, 1));
   }
   @keyframes dd-slide-in {
