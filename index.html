@@ -254,8 +254,39 @@
         <!-- 新版本在此插入（最新的在最上面） -->
         <article class="release-card reveal">
           <div class="release-meta">
-            <span class="release-date">2026-08-01</span>
+            <span class="release-date">2026-08-05</span>
             <span class="release-badge">最新</span>
+            <span class="release-sync-tag">上游 0.33.0</span>
+          </div>
+          <div class="release-body">
+            <div class="release-group">
+              <h3><i class="group-dot dot-kimi" aria-hidden="true"></i>同步上游<small>0.31.1 → 0.33.0</small></h3>
+              <ul>
+                <li>CLI 各界面（TUI、<code>kimi -p</code>、<code>kimi acp</code> 等）默认运行在 agent-core-v2 引擎，<code>KIMI_CODE_LEGACY_FLAG=1</code> 可回退（0.33.0）。</li>
+                <li><code>/plugins</code> 市场新增 Kimi Computer Use 与 Kimi WebBridge 官方内置能力，安装自动配置托管运行时、中断可重试；合作伙伴页更名 Curated（0.33.0）。</li>
+                <li>新增 TurnStarted、UserPromptQueued、TaskStarted、SessionHeartbeat 四个 hook 事件，hook 负载带上会话标题与客户端类型（0.32.0）。</li>
+                <li>新增 <code>[token_counting]</code> 配置节；<code>[loop_control]</code> 两个配置键改名并有启动改名警告（0.32.0）。</li>
+                <li>MCP：OAuth 重新授权失效自动重注册、首请求等待初始化完成、<code>structuredContent</code> 与 <code>_meta</code> 透传给模型（0.32.0 / 0.33.0）。</li>
+                <li>新增 <code>/bug</code> 作为 <code>/feedback</code> 别名；启动询问是否信任当前文件夹；<code>/fork</code> 不再切换会话；交互式 TUI 启动不再立即建会话（0.33.0）。</li>
+                <li>新增实验性 ACP server（<code>kimi acp-v2</code>），问题经 elicitation 桥接并支持宿主斜杠命令（0.32.0）。</li>
+              </ul>
+            </div>
+            <div class="release-group">
+              <h3><i class="group-dot dot-copper" aria-hidden="true"></i>合并进桌面</h3>
+              <ul>
+                <li>内嵌 daemon 全量重建，上述引擎、MCP、hook 与协议能力自动继承；<code>/meta</code> 实验标志等新增字段完成兼容性核对。</li>
+                <li>斜杠菜单补齐 <code>/feedback</code>、<code>/bug</code>、<code>/secondary_model</code>、<code>/effort</code>（上游 <code>/thinking</code> 新名，带参直接设置思考级别）；修复菜单描述长期显示 i18n 键原文的问题，补齐中英全部命令文案。</li>
+                <li>kap-server 插件市场 API 注入 Computer Use / WebBridge 内置能力行，桌面插件面板可直接浏览安装；已装插件的信任标识改为按官方目录 tier 判定，kimi-datasource 正确显示「官方」。</li>
+                <li>应用更名为 <strong>Partial Lunar Eclipse</strong>，启用原创月偏食图标（全套平台图标 + 站点 favicon）。</li>
+                <li>修复打包安装后内嵌 agent 启动即退出：无 package.json 的布局下 web 资产解析直接崩溃，现按 API-only 正常启动。</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <article class="release-card reveal">
+          <div class="release-meta">
+            <span class="release-date">2026-08-01</span>
             <span class="release-sync-tag">上游 0.31.1</span>
           </div>
           <div class="release-body">
