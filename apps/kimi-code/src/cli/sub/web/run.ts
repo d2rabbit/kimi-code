@@ -374,7 +374,15 @@ export function serverWebAssetsDir(
   _env: NodeJS.ProcessEnv = process.env,
   nativeWebAssetsDir: string | null = getNativeWebAssetsDir(),
 ): string | undefined {
-  const dir = resolveServerWebAssetsDir(nativeWebAssetsDir);
+  let dir: string;
+  try {
+    dir = resolveServerWebAssetsDir(nativeWebAssetsDir);
+  } catch {
+    // Asset-less bundle layouts (e.g. the Tauri desktop app staging main.cjs
+    // next to the binary) have no package.json anywhere above them, so there
+    // is no assets dir to resolve — the daemon boots API-only.
+    return undefined;
+  }
   return statSync(join(dir, 'index.html'), { throwIfNoEntry: false })?.isFile() ? dir : undefined;
 }
 
