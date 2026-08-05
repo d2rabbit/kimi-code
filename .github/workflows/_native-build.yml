@@ -85,11 +85,6 @@ jobs:
           node apps/kimi-code/scripts/update-catalog.mjs --out "$CATALOG_FILE"
           echo "KIMI_CODE_BUILT_IN_CATALOG_FILE=$CATALOG_FILE" >> "$GITHUB_ENV"
 
-      - name: Stage Kimi web assets (when present)
-        # apps/kimi-web is not part of this fork; the copy script tolerates
-        # its absence and the daemon boots API-only.
-        run: node apps/kimi-code/scripts/copy-web-assets.mjs
-
       - name: Build native executable (release profile, macOS signed)
         if: runner.os == 'macOS' && inputs.sign-macos
         run: pnpm --filter @moonshot-ai/kimi-code run build:native:release

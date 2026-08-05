@@ -117,7 +117,7 @@ apps/kimi-desktop-tauri/
 │       ├── sea_path.rs           # SEA 路径解析（翻译自 sea-path.ts）
 │       └── commands.rs           # Tauri commands（原生能力）
 ├── scripts/
-│   └── copy-web-assets.mjs       # 复制 kimi-web 构建资产（如有需要）
+│   └── build-run.sh / build-run.ps1  # 一键构建 + 启动（Tauri-only：无浏览器 UI 资产步骤）
 └── test/                         # 测试
 ```
 

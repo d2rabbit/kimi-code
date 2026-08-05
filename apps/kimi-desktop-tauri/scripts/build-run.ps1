@@ -92,7 +92,6 @@ $AppDir = Split-Path -Parent $ScriptDir
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $AppDir)
 $Pkg = '@moonshot-ai/kimi-desktop-tauri'
 $CliPkg = '@moonshot-ai/kimi-code'
-$WebPkg = '@moonshot-ai/kimi-web'
 
 # ---- Platform (Windows = win32-x64) ----
 $Target = 'win32-x64'
@@ -139,15 +138,8 @@ if ($SkipAgent) {
   }
   Write-Log "skipping kimi-code build (-SkipAgent), reuse: $AgentScript"
 } else {
-  Write-Log "building kimi-web frontend (for agent embedding)..."
-  pnpm --filter $WebPkg run build
-  if ($LASTEXITCODE -ne 0) { Write-Err "kimi-web build failed"; exit 1 }
-
-  Write-Log "copying kimi-web assets to kimi-code/dist-web ..."
-  $copyScript = Join-Path $RepoRoot "apps\kimi-code\scripts\copy-web-assets.mjs"
-  node $copyScript
-  if ($LASTEXITCODE -ne 0) { Write-Err "copy-web-assets failed"; exit 1 }
-
+  # 本分支已移除 apps/kimi-web（Tauri-only 方向）：daemon 仅提供 REST/WS，
+  # 没有浏览器 UI 资源需要构建/拷贝。
   # Build vis asset (native build prerequisite), then tsdown.
   $buildVis = Join-Path $RepoRoot "apps\kimi-code\scripts\build-vis-asset.mjs"
   if (Test-Path $buildVis) { node $buildVis }

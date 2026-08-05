@@ -63,6 +63,7 @@
       # -------------------------------------------------------------------
       workspacePaths = [
         ./packages/acp-adapter
+        ./packages/acp-server
         ./packages/agent-core
         ./packages/agent-core-v2
         ./packages/kap-server
@@ -89,6 +90,7 @@
 
       workspaceNames = [
         "@moonshot-ai/acp-adapter"
+        "@moonshot-ai/acp-server"
         "@moonshot-ai/agent-core"
         "@moonshot-ai/agent-core-v2"
         "@moonshot-ai/kap-server"
@@ -160,7 +162,7 @@
               inherit (finalAttrs) pname version src pnpmWorkspaces;
               inherit pnpm;
               fetcherVersion = 3;
-              hash = "sha256-FNxf3Zpr+s6ubtLIqXCkVgecBGejGM4hovUNVRnNoX4=";
+              hash = "sha256-52qERxzBsr7sYsKFq22k6ODNHY2uL8meRWAkvxo01no=";
             };
 
             nativeBuildInputs = [
@@ -198,9 +200,9 @@
                     "// runVerifyStep skipped in nix sandbox (sigtool lacks -dv)"
               ''}
               # The SEA blob step (scripts/native/02-sea-blob.mjs) embeds the
-              # Kimi web assets from apps/kimi-code/dist-web when present; the
-              # copy script tolerates its absence (API-only daemon).
-              node apps/kimi-code/scripts/copy-web-assets.mjs
+              # Kimi web assets from apps/kimi-code/dist-web when present; this
+              # fork ships the API-only daemon (no dist-web), which the blob
+              # step tolerates.
               pnpm --filter=@moonshot-ai/kimi-code run build:native:sea
               runHook postBuild
             '';
