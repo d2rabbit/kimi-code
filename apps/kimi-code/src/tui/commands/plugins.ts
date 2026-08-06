@@ -32,6 +32,7 @@ import {
   isOfficialPluginInstall,
   isOfficialPluginSource,
 } from '../utils/plugin-source-label';
+import { isKimiV2Enabled } from '#/cli/experimental-v2';
 import { KIMI_CODE_PLUGIN_MARKETPLACE_URL_ENV, QUOTA_CONSUMING_PLUGIN_IDS } from '#/constant/app';
 import { loadPluginMarketplace, type PluginMarketplaceEntry } from '#/utils/plugin-marketplace';
 import { openUrl } from '#/utils/open-url';
@@ -219,6 +220,7 @@ async function resolveCapabilityApi(host: SlashCommandHost): Promise<CapabilityA
 function logCapabilityStatus(capability: CapabilityStatus, installed?: boolean): void {
   const payload = {
     capabilityId: capability.id,
+    pluginId: capability.pluginId,
     installed,
     supported: capability.supported,
     state: capability.state,
@@ -260,7 +262,7 @@ async function showPluginsPicker(
 
   const installedIds = new Set(plugins.map((plugin) => plugin.id));
   for (const capability of capabilities) {
-    logCapabilityStatus(capability, installedIds.has(capability.id));
+    logCapabilityStatus(capability, installedIds.has(capability.pluginId ?? capability.id));
   }
 
   const panel = new PluginsPanelComponent({
@@ -444,15 +446,15 @@ function isCapabilityEntry(host: SlashCommandHost, entry: PluginMarketplaceEntry
 }
 
 /**
- * Closed-set id check for the post-remove note. The capability ids are part
- * of the client/engine CONTRACT (mirrored in the klient zod enum), not
- * product data that drifts — so they may be named here. What must not
- * happen is the alternative: answering set membership by running
- * `listCapabilities()`, which fires every entry's detector (seconds of
- * probes) just to decide whether to print one hint line.
+ * Closed-set plugin id check for the post-remove note. What must not happen
+ * is answering membership by running `listCapabilities()`, which fires every
+ * entry's detector (seconds of probes) just to print one hint line.
  */
-function isCapabilityId(host: SlashCommandHost, id: string): boolean {
-  return host.engineV2 && (id === 'kimi-cu' || id === 'kimi-webbridge');
+function isCapabilityPluginId(host: SlashCommandHost, id: string): boolean {
+  return (
+    host.engineV2 &&
+    (id === 'kimi-cu' || id === 'kimi-cu-win' || id === 'kimi-webbridge')
+  );
 }
 
 /** Poll a background capability install until it settles (or we run out of budget). */
@@ -538,7 +540,8 @@ async function installCapabilityFromPanel(
   }
   logCapabilityStatus(result);
   if (result.install.error !== undefined) {
-    host.showError(`${label} installation failed. Check the logs and install again from /plugins.`);
+    host.showError(`${label} installation failed: ${result.install.error}`);
+    host.showStatus('Fix the reported error, then install again from /plugins.', 'warning');
     return;
   }
   if (result.state !== 'ready') {
@@ -555,11 +558,11 @@ async function installCapabilityFromPanel(
         `${label} installation did not complete. Check the logs and install again from /plugins.`,
       );
     }
-    host.showStatus(PLUGIN_RELOAD_HINT, 'warning');
+    host.showStatus(pluginReloadHint(), 'warning');
     return;
   }
   host.showStatus(`${label} is installed.`);
-  host.showStatus(PLUGIN_RELOAD_HINT, 'warning');
+  host.showStatus(pluginReloadHint(), 'warning');
 }
 
 async function installFromPanel(
@@ -719,12 +722,13 @@ async function handlePluginMcpSelection(
 async function removePlugin(host: SlashCommandHost, id: string): Promise<void> {
   await (await resolvePluginApi(host)).removePlugin(id);
   host.showStatus(`Removed ${id}.`);
-  if (isCapabilityId(host, id)) {
+  if (isCapabilityPluginId(host, id)) {
     host.showStatus(
-      'Note: the runtime binaries were left untouched, but Kimi Code plugin wiring is disabled for new sessions. Reinstall any time from the Official tab.',
+      'Note: the runtime binaries were left untouched, but Kimi Code plugin wiring is disabled for new sessions. Restart Kimi Code before reinstalling from the Official tab.',
     );
+    return;
   }
-  host.showStatus(PLUGIN_RELOAD_HINT, 'warning');
+  host.showStatus(pluginReloadHint(), 'warning');
 }
 
 async function renderPluginsList(
@@ -767,6 +771,13 @@ async function installPluginFromSource(
 
 const PLUGIN_RELOAD_HINT = 'Run /new or /reload to apply plugin changes.';
 
+const PLUGIN_RELOAD_HINT_V2 =
+  'Plugin changes apply immediately. MCP tools already loaded in open sessions stay visible but fail with a removal notice once uninstalled.';
+
+function pluginReloadHint(): string {
+  return isKimiV2Enabled() ? PLUGIN_RELOAD_HINT_V2 : PLUGIN_RELOAD_HINT;
+}
+
 const PLUGIN_QUOTA_NOTE = 'Note: This plugin consumes your quota.';
 
 function showPluginInstallResult(
@@ -782,7 +793,7 @@ function showPluginInstallResult(
       : '';
   const action = describeInstallAction(previous, summary);
   host.showStatus(`${action} (${summary.id}).${mcpHint}`);
-  host.showStatus(PLUGIN_RELOAD_HINT, 'warning');
+  host.showStatus(pluginReloadHint(), 'warning');
   // Gate on provenance, not just the id: a local/GitHub fork whose manifest
   // reuses a billed plugin's id is not the official quota-consuming build.
   if (QUOTA_CONSUMING_PLUGIN_IDS.includes(summary.id) && isOfficialPluginInstall(summary)) {
