@@ -254,8 +254,37 @@
         <!-- 新版本在此插入（最新的在最上面） -->
         <article class="release-card reveal">
           <div class="release-meta">
-            <span class="release-date">2026-08-05</span>
+            <span class="release-date">2026-08-06</span>
             <span class="release-badge">最新</span>
+            <span class="release-sync-tag">上游 0.33.0+</span>
+          </div>
+          <div class="release-body">
+            <div class="release-group">
+              <h3><i class="group-dot dot-kimi" aria-hidden="true"></i>同步上游<small>0.33.0 → 最新 main（15 个提交）</small></h3>
+              <ul>
+                <li>L3 unit 层与 Feature seam 落地；会话冷列表持久化最近一轮结果（#2678 / #2666）。</li>
+                <li>MCP 服务器移除改为 tombstone 语义、插件 prompt 输入冻结（#2694）；技能激活支持附件（#2693）。</li>
+                <li>REST 会话状态在上下文上限未知时省略 max_context_tokens（#2696）；恢复会话播种 activity lastTurn（#2648）。</li>
+                <li>UTF-16 文本文件自动转码 UTF-8 读取（#2647）；<code>kimi -p</code> 等待后台任务完成再退出（#2675）。</li>
+                <li>Kimi Computer Use 支持 Windows，并选对兼容的 PowerShell（#2652 / #2686）；TUI 显示 capability 安装错误（#2682）。</li>
+                <li>子智能体 UI 展示绑定模型与思考强度（#2679）；v2 后台任务通知支持会话重放渲染（#2677）；恢复/空闲会话的缓存过期提示（#2646）。</li>
+              </ul>
+            </div>
+            <div class="release-group">
+              <h3><i class="group-dot dot-copper" aria-hidden="true"></i>合并进桌面</h3>
+              <ul>
+                <li>修复上游 #2666 引入的错误导入（LifecycleScope 引自不导出它的模块），agent-core-v2 恢复可构建，21 项 sessionActivity 测试通过。</li>
+                <li>移植子智能体模型/思考强度字段：任务协议 <code>model</code> / <code>thinking_effort</code> 贯通 wire → mapper → UI，桌面「子智能体」页实时任务行显示模型（思考强度）。</li>
+                <li>兼容 max_context_tokens 可省略：设置页用量环在上限未知时不再显示 "/ 0"。</li>
+                <li>kap-server 全量 988 项测试通过；内嵌 daemon 重建集成全部引擎修复。</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <article class="release-card reveal">
+          <div class="release-meta">
+            <span class="release-date">2026-08-05</span>
             <span class="release-sync-tag">上游 0.33.0</span>
           </div>
           <div class="release-body">
