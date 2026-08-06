@@ -208,6 +208,16 @@ button { font: inherit; }
 .bento::before { content: ""; position: absolute; inset: 0; opacity: 0; background: linear-gradient(120deg, rgba(114, 140, 255, 0.06), transparent 40%, rgba(231, 154, 112, 0.05)); transition: opacity 240ms ease-out; pointer-events: none; }
 .bento:hover { transform: translateY(-4px); border-color: rgba(143, 163, 225, 0.3); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.04); }.bento:hover::before { opacity: 1; }
 .bento-chat { grid-column: span 7; min-height: 400px; }.bento-terminal { grid-column: span 5; min-height: 400px; }.bento-search { grid-column: span 4; }.bento-account { grid-column: span 4; }.bento-safe { grid-column: span 4; }
+.bento-hooks { grid-column: 1 / -1; min-height: 0; }
+.hooks-demo { margin-top: 26px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.hook-events { flex: 1 1 460px; display: flex; flex-wrap: wrap; gap: 7px; }
+.hook-events span { padding: 6px 11px; border: 1px solid var(--panel-border); border-radius: 999px; color: var(--text-dim); background: rgba(10, 14, 30, 0.5); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 9px; }
+.hook-events span.active { border-color: rgba(114, 140, 255, 0.4); color: #cdd7ff; background: rgba(114, 140, 255, 0.11); }
+.hook-events em { align-self: center; color: #56617d; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8.5px; font-style: normal; }
+.hook-contract { display: flex; gap: 8px; }
+.hook-contract div { display: flex; align-items: baseline; gap: 6px; padding: 7px 12px; border: 1px solid var(--panel-border); border-radius: 9px; background: rgba(10, 14, 30, 0.5); }
+.hook-contract b { color: var(--kimi-bright); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 11px; }
+.hook-contract span { color: var(--text-dim); font-size: 9px; }
 .card-heading { display: flex; align-items: center; justify-content: space-between; }
 .card-number { color: #56617d; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 9px; }
 .card-chip { padding: 4px 8px; border-radius: 999px; font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; }

@@ -195,9 +195,9 @@
         <article class="bento bento-account reveal" data-glow-card>
           <div class="card-heading"><span class="card-number">04</span><span class="card-chip chip-copper">Managed account</span></div>
           <h3>账号、配额与 Booster，不再藏在接口后面</h3>
-          <p>结构化展示全部限额窗口与重置时间，让使用状态和模型选择一样清楚。</p>
+          <p>结构化展示全部限额窗口与重置时间，让使用状态和模型选择一样清楚。方案等级直接采用 Kimi 官方 user_level_name，侧栏与设置页共享同一份账号身份。</p>
           <div class="quota-demo" aria-hidden="true">
-            <div class="quota-head"><span class="quota-avatar">K</span><p><strong>Kimi Code</strong><small>Managed account</small></p><em>PRO</em></div>
+            <div class="quota-head"><span class="quota-avatar">K</span><p><strong>Kimi Code</strong><small>Managed account</small></p><em>VIVACE</em></div>
             <div class="quota-row"><span>Weekly</span><b><i style="--quota: 72%"></i></b><small>72%</small></div>
             <div class="quota-row"><span>Booster</span><b><i style="--quota: 46%"></i></b><small>46%</small></div>
           </div>
@@ -211,6 +211,22 @@
           <ul class="boundary-list">
             <li><i></i>随机回环端口</li><li><i></i>隔离 KIMI_CODE_HOME</li><li><i></i>HTTP(S) 外链白名单</li>
           </ul>
+        </article>
+
+        <article class="bento bento-hooks reveal" data-glow-card>
+          <div class="card-heading"><span class="card-number">06</span><span class="card-chip chip-copper">Hooks</span></div>
+          <h3>hooks 不再只住在 config.toml 里</h3>
+          <p>官方 hook 模型有了自己的侧栏模块：全部 20 种事件连同 matcher 含义与阻塞语义逐条列出，附 stdin JSON 与退出码契约指南。编辑走 /config REST 读写，GUI 与 <code>[[hooks]]</code> 始终是同一份事实。</p>
+          <div class="hooks-demo" aria-hidden="true">
+            <div class="hook-events">
+              <span>SessionStart</span><span>UserPromptSubmit</span><span class="active">PreToolUse</span><span>PostToolUse</span><span>SubagentStop</span><span>PreCompact</span><span>Notification</span><span>Stop</span><em>+12 种事件</em>
+            </div>
+            <div class="hook-contract">
+              <div><b>0</b><span>放行</span></div>
+              <div><b>2</b><span>阻断</span></div>
+              <div><b>*</b><span>失败放行</span></div>
+            </div>
+          </div>
         </article>
       </div>
     </section>
@@ -276,6 +292,10 @@
                 <li>修复上游 #2666 引入的错误导入（LifecycleScope 引自不导出它的模块），agent-core-v2 恢复可构建，21 项 sessionActivity 测试通过。</li>
                 <li>移植子智能体模型/思考强度字段：任务协议 <code>model</code> / <code>thinking_effort</code> 贯通 wire → mapper → UI，桌面「子智能体」页实时任务行显示模型（思考强度）。</li>
                 <li>兼容 max_context_tokens 可省略：设置页用量环在上限未知时不再显示 "/ 0"。</li>
+                <li>新增侧栏 Hooks 模块：镜像官方 <code>[[hooks]]</code> 语义，覆盖全部 20 种事件及 matcher / 阻塞说明，附 stdin JSON 与退出码契约指南（0 放行 / 2 阻断 / 失败放行）；编辑器限定 event / matcher / command / timeout 四字段并做正则与 1-600s 校验，经 <code>/config</code> REST 读写，GUI 与 config.toml 保持同步。</li>
+                <li>账号身份统一：侧栏与设置页共用同一显示名（昵称 → 用户名 → 邮箱回退），方案徽章改用 Kimi 官方 <code>user_level_name</code>（如 Vivace），未知时隐藏而不是硬编「Pro」。</li>
+                <li>插件面板已装列表合入 Computer Use / WebBridge 等内置能力（只读行，归入 Kimi 官方分类），与发现页的安装状态保持一致。</li>
+                <li>diff 抽屉改为相对工作区定位并按 token 层级置于 TitleBar 之下、下拉层之上，新增遮罩点击关闭（Esc 与 ✕ 仍然可用）。</li>
                 <li>kap-server 全量 988 项测试通过；内嵌 daemon 重建集成全部引擎修复。</li>
               </ul>
             </div>
