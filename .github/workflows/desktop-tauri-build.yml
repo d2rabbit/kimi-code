@@ -14,6 +14,8 @@ name: desktop-tauri-build
 #
 # Triggers:
 #   - workflow_dispatch: manual ad-hoc builds from the Actions tab.
+#   - push to `release`: every landing on the release branch builds the
+#     full platform matrix and uploads installer artifacts.
 #   - push tag `desktop-v*`: build installers and attach them to a GitHub
 #     Release named after the tag.
 #   - workflow_call: reusable from other workflows.
@@ -27,6 +29,8 @@ on:
         type: number
         default: 5
   push:
+    branches:
+      - release
     tags:
       - 'desktop-v*'
   workflow_call:
