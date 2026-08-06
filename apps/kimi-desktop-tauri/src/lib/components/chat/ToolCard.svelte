@@ -18,17 +18,20 @@
     tool: ToolCall;
   } = $props();
 
-  // Expand state: defaults to expanded when running. The $effect below
-  // keeps it in sync when tool.status changes at runtime.
+  // Expand state: collapsed by default; auto-expands only while running.
   let expanded = $state(false);
+  // Once the user manually toggles, the automation stops managing this card.
+  let touched = false;
 
-  // Auto-expand running tools; once completed, collapse by default.
-  // Re-opens if the tool transitions back to running.
+  // Auto-expand while running; collapse again once finished so completed
+  // history stays compact. A manual toggle wins over the automation.
   $effect(() => {
-    if (tool.status === 'running') expanded = true;
+    if (touched) return;
+    expanded = tool.status === 'running';
   });
 
   function toggle() {
+    touched = true;
     expanded = !expanded;
   }
 

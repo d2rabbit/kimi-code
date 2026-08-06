@@ -207,6 +207,17 @@
     return r;
   }
   let expanded = $state<Record<number, boolean>>({});
+  // 折叠状态按循环索引记录，切换会话时重置，避免索引串台。
+  $effect(() => {
+    void client.activeSessionId();
+    expanded = {};
+  });
+
+  // 置顶缩略图：最近一条带图用户消息的镜像，滚动时固定在消息视口顶部。
+  const pinnedImages = $derived.by(() => {
+    const t = client.turns().findLast((x) => x.role === 'user' && (x.images?.length ?? 0) > 0);
+    return t ? { turnId: t.id, images: t.images ?? [] } : null;
+  });
 </script>
 
 <div class="chat">
@@ -231,6 +242,11 @@
 
   <div class="msgs" bind:this={scrollEl} onscroll={onScroll}>
     <ConversationToc items={tocItems} activeId={activeTurnId} onselect={scrollToTurn} />
+    {#if pinnedImages}
+      <button class="pinned-imgs" type="button" title="定位到该消息" onclick={() => pinnedImages && scrollToTurn(pinnedImages.turnId)}>
+        {#each pinnedImages.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}
+      </button>
+    {/if}
     <div class="msgs-inner">
       {#if client.turns().length === 0 && !client.sessionLoading()}
         <div class="welcome">
@@ -282,35 +298,30 @@
           {:else if turn.role === 'compaction'}
             <div class="compact">对话已压缩</div>
           {:else}
-            <!-- Agent：左侧气泡（QQ 聊天式，与用户气泡镜像）+ 下方工具卡 -->
+            <!-- Agent：左侧气泡（QQ 聊天式，与用户气泡镜像）；思考/正文/工具卡按时间序单流渲染 -->
             <div class="msg agent">
               <span class="avatar a">K</span>
               <div class="a-col">
-                <div class="a-text">
-                  {#each group(turn.blocks ?? []) as item}
-                    {#if item.kind === 'thinking'}
-                      <ThinkCard
-                        thinking={item.thinking}
-                        streaming={running && turn.id === lastTurnId}
-                      />
-                    {:else if item.kind === 'text'}
-                      <div class="bubble a-bub">
-                        <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn.id === lastTurnId} /></div>
-                      </div>
-                    {/if}
-                  {/each}
-                </div>
                 {#each group(turn.blocks ?? []) as item, i}
-                  {#if item.kind === 'tool'}
+                  {#if item.kind === 'thinking'}
+                    <ThinkCard
+                      thinking={item.thinking}
+                      streaming={running && turn.id === lastTurnId}
+                    />
+                  {:else if item.kind === 'text'}
+                    <div class="bubble a-bub">
+                      <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn.id === lastTurnId} /></div>
+                    </div>
+                  {:else if item.kind === 'tool'}
                     <ToolCard tool={item.tool} />
                   {:else if item.kind === 'tg'}
-                    <button class="tg-toggle" onclick={() => expanded[i] = !(expanded[i] ?? true)} type="button">
-                      <span class="tg-chevron">{expanded[i] ?? true ? '▾' : '▸'}</span>
+                    <button class="tg-toggle" onclick={() => expanded[i] = !(expanded[i] ?? false)} type="button">
+                      <span class="tg-chevron">{expanded[i] ?? false ? '▾' : '▸'}</span>
                       <span class="tg-icon">🔧</span>
                       <span class="tg-count">{item.tools.length} 个工具调用</span>
                       <span class="tg-summary">{[...new Set(item.tools.map((t) => t.name))].slice(0, 3).join(' · ')}{item.tools.length > 3 ? ' …' : ''}</span>
                     </button>
-                    {#if expanded[i] ?? true}{#each item.tools as t}<ToolCard tool={t} />{/each}{/if}
+                    {#if expanded[i] ?? false}{#each item.tools as t}<ToolCard tool={t} />{/each}{/if}
                   {/if}
                 {/each}
               </div>
@@ -460,7 +471,6 @@
     box-shadow: var(--elev-bubble, none);
   }
   .a-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-  .a-text { display: flex; flex-direction: column; gap: 8px; max-width: 100%; }
   /* Agent 气泡：与用户气泡镜像且色彩分立——用户用 accent 蓝，agent 用 K 头像
      渐变里的青（#5bc0be），QQ 式绿白对比；surface-2 为底调出主题自适应 */
   .a-bub {
@@ -475,6 +485,18 @@
   }
   .imgs { display: flex; gap: 4px; margin-bottom: 4px; }
   .imgs img { max-width: 100px; border-radius: 6px; }
+  /* 置顶缩略图：sticky 相对 .msgs 滚动容器钉在视口顶部，镜像最近一条带图用户消息 */
+  .pinned-imgs {
+    position: sticky; top: 8px; z-index: 6;
+    display: flex; justify-content: flex-end; gap: 4px;
+    max-width: 920px; margin: 0 auto; padding: 8px 32px 0;
+    border: none; background: transparent; cursor: pointer;
+  }
+  .pinned-imgs img {
+    max-height: 38px; max-width: 60px; border-radius: 6px;
+    border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    box-shadow: var(--elev-chip, none);
+  }
   .u-text { word-break: break-word; }
   /* Compact markdown inside user bubbles — tighter spacing than agent output */
   .u-text :global(.md-body) { font-size: 12.5px; line-height: 1.55; }
