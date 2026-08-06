@@ -14,6 +14,7 @@ import type { KimiWebApi } from '../api/types';
 import type {
   AppConfig,
   AppEvent,
+  AppManagedUserInfo,
   AppMessage,
   AppMessageContent,
   AppPromptItem,
@@ -85,6 +86,9 @@ const ui = $state({
 
   // Auth
   authProvider: null as { name: string; status: string } | null,
+  /** Managed-platform profile (/oauth/userinfo) — Kimi nickname + official
+      user level (userLevelName), shared by the sidebar and settings. */
+  managedUserInfo: null as AppManagedUserInfo | null,
 
   // Side panel
   detailTarget: null as string | null,
@@ -209,6 +213,15 @@ export const isSending = () => ui.isSending;
 export const isStartingFirstPrompt = () => ui.isStartingFirstPrompt;
 
 export const authProvider = () => ui.authProvider;
+/** Managed-platform profile (Kimi nickname + official user level name). */
+export const managedUserInfo = () => ui.managedUserInfo;
+/** Kimi 昵称（与设置页账号区同一来源），回退到 provider 名。 */
+export const accountDisplayName = () =>
+  ui.managedUserInfo?.nickname ||
+  ui.managedUserInfo?.username ||
+  ui.managedUserInfo?.email ||
+  ui.authProvider?.name ||
+  '';
 
 // File preview panel state.
 export const previewOpen = () => ui.previewPath !== null;
@@ -414,6 +427,7 @@ async function load(): Promise<void> {
       ui.authProvider = authR.value.managedProvider
         ? { name: 'managed:kimi-code', status: authR.value.managedProvider.status ?? 'unknown' }
         : null;
+      void refreshManagedUserInfo();
     }
 
     if (configR.status === 'fulfilled') {
@@ -1294,6 +1308,21 @@ async function checkAuth(): Promise<void> {
   } catch {
     ui.authReady = false;
   }
+  void refreshManagedUserInfo();
+}
+
+/** Fetch the managed-platform profile (Kimi nickname + official user level)
+    when signed in; clear it otherwise. */
+async function refreshManagedUserInfo(): Promise<void> {
+  if (ui.authProvider?.status !== 'authenticated') {
+    ui.managedUserInfo = null;
+    return;
+  }
+  try {
+    ui.managedUserInfo = await getApi().getManagedUserInfo();
+  } catch {
+    ui.managedUserInfo = null;
+  }
 }
 
 /** Start the OAuth device flow login. */
@@ -1729,6 +1758,7 @@ export const client = {
   refreshModels,
   refreshProviderModels,
   checkAuth,
+  refreshManagedUserInfo,
   startOAuthLogin,
   pollOAuthLogin,
   cancelOAuthLogin,

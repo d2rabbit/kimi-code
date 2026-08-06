@@ -177,7 +177,9 @@
     }
   });
   const accountUserId = $derived(oauthUserInfo?.userId ?? oauthAccount?.userId);
+  // 与左下角账号区同源：store 的 managedUserInfo 优先，本地 fetch 兜底。
   const accountDisplayName = $derived(
+    client.accountDisplayName() ||
     oauthUserInfo?.nickname || oauthUserInfo?.username || oauthUserInfo?.email || accountUserId,
   );
   const managedUsageRows = $derived.by(() => {
@@ -322,7 +324,9 @@
       <div class="sp-foot">
         <div class="avatar">{(accountDisplayName || client.authProvider()?.name || 'U')[0].toUpperCase()}</div>
         <span class="user-name">{accountDisplayName || client.authProvider()?.name || '未登录'}</span>
-        {#if client.authProvider()?.status === 'authenticated'}<Chip tone="warning">Pro</Chip>{/if}
+        {#if client.authProvider()?.status === 'authenticated' && client.managedUserInfo()?.userLevelName}
+          <Chip tone="warning">{client.managedUserInfo()!.userLevelName}</Chip>
+        {/if}
       </div>
     </nav>
 

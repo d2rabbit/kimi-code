@@ -71,8 +71,10 @@
     return client.sessions().filter((s) => s.workspaceId === wsId || (!s.workspaceId && s.cwd === root));
   }
 
-  const authName = $derived(client.authProvider()?.name ?? '');
+  const authName = $derived(client.accountDisplayName());
   const authed = $derived(client.authProvider()?.status === 'authenticated');
+  // Kimi 官方套餐等级名（user_level_name，如 Vivace）；未取到则不显示徽章。
+  const planName = $derived(client.managedUserInfo()?.userLevelName ?? '');
   const pendingCount = $derived(client.pendingApprovals().length + client.questions().length);
 </script>
 
@@ -162,7 +164,7 @@
     {/if}
     <div class="avatar">{(authName || 'U')[0].toUpperCase()}</div>
     <span class="user-name">{authName || '未登录'}</span>
-    {#if authed}<span class="badge-pro">Pro</span>{/if}
+    {#if authed && planName}<span class="badge-pro">{planName}</span>{/if}
     <button class="gear" use:tooltip={'设置'} onclick={onnavigate}><Icon name="settings" size="md" /></button>
   </footer>
 </aside>
