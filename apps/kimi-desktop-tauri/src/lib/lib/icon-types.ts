@@ -11,7 +11,7 @@ export type IconName =
   | 'arrow-left' | 'minus' | 'panel-collapse' | 'panel-expand' | 'expand' | 'collapse'
   | 'list' | 'sort' | 'grip' | 'folder' | 'folder-closed' | 'folder-plus'
   | 'folder-solid' | 'file' | 'file-text' | 'file-edit' | 'file-plus' | 'file-off'
-  | 'image-off' | 'code' | 'terminal' | 'pencil' | 'tool' | 'glob' | 'globe'
+  | 'image-off' | 'code' | 'terminal' | 'pencil' | 'tool' | 'glob' | 'globe' | 'moon'
   | 'check-list' | 'bolt' | 'git-pull-request' | 'git-branch' | 'message' | 'mail'
   | 'user' | 'info' | 'help-circle' | 'alert-triangle' | 'clock' | 'sparkles'
   | 'target' | 'pause' | 'play' | 'stop' | 'star' | 'star-outline' | 'dots-horizontal'

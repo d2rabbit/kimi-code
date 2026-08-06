@@ -206,8 +206,9 @@
     if (buf.length) r.push(buf.length === 1 ? { kind: 'tool', tool: buf[0]! } : { kind: 'tg', tools: [...buf] });
     return r;
   }
-  let expanded = $state<Record<number, boolean>>({});
-  // 折叠状态按循环索引记录，切换会话时重置，避免索引串台。
+  let expanded = $state<Record<string, boolean>>({});
+  // 折叠状态按「轮 id + 循环索引」记录——纯索引会在不同轮之间串台（同一 i 命中多轮）。
+  const exk = (turnId: string, i: number) => `${turnId}:${i}`;
   $effect(() => {
     void client.activeSessionId();
     expanded = {};
@@ -225,7 +226,6 @@
     <span class="hdr-title">{client.activeSession()?.title || '新对话'}</span>
     {#if running}<span class="chip-run"><span class="dot-run"></span>运行中</span>{/if}
     <div class="hdr-actions">
-      {#if running}<button class="stop-btn" onclick={abort}>停止</button>{/if}
       {#if client.activeSession()}<IconButton name="download" label="导出诊断包" size="sm" disabled={exporting} onclick={exportDiagnostics} />{/if}
       {#if client.activeSession()}<IconButton name="close" label="归档" size="sm" onclick={() => client.client.archiveSession(client.activeSessionId())} />{/if}
     </div>
@@ -240,108 +240,110 @@
     </div>
   {/each}
 
-  <div class="msgs" bind:this={scrollEl} onscroll={onScroll}>
-    <ConversationToc items={tocItems} activeId={activeTurnId} onselect={scrollToTurn} />
+  <div class="msgs-viewport">
     {#if pinnedImages}
       <button class="pinned-imgs" type="button" title="定位到该消息" onclick={() => pinnedImages && scrollToTurn(pinnedImages.turnId)}>
         {#each pinnedImages.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}
       </button>
     {/if}
-    <div class="msgs-inner">
-      {#if client.turns().length === 0 && !client.sessionLoading()}
-        <div class="welcome">
-          <div class="w-logo"><span class="w-mark">K</span></div>
-          <h1>有什么可以帮你？</h1>
-          <div class="chips">
-            <button class="chip" onclick={() => text = '解释这个项目的目录结构'}>解释项目结构</button>
-            <button class="chip" onclick={() => text = '帮我写一个单元测试'}>写单元测试</button>
-            <button class="chip" onclick={() => text = '审查最近的代码变更'}>审查代码</button>
-            <button class="chip" onclick={() => text = '/'}>命令</button>
-          </div>
-        </div>
-      {:else if client.turns().length === 0}
-        <div class="loading"><Spinner size="md" /></div>
-      {:else}
-        {#each client.turns() as turn (turn.id)}
-          {#if turn.role === 'user'}
-            <!-- 用户：右侧气泡（QQ 聊天式）— markdown 渲染支持代码块/列表/链接 -->
-            <div class="msg user" id="turn-{turn.id}" data-turn-id={turn.id}>
-              <div class="bubble u-bub">
-                {#if turn.images?.length}<div class="imgs">{#each turn.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}</div>{/if}
-                {#if turn.skillActivation}
-                  <!-- 技能激活卡片（kimi-web 同款，替代裸 "/xxx" 文本） -->
-                  <div class="skill-act">
-                    <div class="sa-head">
-                      <span class="sa-icon">✦</span>
-                      <span class="sa-title">已激活技能</span>
-                      <span class="sa-name mono">{turn.skillActivation.name}</span>
-                    </div>
-                    {#if turn.skillActivation.args}<div class="sa-args">{turn.skillActivation.args}</div>{/if}
-                  </div>
-                {:else if turn.pluginCommand}
-                  <!-- 插件命令卡片（替代展开后的插件正文） -->
-                  <div class="skill-act">
-                    <div class="sa-head">
-                      <span class="sa-icon">🧩</span>
-                      <span class="sa-name mono">/{turn.pluginCommand.pluginId}:{turn.pluginCommand.commandName}</span>
-                    </div>
-                    {#if turn.pluginCommand.args}<div class="sa-args">{turn.pluginCommand.args}</div>{/if}
-                  </div>
-                {:else if turn.text}
-                  <div class="u-text">
-                    <MarkdownRenderer text={turn.text} streaming={false} />
-                  </div>
-                {/if}
-              </div>
-              <span class="avatar u">你</span>
+    <div class="msgs" bind:this={scrollEl} onscroll={onScroll}>
+      <ConversationToc items={tocItems} activeId={activeTurnId} onselect={scrollToTurn} />
+      <div class="msgs-inner">
+        {#if client.turns().length === 0 && !client.sessionLoading()}
+          <div class="welcome">
+            <div class="w-logo"><span class="w-mark">K</span></div>
+            <h1>有什么可以帮你？</h1>
+            <div class="chips">
+              <button class="chip" onclick={() => text = '解释这个项目的目录结构'}>解释项目结构</button>
+              <button class="chip" onclick={() => text = '帮我写一个单元测试'}>写单元测试</button>
+              <button class="chip" onclick={() => text = '审查最近的代码变更'}>审查代码</button>
+              <button class="chip" onclick={() => text = '/'}>命令</button>
             </div>
-          {:else if turn.role === 'compaction'}
-            <div class="compact">对话已压缩</div>
-          {:else}
-            <!-- Agent：左侧气泡（QQ 聊天式，与用户气泡镜像）；思考/正文/工具卡按时间序单流渲染 -->
+          </div>
+        {:else if client.turns().length === 0}
+          <div class="loading"><Spinner size="md" /></div>
+        {:else}
+          {#each client.turns() as turn (turn.id)}
+            {#if turn.role === 'user'}
+              <!-- 用户：右侧气泡（QQ 聊天式）— markdown 渲染支持代码块/列表/链接 -->
+              <div class="msg user" id="turn-{turn.id}" data-turn-id={turn.id}>
+                <div class="bubble u-bub">
+                  {#if turn.images?.length}<div class="imgs">{#each turn.images as img}<img src={img.url} alt={img.alt ?? ''} />{/each}</div>{/if}
+                  {#if turn.skillActivation}
+                    <!-- 技能激活卡片（kimi-web 同款，替代裸 "/xxx" 文本） -->
+                    <div class="skill-act">
+                      <div class="sa-head">
+                        <span class="sa-icon">✦</span>
+                        <span class="sa-title">已激活技能</span>
+                        <span class="sa-name mono">{turn.skillActivation.name}</span>
+                      </div>
+                      {#if turn.skillActivation.args}<div class="sa-args">{turn.skillActivation.args}</div>{/if}
+                    </div>
+                  {:else if turn.pluginCommand}
+                    <!-- 插件命令卡片（替代展开后的插件正文） -->
+                    <div class="skill-act">
+                      <div class="sa-head">
+                        <span class="sa-icon">🧩</span>
+                        <span class="sa-name mono">/{turn.pluginCommand.pluginId}:{turn.pluginCommand.commandName}</span>
+                      </div>
+                      {#if turn.pluginCommand.args}<div class="sa-args">{turn.pluginCommand.args}</div>{/if}
+                    </div>
+                  {:else if turn.text}
+                    <div class="u-text">
+                      <MarkdownRenderer text={turn.text} streaming={false} />
+                    </div>
+                  {/if}
+                </div>
+                <span class="avatar u">你</span>
+              </div>
+            {:else if turn.role === 'compaction'}
+              <div class="compact">对话已压缩</div>
+            {:else}
+              <!-- Agent：左侧气泡（QQ 聊天式，与用户气泡镜像）；思考/正文/工具卡按时间序单流渲染 -->
+              <div class="msg agent">
+                <span class="avatar a">K</span>
+                <div class="a-col">
+                  {#each group(turn.blocks ?? []) as item, i}
+                    {#if item.kind === 'thinking'}
+                      <ThinkCard
+                        thinking={item.thinking}
+                        streaming={running && turn.id === lastTurnId}
+                      />
+                    {:else if item.kind === 'text'}
+                      <div class="bubble a-bub">
+                        <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn.id === lastTurnId} /></div>
+                      </div>
+                    {:else if item.kind === 'tool'}
+                      <ToolCard tool={item.tool} />
+                    {:else if item.kind === 'tg'}
+                      <button class="tg-toggle" onclick={() => expanded[exk(turn.id, i)] = !(expanded[exk(turn.id, i)] ?? false)} type="button">
+                        <span class="tg-chevron">{expanded[exk(turn.id, i)] ?? false ? '▾' : '▸'}</span>
+                        <span class="tg-icon">🔧</span>
+                        <span class="tg-count">{item.tools.length} 个工具调用</span>
+                        <span class="tg-summary">{[...new Set(item.tools.map((t) => t.name))].slice(0, 3).join(' · ')}{item.tools.length > 3 ? ' …' : ''}</span>
+                      </button>
+                      {#if expanded[exk(turn.id, i)] ?? false}{#each item.tools as t}<ToolCard tool={t} />{/each}{/if}
+                    {/if}
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          {/each}
+          <!-- 审批/提问卡来自 agent —— 挂进 agent 行，与气泡/工具卡共享左边线 -->
+          {#if approval}
             <div class="msg agent">
               <span class="avatar a">K</span>
-              <div class="a-col">
-                {#each group(turn.blocks ?? []) as item, i}
-                  {#if item.kind === 'thinking'}
-                    <ThinkCard
-                      thinking={item.thinking}
-                      streaming={running && turn.id === lastTurnId}
-                    />
-                  {:else if item.kind === 'text'}
-                    <div class="bubble a-bub">
-                      <div class="ai-text"><MarkdownRenderer text={item.text} streaming={running && turn.id === lastTurnId} /></div>
-                    </div>
-                  {:else if item.kind === 'tool'}
-                    <ToolCard tool={item.tool} />
-                  {:else if item.kind === 'tg'}
-                    <button class="tg-toggle" onclick={() => expanded[i] = !(expanded[i] ?? false)} type="button">
-                      <span class="tg-chevron">{expanded[i] ?? false ? '▾' : '▸'}</span>
-                      <span class="tg-icon">🔧</span>
-                      <span class="tg-count">{item.tools.length} 个工具调用</span>
-                      <span class="tg-summary">{[...new Set(item.tools.map((t) => t.name))].slice(0, 3).join(' · ')}{item.tools.length > 3 ? ' …' : ''}</span>
-                    </button>
-                    {#if expanded[i] ?? false}{#each item.tools as t}<ToolCard tool={t} />{/each}{/if}
-                  {/if}
-                {/each}
-              </div>
+              <div class="a-col"><ApprovalCard request={approval} /></div>
             </div>
           {/if}
-        {/each}
-        <!-- 审批/提问卡来自 agent —— 挂进 agent 行，与气泡/工具卡共享左边线 -->
-        {#if approval}
-          <div class="msg agent">
-            <span class="avatar a">K</span>
-            <div class="a-col"><ApprovalCard request={approval} /></div>
-          </div>
+          {#if question}
+            <div class="msg agent">
+              <span class="avatar a">K</span>
+              <div class="a-col"><QuestionCard question={question} /></div>
+            </div>
+          {/if}
         {/if}
-        {#if question}
-          <div class="msg agent">
-            <span class="avatar a">K</span>
-            <div class="a-col"><QuestionCard question={question} /></div>
-          </div>
-        {/if}
-      {/if}
+      </div>
     </div>
   </div>
 
@@ -358,7 +360,7 @@
     </div>
   {/if}
 
-  <Composer bind:text {running} onsubmit={submit} />
+  <Composer bind:text {running} onsubmit={submit} onabort={abort} />
 </div>
 
 <style>
@@ -369,8 +371,6 @@
   .chip-run { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 8px; font-size: 10.5px; font-weight: 600; background: var(--ok-soft); color: var(--ok); }
   .dot-run { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); animation: kimi-pulse 1.5s infinite; }
   .hdr-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
-  .stop-btn { padding: 3px 10px; border-radius: var(--r-sm); border: 1px solid var(--color-danger-bd); background: transparent; color: var(--err); font-size: 11px; cursor: pointer; }
-  .stop-btn:hover { background: var(--err-soft); }
 
   /* 会话警告 banner（服务端 /sessions/:id/warnings） */
   .sess-warn {
@@ -443,6 +443,7 @@
   .qs-act.steer { color: var(--ac); font-weight: 600; }
   .qs-act.steer:hover { background: var(--ac-soft); }
 
+  .msgs-viewport { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
   .msgs { flex: 1; overflow-y: auto; position: relative; }
   .msgs-inner { max-width: 920px; margin: 0 auto; padding: 24px 32px 12px; display: flex; flex-direction: column; gap: 18px; }
 
@@ -485,18 +486,21 @@
   }
   .imgs { display: flex; gap: 4px; margin-bottom: 4px; }
   .imgs img { max-width: 100px; border-radius: 6px; }
-  /* 置顶缩略图：sticky 相对 .msgs 滚动容器钉在视口顶部，镜像最近一条带图用户消息 */
+  /* 置顶缩略图：悬浮在消息视口右上角的绝对定位层（不随滚动移动），
+     镜像最近一条带图用户消息；右缘与 920px 内容列右缘对齐 */
   .pinned-imgs {
-    position: sticky; top: 8px; z-index: 6;
-    display: flex; justify-content: flex-end; gap: 4px;
-    max-width: 920px; margin: 0 auto; padding: 8px 32px 0;
-    border: none; background: transparent; cursor: pointer;
-  }
-  .pinned-imgs img {
-    max-height: 38px; max-width: 60px; border-radius: 6px;
+    position: absolute; top: 10px; z-index: 20;
+    right: max(32px, calc(50% - 460px + 32px));
+    display: flex; gap: 4px; padding: 4px;
     border: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd));
+    border-radius: 10px;
+    background: var(--mat-chip-bg, var(--l2));
+    backdrop-filter: var(--mat-blur, none);
+    -webkit-backdrop-filter: var(--mat-blur, none);
     box-shadow: var(--elev-chip, none);
+    cursor: pointer;
   }
+  .pinned-imgs img { display: block; max-height: 38px; max-width: 60px; border-radius: 6px; }
   .u-text { word-break: break-word; }
   /* Compact markdown inside user bubbles — tighter spacing than agent output */
   .u-text :global(.md-body) { font-size: 12.5px; line-height: 1.55; }
@@ -544,7 +548,7 @@
   /* ---- 气泡融合层 ------------------------------------------------------
      气泡内的 markdown 渲染不再引用页面层 token（--l1/--l3/--bd/--ac），
      一律以气泡自身墨色（currentColor）的透明度梯度派生表面与线条，
-     使文字/代码/链接/引用/表格在全部 7 套主题下都与气泡浑然一体。 */
+     使文字/代码/链接/引用/表格在全部 8 套主题下都与气泡浑然一体。 */
   .u-text :global(.md-body),
   .ai-text :global(.md-body) { color: inherit; }
 

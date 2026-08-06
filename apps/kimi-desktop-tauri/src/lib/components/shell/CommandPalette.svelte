@@ -47,6 +47,7 @@
     { id: 'theme-neon', title: '霓光主题', category: 'action', icon: 'tool', keywords: 'theme neon', action: () => client.client.setColorScheme('neon') },
     { id: 'theme-glass', title: '玻璃主题', category: 'action', icon: 'sparkles', keywords: 'theme glass', action: () => client.client.setColorScheme('glass') },
     { id: 'theme-aqua', title: '水凝主题', category: 'action', icon: 'image', keywords: 'theme aqua', action: () => client.client.setColorScheme('aqua') },
+    { id: 'theme-moonshot', title: '月之暗面主题', category: 'action', icon: 'moon', keywords: 'theme moonshot kimi 月之暗面', action: () => client.client.setColorScheme('moonshot') },
     // 模式切换
     { id: 'mode-plan', title: '切换计划模式', category: 'action', icon: 'list', keywords: 'plan mode', action: () => client.client.togglePlanMode() },
     { id: 'mode-swarm', title: '切换 Swarm 模式', category: 'action', icon: 'bolt', keywords: 'swarm mode', action: () => client.client.toggleSwarmMode() },

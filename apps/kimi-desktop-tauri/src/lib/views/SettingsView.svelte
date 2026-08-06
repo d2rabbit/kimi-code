@@ -76,6 +76,7 @@
     { value: 'neon', label: '霓光' },
     { value: 'glass', label: '玻璃' },
     { value: 'aqua', label: '水凝' },
+    { value: 'moonshot', label: '月之暗面' },
     { value: 'system', label: '跟随系统' },
   ];
 
@@ -338,11 +339,11 @@
         <h2>常规</h2>
         <p class="sub-desc">外观偏好和应用设置</p>
         <div class="scard">
-          <span class="lab"><span class="t">界面主题</span><span class="d">深色 / 浅色 / 粘土 / 霓光 / 玻璃 / 水凝 / 跟随系统</span></span>
+          <span class="lab"><span class="t">界面主题</span><span class="d">深色 / 浅色 / 粘土 / 霓光 / 玻璃 / 水凝 / 月之暗面 / 跟随系统</span></span>
           <Segmented
             value={client.colorScheme() || 'dark'}
             options={THEME_OPTIONS}
-            onchange={(v) => client.client.setColorScheme(v as 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua')}
+            onchange={(v) => client.client.setColorScheme(v as 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua' | 'moonshot')}
           />
         </div>
         <div class="scard">

@@ -40,7 +40,7 @@
     const attr = typeof document !== 'undefined'
       ? document.documentElement.dataset.colorScheme
       : 'dark';
-    if (attr === 'dark' || attr === 'glass' || attr === 'neon') return true;
+    if (attr === 'dark' || attr === 'glass' || attr === 'neon' || attr === 'moonshot') return true;
     if (attr === 'light' || attr === 'clay' || attr === 'aqua') return false;
     return typeof window !== 'undefined'
       ? window.matchMedia('(prefers-color-scheme: dark)').matches

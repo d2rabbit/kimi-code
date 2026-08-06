@@ -58,13 +58,16 @@
     text = $bindable(''),
     running = false,
     onsubmit,
+    onabort,
   }: {
     text: string;
     running: boolean;
     onsubmit: (attachments?: { fileId: string; kind: 'image' | 'video' }[]) => void;
+    onabort?: () => void;
   } = $props();
 
-  const showMention = $derived(mentionQuery !== '' && !running);
+  // 运行中也可唤起 @ 菜单（输入不受限，steer/排队照常），故不再按 !running 门控。
+  const showMention = $derived(mentionQuery !== '');
 
   let textareaEl: HTMLTextAreaElement | null = $state(null);
   let fileInputEl: HTMLInputElement | null = $state(null);
@@ -230,10 +233,10 @@
     }
   });
 
-  // --- Slash menu：'/' 或 '$' 开头即触发（空查询展示全部技能） ---
+  // --- Slash menu：'/' 或 '$' 开头即触发（空查询展示全部技能）；运行中也可唤起 ---
   const slashTrigger = $derived((text.startsWith('/') || text.startsWith('$')) && !text.includes(' '));
   const slashQuery = $derived(slashTrigger ? text.slice(1) : '');
-  const showSlash = $derived(slashTrigger && !running);
+  const showSlash = $derived(slashTrigger);
 
   $effect(() => { void slashQuery; slashIndex = 0; });
   $effect(() => { void client.activeSessionId(); historyBrowsing = false; });
@@ -473,15 +476,27 @@
         class="composer-input"
         class:busy={running}
       ></textarea>
-      <button
-        class="sendc"
-        disabled={running || (!text.trim() && !allUploaded)}
-        onclick={doSend}
-        type="button"
-        aria-label="发送"
-      >
-        <Icon name="send" size="md" />
-      </button>
+      {#if running}
+        <button
+          class="sendc stop"
+          onclick={() => onabort?.()}
+          type="button"
+          aria-label="停止"
+          title="停止当前运行"
+        >
+          <Icon name="stop" size="sm" />
+        </button>
+      {:else}
+        <button
+          class="sendc"
+          disabled={!text.trim() && !allUploaded}
+          onclick={doSend}
+          type="button"
+          aria-label="发送"
+        >
+          <Icon name="send" size="md" />
+        </button>
+      {/if}
     </div>
 
     <!-- Control row -->
@@ -651,6 +666,11 @@
   .sendc:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
   .sendc:not(:disabled):hover { background: var(--mat-primary-bg-hover, var(--ac-h)); transform: scale(1.06); }
   .sendc:not(:disabled):active { transform: var(--motion-press, scale(0.95)); }
+
+  /* 停止态：运行中发送键变为红色停止键（实心方块图标） */
+  .sendc.stop { background: var(--err); box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35); }
+  .sendc.stop:hover { background: var(--err); transform: scale(1.06); }
+  .sendc.stop :global(svg) { fill: currentColor; }
 
   /* Control row */
   .ctrl { display: flex; align-items: center; gap: 6px; padding: 8px 12px 10px; border-top: var(--g-border-w, 1px) var(--g-border-style, solid) var(--g-border-color, var(--bd)); }

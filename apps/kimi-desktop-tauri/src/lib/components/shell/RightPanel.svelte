@@ -12,6 +12,7 @@
   import DiffDrawer from './DiffDrawer.svelte';
   import SideChatPanel from '../chat/SideChatPanel.svelte';
   import * as client from '../../stores/client.svelte';
+  import { latestTodos } from '../../lib/latestTodos';
   import { getKimiWebApi } from '../../api';
 
   type Mode = 'default' | 'review';
@@ -38,19 +39,26 @@
     if (!btwVisible && activeTool === 'btw') activeTool = 'git';
   });
 
-  // --- Plan (real session tasks → plan steps) ---
+  // --- Plan：模型 TodoList 优先（latestTodos 从转录提取最新全量列表），无 todo 时回退到后台/子代理任务 ---
   const realTasks = $derived(client.tasks());
+  const todos = $derived(latestTodos(client.activeMessages()));
+  const useTodos = $derived(todos.length > 0);
   const hasActiveSession = $derived(!!client.activeSessionId());
   const activeSessionId = $derived(client.activeSessionId());
 
   type StepState = 'done' | 'run' | 'todo';
   function stepState(status: string): StepState {
-    if (status === 'completed') return 'done';
-    if (status === 'running' || status === 'working' || status === 'queued') return 'run';
+    if (status === 'completed' || status === 'done') return 'done';
+    if (status === 'running' || status === 'working' || status === 'queued' || status === 'in_progress') return 'run';
     return 'todo';
   }
-  const doneCount = $derived(realTasks.filter((t) => t.status === 'completed').length);
-  const taskProgress = $derived(realTasks.length > 0 ? Math.round((doneCount / realTasks.length) * 100) : 0);
+  const doneCount = $derived(
+    useTodos
+      ? todos.filter((t) => t.status === 'done').length
+      : realTasks.filter((t) => t.status === 'completed').length,
+  );
+  const totalCount = $derived(useTodos ? todos.length : realTasks.length);
+  const taskProgress = $derived(totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
   // Active goal for the session (null when no goal is running). Falls back to
   // the session title only when no goal is set, so the card stays informative.
   const activeGoal = $derived(client.goal());
@@ -267,26 +275,38 @@
             </div>
             <div class="task-progress-head">
               <span>任务进度</span>
-              <Chip tone="success" size="sm" class="progress-count">{doneCount}/{realTasks.length}</Chip>
+              <Chip tone="success" size="sm" class="progress-count">{doneCount}/{totalCount}</Chip>
             </div>
             <div class="task-progress-track"><span style="width: {taskProgress}%"></span></div>
             <div class="task-list">
-              {#if hasActiveSession && realTasks.length > 0}
-                {#each realTasks as task (task.id)}
-                  {@const st = stepState(task.status)}
-                  {@const failing = task.status === 'failed' || task.status === 'cancelled'}
-                  <div class="task-item" class:todo={st === 'todo'} class:failing>
-                    {#if st === 'done'}<span class="task-check done">✓</span>
-                    {:else if st === 'run'}<span class="task-check run"></span>
-                    {:else if failing}<span class="task-check fail">✕</span>
-                    {:else}<span class="task-check"></span>{/if}
-                    <span class="task-name">{task.description}</span>
-                    {#if st === 'run'}
-                      <Button variant="danger" size="sm" class="task-cancel"
-                        onclick={() => void client.client.cancelTask(task.id)}>取消</Button>
-                    {/if}
-                  </div>
-                {/each}
+              {#if hasActiveSession && totalCount > 0}
+                {#if useTodos}
+                  {#each todos as todo, i (i)}
+                    {@const st = stepState(todo.status)}
+                    <div class="task-item" class:todo={st === 'todo'}>
+                      {#if st === 'done'}<span class="task-check done">✓</span>
+                      {:else if st === 'run'}<span class="task-check run"></span>
+                      {:else}<span class="task-check"></span>{/if}
+                      <span class="task-name">{todo.title}</span>
+                    </div>
+                  {/each}
+                {:else}
+                  {#each realTasks as task (task.id)}
+                    {@const st = stepState(task.status)}
+                    {@const failing = task.status === 'failed' || task.status === 'cancelled'}
+                    <div class="task-item" class:todo={st === 'todo'} class:failing>
+                      {#if st === 'done'}<span class="task-check done">✓</span>
+                      {:else if st === 'run'}<span class="task-check run"></span>
+                      {:else if failing}<span class="task-check fail">✕</span>
+                      {:else}<span class="task-check"></span>{/if}
+                      <span class="task-name">{task.description}</span>
+                      {#if st === 'run'}
+                        <Button variant="danger" size="sm" class="task-cancel"
+                          onclick={() => void client.client.cancelTask(task.id)}>取消</Button>
+                      {/if}
+                    </div>
+                  {/each}
+                {/if}
               {:else}
                 <p class="empty-note">暂无进行中的计划</p>
               {/if}

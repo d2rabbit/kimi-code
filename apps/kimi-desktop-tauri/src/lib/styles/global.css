@@ -1131,10 +1131,110 @@ html[data-color-scheme="neon"] {
   --glow-cyan: 0 0 12px rgba(34, 211, 238, 0.45);
 }
 
-/* ---- clay / neon：把各自的 --haze 接入 body 漂移层（aurora 用 --aurora-bg） ---- */
+/* ---- clay / neon / moonshot：把各自的 --haze 接入 body 漂移层（aurora 用 --aurora-bg） ---- */
 html[data-color-scheme="clay"] body::before,
-html[data-color-scheme="neon"] body::before {
+html[data-color-scheme="neon"] body::before,
+html[data-color-scheme="moonshot"] body::before {
   background: var(--haze);
+}
+
+/* ============================================================================
+   MOONSHOT — 月之暗面（月夜主题，独立于 dark / light / clay / neon / glass / aqua）
+   月夜深空黑蓝 + 月光银蓝（靛→青）品牌渐变 + 静谧呼吸辉光。
+============================================================================ */
+html[data-color-scheme="moonshot"] {
+  /* ---- primitives ---- */
+  --bg: #05070f;          /* 月夜深空 */
+  --l1: #0a0e1c;          /* 月夜表面 */
+  --l2: #10152a;          /* 抬升表面 */
+  --l3: #171d36;          /* 高亮表面 */
+
+  --bd: rgba(140, 158, 255, 0.14);
+  --bd2: rgba(140, 158, 255, 0.26);
+
+  --tx: #eceffb;
+  --tx2: #9fa9d4;
+  --tx3: #5d6690;
+
+  --ac: #6c8cff;          /* 月光靛蓝 */
+  --ac-h: #8fa8ff;
+  --ac-soft: rgba(108, 140, 255, 0.15);
+  --ac-bd: rgba(108, 140, 255, 0.40);
+
+  --ok: #34d399;
+  --ok-soft: rgba(52, 211, 153, 0.14);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.14);
+  --err: #fb7185;
+  --err-soft: rgba(251, 113, 133, 0.14);
+  --amb: #a78bfa;
+  --amb-soft: rgba(167, 139, 250, 0.14);
+
+  --toplight: inset 0 1px 0 rgba(236, 239, 251, 0.06);
+  --sh: 0 12px 40px rgba(2, 4, 16, 0.55);
+  --sh-lg: 0 24px 64px rgba(2, 4, 16, 0.65);
+
+  --overlay: rgba(2, 4, 10, 0.66);
+
+  /* 月夜雾晕：右上月光银辉 + 左下靛蓝 + 中部青辉 */
+  --haze:
+    radial-gradient(42% 36% at 78% 8%, rgba(190, 205, 255, 0.13), transparent 70%),
+    radial-gradient(45% 40% at 15% 85%, rgba(108, 140, 255, 0.12), transparent 70%),
+    radial-gradient(35% 35% at 55% 45%, rgba(112, 200, 255, 0.07), transparent 70%);
+  --grain-op: 0.04;
+
+  /* 代码高亮（月夜） */
+  --syn-k: #a5b4ff;
+  --syn-s: #6ee7b7;
+  --syn-f: #70c8ff;
+  --syn-n: #fbbf24;
+
+  /* ---- semantic layer（与其它主题完全相同的别名映射） ---- */
+  --color-bg: var(--bg);
+  --color-surface: var(--l1);
+  --color-surface-raised: var(--l2);
+  --color-surface-sunken: var(--bg);
+  --color-sidebar-bg: var(--l1);
+  --color-text: var(--tx);
+  --color-text-muted: var(--tx2);
+  --color-text-faint: var(--tx3);
+  --color-text-on-accent: #081226;
+  --color-line: var(--bd);
+  --color-line-strong: var(--bd2);
+  --color-selected: var(--ac-soft);
+  --color-hover: rgba(140, 158, 255, 0.08);
+  --color-accent: var(--ac);
+  --color-accent-hover: var(--ac-h);
+  --color-accent-soft: var(--ac-soft);
+  --color-accent-bd: var(--ac-bd);
+  --accent-primary: var(--ac);
+  --color-success: var(--ok);
+  --color-success-soft: var(--ok-soft);
+  --color-success-bd: rgba(52, 211, 153, 0.30);
+  --color-warning: var(--warn);
+  --color-warning-soft: var(--warn-soft);
+  --color-warning-bd: rgba(251, 191, 36, 0.30);
+  --color-danger: var(--err);
+  --color-danger-soft: var(--err-soft);
+  --color-danger-bd: rgba(251, 113, 133, 0.30);
+  --color-done: #a78bfa;
+  --color-done-soft: rgba(167, 139, 250, 0.14);
+  --color-done-bd: rgba(167, 139, 250, 0.30);
+  --color-info: var(--ac);
+  --color-logo-dev: #6c8cff;
+  --glass-divider: var(--bd);
+
+  --shadow-xs: 0 1px 3px rgba(2, 4, 16, 0.50);
+  --shadow-sm: 0 2px 6px rgba(2, 4, 16, 0.50);
+  --shadow-md: 0 6px 18px rgba(2, 4, 16, 0.55);
+  --shadow-lg: 0 12px 32px rgba(2, 4, 16, 0.60);
+  --shadow-xl: 0 24px 64px rgba(2, 4, 16, 0.70);
+
+  --p-focus-ring: 0 0 0 3px rgba(108, 140, 255, 0.30);
+  --p-focus-ring-strong: 0 0 0 3px rgba(108, 140, 255, 0.30), 0 0 0 1px var(--ac);
+  --p-selection: rgba(108, 140, 255, 0.28);
+
+  color-scheme: dark;
 }
 
 /* ============================================================================
@@ -1585,6 +1685,65 @@ html[data-color-scheme="neon"] {
   --type-primary-text-shadow: 0 0 10px rgba(34, 211, 238, 0.35);
 }
 
+/* ---- MOONSHOT 月之暗面 ---- */
+html[data-color-scheme="moonshot"] {
+  /* geometry */
+  --g-radius-chip: 999px;
+  --g-radius-control: 10px;
+  --g-radius-input: 10px;
+  --g-radius-card: 14px;
+  --g-radius-overlay: 16px;
+  --g-radius-bubble: 16px 16px 16px 4px;
+  --g-border-w: 1px;
+  --g-border-w-input: 1px;
+  --g-border-style: solid;
+  --g-border-color: var(--bd);
+  /* elevation */
+  --elev-control: 0 2px 10px rgba(2, 4, 16, 0.45), inset 0 1px 0 rgba(236, 239, 251, 0.06);
+  --elev-control-hover: 0 4px 16px rgba(2, 4, 16, 0.50), 0 0 12px rgba(108, 140, 255, 0.14), inset 0 1px 0 rgba(236, 239, 251, 0.08);
+  --elev-input: inset 0 1px 3px rgba(2, 4, 16, 0.50);
+  --elev-card: 0 8px 24px rgba(2, 4, 16, 0.50), inset 0 1px 0 rgba(236, 239, 251, 0.05);
+  --elev-card-hover: 0 12px 32px rgba(2, 4, 16, 0.55), 0 0 20px rgba(108, 140, 255, 0.12), inset 0 1px 0 rgba(236, 239, 251, 0.08);
+  --elev-overlay: var(--shadow-xl);
+  --elev-chip: inset 0 1px 0 rgba(236, 239, 251, 0.05);
+  --elev-bubble: 0 4px 16px rgba(2, 4, 16, 0.45);
+  --motion-press-shadow: var(--elev-control);
+  /* material */
+  --mat-surface-1: rgba(10, 14, 28, 0.72);
+  --mat-surface-2: rgba(16, 21, 42, 0.78);
+  --mat-surface-3: rgba(23, 29, 54, 0.85);
+  --mat-blur: blur(12px) saturate(1.15);
+  --mat-sheen: linear-gradient(180deg, rgba(236, 239, 251, 0.05), transparent 55%);
+  --mat-texture: none;
+  --mat-control-bg: rgba(16, 21, 42, 0.80);
+  --mat-control-bg-hover: rgba(23, 29, 54, 0.85);
+  --mat-primary-bg: linear-gradient(135deg, #6c8cff, #70c8ff);
+  --mat-primary-bg-hover: linear-gradient(135deg, #8fa8ff, #6c8cff);
+  --mat-danger-bg: linear-gradient(135deg, #fb7185, #e11d48);
+  --mat-input-bg: rgba(10, 14, 28, 0.72);
+  --mat-chip-bg: rgba(16, 21, 42, 0.80);
+  --mat-bubble-bg: rgba(16, 21, 42, 0.78);
+  --mat-sidebar-bg: rgba(7, 10, 20, 0.62);
+  --mat-header-bg: rgba(7, 10, 20, 0.55);
+  --mat-primary-bd: rgba(108, 140, 255, 0.45);
+  /* motion */
+  --motion-press: scale(0.97);
+  --motion-hover-lift: translateY(-1px);
+  --motion-hover-lift-card: translateY(-2px);
+  --motion-ease-enter: var(--ease-out);
+  --motion-enter-anim: moon-in 260ms var(--ease-out) backwards;
+  --motion-cta-anim: moon-pulse 3.2s ease-in-out infinite;
+  --motion-ambient: moon-pulse 3.2s ease-in-out infinite;
+  /* type */
+  --type-control-transform: none;
+  --type-control-tracking: 0.01em;
+  --type-control-weight: 500;
+  --type-primary-transform: none;
+  --type-primary-tracking: 0.01em;
+  --type-primary-weight: 600;
+  --type-primary-text-shadow: 0 0 10px rgba(108, 140, 255, 0.35);
+}
+
 /* ---- GLASS 棱镜玻璃 ---- */
 html[data-color-scheme="glass"] {
   /* geometry */
@@ -1791,6 +1950,15 @@ html[data-color-scheme="aqua"] {
 @keyframes neon-pulse {
   0%, 100% { filter: brightness(1) drop-shadow(0 0 0 rgba(34, 211, 238, 0)); }
   50%      { filter: brightness(1.12) drop-shadow(0 0 10px rgba(34, 211, 238, 0.45)); }
+}
+/* moonshot：入场（月升，亮度回落）与月光脉冲（银蓝辉光呼吸，比 neon 更静谧） */
+@keyframes moon-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); filter: brightness(1.5); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+}
+@keyframes moon-pulse {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 0 rgba(108, 140, 255, 0)); }
+  50%      { filter: brightness(1.1) drop-shadow(0 0 10px rgba(108, 140, 255, 0.42)); }
 }
 /* clay：暖影脉冲（陶土色外阴影呼吸） */
 @keyframes clay-glow {

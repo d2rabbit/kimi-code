@@ -75,7 +75,7 @@ const ui = $state({
   goalMode: false,
 
   // Appearance
-  colorScheme: 'system' as 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua',
+  colorScheme: 'system' as 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua' | 'moonshot',
   accent: 'blue' as string,
   uiFontSize: 14 as number,
 
@@ -392,7 +392,7 @@ async function load(): Promise<void> {
     // Restore persisted appearance preferences (theme + font size + onboarding).
     try {
       const scheme = localStorage.getItem('kimi-web.color-scheme');
-      if (scheme === 'light' || scheme === 'dark' || scheme === 'system') {
+      if (scheme === 'light' || scheme === 'dark' || scheme === 'system' || scheme === 'clay' || scheme === 'neon' || scheme === 'glass' || scheme === 'aqua' || scheme === 'moonshot') {
         setColorScheme(scheme);
       }
       const fs = localStorage.getItem('kimi-web.ui-font-size');
@@ -1371,7 +1371,7 @@ async function logout(): Promise<void> {
 }
 
 /** Set the color scheme (appearance — frontend local, not daemon config). */
-function setColorScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua'): void {
+function setColorScheme(scheme: 'light' | 'dark' | 'system' | 'clay' | 'neon' | 'glass' | 'aqua' | 'moonshot'): void {
   ui.colorScheme = scheme;
   try {
     document.documentElement.dataset.colorScheme = scheme;

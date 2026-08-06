@@ -155,7 +155,7 @@
         try {
           const highlighted = h.codeToHtml(codeText, {
             lang,
-            theme: ['dark', 'glass', 'neon'].includes(document.documentElement.dataset.colorScheme ?? '') ? 'github-dark' : 'github-light',
+            theme: ['dark', 'glass', 'neon', 'moonshot'].includes(document.documentElement.dataset.colorScheme ?? '') ? 'github-dark' : 'github-light',
           });
           result = result.replace(m[0], highlighted);
         } catch {
