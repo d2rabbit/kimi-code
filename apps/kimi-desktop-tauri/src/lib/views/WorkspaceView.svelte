@@ -8,10 +8,11 @@
   import PluginsView from './PluginsView.svelte';
   import SubagentsView from './SubagentsView.svelte';
   import ArchiveView from './ArchiveView.svelte';
+  import HooksView from './HooksView.svelte';
 
   let { onnavigate = () => {} }: { onnavigate?: () => void } = $props();
 
-  type ModuleView = 'chat' | 'plugins' | 'subagents' | 'archive';
+  type ModuleView = 'chat' | 'plugins' | 'subagents' | 'archive' | 'hooks';
   let activeView = $state<ModuleView>('chat');
 
   let sidebarWidth = $state(224);
@@ -42,6 +43,8 @@
     <SubagentsView />
   {:else if activeView === 'archive'}
     <ArchiveView />
+  {:else if activeView === 'hooks'}
+    <HooksView />
   {/if}
 </div>
 

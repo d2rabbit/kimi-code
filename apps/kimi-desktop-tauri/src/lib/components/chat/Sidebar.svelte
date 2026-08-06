@@ -89,6 +89,7 @@
     <button class="mod" class:on={activeModule === 'plugins'} onclick={() => onmoduleview('plugins')}><span class="ic">⬡</span>插件</button>
     <button class="mod" class:on={activeModule === 'subagents'} onclick={() => onmoduleview('subagents')}><span class="ic">◈</span>子智能体</button>
     <button class="mod" class:on={activeModule === 'archive'} onclick={() => onmoduleview('archive')}><span class="ic">▤</span>归档历史</button>
+    <button class="mod" class:on={activeModule === 'hooks'} onclick={() => onmoduleview('hooks')}><span class="ic">⚡</span>Hooks</button>
   </nav>
 
   <!-- Sessions header -->
