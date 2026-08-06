@@ -127,6 +127,7 @@
         <span class="id mono">
           {task.status}
           {#if task.startedAt}· {formatElapsed(task.startedAt)}{/if}
+          {#if task.model}· {task.model}{#if task.thinkingEffort}({task.thinkingEffort}){/if}{/if}
           {#if task.command}· {task.command}{/if}
         </span>
       </span>

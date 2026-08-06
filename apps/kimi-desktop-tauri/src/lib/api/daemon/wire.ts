@@ -411,6 +411,10 @@ export interface WireBackgroundTask {
   output_bytes?: number;
   subagent_phase?: 'queued' | 'working' | 'suspended' | 'completed' | 'failed';
   subagent_type?: string;
+  /** Subagent tasks only: the display-normalized model alias the child is bound to. */
+  model?: string;
+  /** Subagent tasks only: the child's effective thinking effort at spawn. */
+  thinking_effort?: string;
   parent_tool_call_id?: string;
   suspended_reason?: string;
   swarm_index?: number;

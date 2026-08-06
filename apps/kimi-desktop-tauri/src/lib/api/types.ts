@@ -329,6 +329,10 @@ export interface AppTask {
   text?: string;
   subagentPhase?: AppSubagentPhase;
   subagentType?: string;
+  /** Subagent tasks only: the display-normalized model alias the child is bound to. */
+  model?: string;
+  /** Subagent tasks only: the child's effective thinking effort at spawn. */
+  thinkingEffort?: string;
   parentToolCallId?: string;
   suspendedReason?: string;
   swarmIndex?: number;

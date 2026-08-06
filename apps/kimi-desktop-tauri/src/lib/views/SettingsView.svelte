@@ -567,7 +567,7 @@
                   </svg>
                   <div class="ring-c"><div class="mono ring-pct">{Math.round(ringPct * 100)}%</div><div class="ring-l">Context</div></div>
                 </div>
-                <div class="ring-m mono">当前会话 {kFmt(usage.contextTokens)} / {kFmt(usage.contextLimit)}</div>
+                <div class="ring-m mono">当前会话 {kFmt(usage.contextTokens)}{#if usage.contextLimit > 0} / {kFmt(usage.contextLimit)}{/if}</div>
               </div>
             {/if}
           </div>
