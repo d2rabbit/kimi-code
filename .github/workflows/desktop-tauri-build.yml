@@ -197,17 +197,20 @@ jobs:
             gh release upload "$TAG" release-assets/* --clobber
           else
             echo "Creating Release $TAG."
-            gh release create "$TAG" release-assets/* \
-              --title "$TAG" \
-              --notes "Automated desktop build from ${GITHUB_REF#refs/heads/} @ ${GITHUB_SHA::7}.
+            cat > /tmp/release-notes.md <<'EOF'
+          自动化桌面构建归档。
 
           ## 平台 / Platforms
 
           | 平台 | 安装包 |
           |------|--------|
-          | macOS (Apple Silicon) | \`.dmg\` |
-          | Windows (x64) | \`.msi\` (en-US, zh-CN), \`.exe\` (NSIS) |
-          | Linux (x64) | \`.deb\`, \`.rpm\`, \`.AppImage\` |
+          | macOS (Apple Silicon) | `.dmg` |
+          | Windows (x64) | `.msi` (en-US, zh-CN), `.exe` (NSIS) |
+          | Linux (x64) | `.deb`, `.rpm`, `.AppImage` |
 
-          > 产物由 \`desktop-tauri-build\` 自动打包归档。"
+          > 产物由 `desktop-tauri-build` 自动打包归档。
+          EOF
+            gh release create "$TAG" release-assets/* \
+              --title "$TAG" \
+              --notes-file /tmp/release-notes.md
           fi
