@@ -153,6 +153,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # gh release create tags a commit, so the runner needs a checkout.
+      - uses: actions/checkout@v4
+
       - name: Resolve release tag
         id: tag
         run: |
