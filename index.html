@@ -270,8 +270,38 @@
         <!-- 新版本在此插入（最新的在最上面） -->
         <article class="release-card reveal">
           <div class="release-meta">
-            <span class="release-date">2026-08-06</span>
+            <span class="release-date">2026-08-09</span>
             <span class="release-badge">最新</span>
+            <span class="release-sync-tag">上游 0.34.0</span>
+          </div>
+          <div class="release-body">
+            <div class="release-group">
+              <h3><i class="group-dot dot-kimi" aria-hidden="true"></i>同步上游<small>0.33.0+ → 0.34.0（12 个提交）</small></h3>
+              <ul>
+                <li>全文搜索索引与会话索引、主线程解耦，kap-server 搜索跑在独立 worker 线程（#2701），打包侧新增 <code>tsdown.dist-worker</code> 产物。</li>
+                <li>MCP 连接级鉴权状态探测与全局暴露：连接握手时探明 auth，<code>/api/v1/mcp/auth</code> 汇总全局 MCP 鉴权状态（#2731 / #2706）。</li>
+                <li>每个会话隔离 builtin profile 目录，避免跨会话的模型/供应商配置串扰（#2740）。</li>
+                <li>修复上游 #2666 的 LifecycleScope 错误导入（#2703）；压缩 token 改按全请求口径计入（#2699）。</li>
+                <li>插件变更受会话 baseline 与 reminder 约束（#2702）；TUI 在 WebBridge 安装后展示配置步骤（#2692）。</li>
+                <li>文档新增 Official Plugins 章节（WebBridge / Computer Use）；用户 changelog 规则重做并同步 0.34.0。</li>
+              </ul>
+            </div>
+            <div class="release-group">
+              <h3><i class="group-dot dot-copper" aria-hidden="true"></i>合并进桌面</h3>
+              <ul>
+                <li>修复 Windows 打包 CI：cargo test 阶段 <code>tauri-build</code> 校验 gitignored 的 <code>resources/bin</code> / <code>resources/codegraph</code> 目录导致 build.rs 失败；在测试前补建空目录占位，真实 staging 仍由打包阶段 <code>beforeBundleCommand</code> 完成。</li>
+                <li>Moonshot 主题落地：全局配色、组件视觉与深浅切换统一为月偏食蓝紫—铜色谱。</li>
+                <li>发送/停止双态按钮：同一控件按 agent 运行态在发送与中止间切换，避免误触与重复请求。</li>
+                <li>时序化轮次块：对话按时间线折叠展开，执行卡片默认收起、缩略图钉选，降低长会话视觉噪音。</li>
+                <li>合并上游 0.34.0：含搜索 worker 构建步骤，去掉本分支不发布的 <code>check-web-assets</code>（桌面 daemon 为 REST/WS-only）。</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <article class="release-card reveal">
+          <div class="release-meta">
+            <span class="release-date">2026-08-06</span>
             <span class="release-sync-tag">上游 0.33.0+</span>
           </div>
           <div class="release-body">
