@@ -111,6 +111,17 @@ jobs:
         working-directory: apps/kimi-desktop-tauri
         run: pnpm run typecheck
 
+      # tauri-build (build.rs) validates every path in tauri.conf.json's
+      # bundle.resources at compile time. resources/bin and resources/codegraph
+      # are gitignored (staged by before-bundle.cjs only during packaging), so a
+      # bare `cargo test` aborts with "resource path doesn't exist" before any
+      # test runs. Create empty directories so build.rs passes; real staging
+      # still happens in the "Build Tauri app" step via beforeBundleCommand.
+      - name: Ensure Tauri resource directories exist
+        run: >
+          node -e
+          "for (const p of ['apps/kimi-desktop-tauri/src-tauri/resources/bin','apps/kimi-desktop-tauri/src-tauri/resources/codegraph/bin','apps/kimi-desktop-tauri/src-tauri/resources/codegraph/lib']) require('node:fs').mkdirSync(p,{recursive:true})"
+
       - name: Test desktop Rust shell
         run: cargo test --manifest-path apps/kimi-desktop-tauri/src-tauri/Cargo.toml
 
