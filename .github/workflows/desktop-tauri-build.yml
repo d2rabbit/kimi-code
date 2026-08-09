@@ -1,6 +1,7 @@
 name: desktop-tauri-build
 
-# Builds the Kimi Code Desktop (Tauri) installers for macOS, Windows and Linux.
+# Builds the Kimi Code Desktop (Tauri) installers for macOS (arm64), Windows
+# and Linux, then archives every installer to a GitHub Release.
 #
 # Current architecture (post-SEA): the embedded agent is a PLATFORM-INDEPENDENT
 # JS bundle — apps/kimi-code is packed by tsdown into
@@ -15,9 +16,10 @@ name: desktop-tauri-build
 # Triggers:
 #   - workflow_dispatch: manual ad-hoc builds from the Actions tab.
 #   - push to `release`: every landing on the release branch builds the
-#     full platform matrix and uploads installer artifacts.
-#   - push tag `desktop-v*`: build installers and attach them to a GitHub
-#     Release named after the tag.
+#     full platform matrix, uploads installer artifacts, AND archives them
+#     to a dated GitHub Release (desktop-v0.1.0-YYYY.MM.DD).
+#   - push tag `desktop-v*`: build installers and archive them under the
+#     pushed tag's own GitHub Release.
 #   - workflow_call: reusable from other workflows.
 
 on:
@@ -41,7 +43,7 @@ on:
         default: 5
 
 permissions:
-  contents: write # attach installers to a GitHub Release on tag builds
+  contents: write # create GitHub Releases + attach installers
 
 concurrency:
   group: desktop-tauri-build-${{ github.ref }}
@@ -55,8 +57,6 @@ jobs:
         include:
           - os: macos-latest
             target: darwin-arm64
-          - os: macos-13
-            target: darwin-x64
           - os: windows-latest
             target: win32-x64
           - os: ubuntu-22.04
@@ -137,7 +137,6 @@ jobs:
           name: kimi-desktop-tauri-${{ matrix.target }}
           path: |
             apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.dmg
-            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.app
             apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.msi
             apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.exe
             apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.deb
@@ -145,14 +144,70 @@ jobs:
             apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.AppImage
           retention-days: ${{ inputs.retention-days || 5 }}
 
-      - name: Attach installers to the Release
-        if: startsWith(github.ref, 'refs/tags/desktop-v')
-        uses: softprops/action-gh-release@v2
+  # Archive every installer to a GitHub Release. Runs only after all platform
+  # builds succeed, so there is no upload race. On `release`-branch pushes a
+  # dated tag (desktop-v0.1.0-YYYY.MM.DD) is generated; on `desktop-v*` tag
+  # pushes the pushed tag is reused. Manual dispatch skips archiving.
+  release:
+    if: github.ref == 'refs/heads/release' || startsWith(github.ref, 'refs/tags/desktop-v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/desktop-v* ]]; then
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            # release-branch push: synthesize a dated tag.
+            echo "name=desktop-v0.1.0-$(date -u +%Y.%m.%d)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
         with:
-          files: |
-            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.dmg
-            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.msi
-            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.exe
-            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.deb
-            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.rpm
-            apps/kimi-desktop-tauri/src-tauri/target/release/bundle/**/*.AppImage
+          path: installers
+          pattern: kimi-desktop-tauri-*
+          merge-multiple: false
+
+      # Flatten the nested artifact layout into a single dir of installers.
+      # download-artifact preserves per-target subdirs (darwin-arm64/, ...);
+      # we only want the actual installer files for the Release assets.
+      - name: Stage installers
+        run: |
+          mkdir -p release-assets
+          find installers -type f \( \
+            -name '*.dmg' -o \
+            -name '*.msi' -o \
+            -name '*.exe' -o \
+            -name '*.deb' -o \
+            -name '*.rpm' -o \
+            -name '*.AppImage' \
+          \) -exec cp {} release-assets/ \;
+          echo "=== staged installers ==="
+          ls -la release-assets/
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — uploading assets."
+            gh release upload "$TAG" release-assets/* --clobber
+          else
+            echo "Creating Release $TAG."
+            gh release create "$TAG" release-assets/* \
+              --title "$TAG" \
+              --notes "Automated desktop build from ${GITHUB_REF#refs/heads/} @ ${GITHUB_SHA::7}.
+
+          ## 平台 / Platforms
+
+          | 平台 | 安装包 |
+          |------|--------|
+          | macOS (Apple Silicon) | \`.dmg\` |
+          | Windows (x64) | \`.msi\` (en-US, zh-CN), \`.exe\` (NSIS) |
+          | Linux (x64) | \`.deb\`, \`.rpm\`, \`.AppImage\` |
+
+          > 产物由 \`desktop-tauri-build\` 自动打包归档。"
+          fi
